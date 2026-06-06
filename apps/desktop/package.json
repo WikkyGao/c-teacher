@@ -1,0 +1,35 @@
+{
+  "name": "@c-teacher/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 1420",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 1421",
+    "tauri": "tauri",
+    "test": "vitest run",
+    "lint": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.5.0",
+    "@tauri-apps/plugin-dialog": "^2.2.1",
+    "@tauri-apps/plugin-notification": "^2.2.2",
+    "@vueuse/core": "^13.1.0",
+    "katex": "^0.17.0",
+    "lucide-vue-next": "^0.511.0",
+    "naive-ui": "^2.41.0",
+    "pinia": "^3.0.2",
+    "vue": "^3.5.14",
+    "vue-router": "^4.5.1",
+    "zod": "^3.24.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.3",
+    "@vue/test-utils": "^2.4.6",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4",
+    "vue-tsc": "^2.2.10"
+  }
+}

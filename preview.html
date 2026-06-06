@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>C-teacher 课程表与皮肤 H5 预览</title>
+  <style>
+    :root {
+      --primary: #0d6f65;
+      --primary-strong: #084b45;
+      --primary-soft: #e5f3ef;
+      --accent: #cc5a3c;
+      --accent-soft: #fff0ea;
+      --info: #315f96;
+      --bg: #f5f7f4;
+      --page: #eef5f2;
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-solid: #ffffff;
+      --text: #17212b;
+      --muted: #66717f;
+      --muted-strong: #46515f;
+      --border: #dfe6df;
+      --sidebar: #143c3a;
+      --sidebar-text: #edf7f4;
+      --sidebar-muted: #a9c6bf;
+      --shadow: 0 18px 52px rgba(27, 42, 54, 0.12);
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Noto Sans SC", sans-serif;
+    }
+
+    body[data-theme="night"] {
+      --primary: #78d9c8;
+      --primary-strong: #cbfff5;
+      --primary-soft: #153f3b;
+      --accent: #ffd082;
+      --accent-soft: #3d2c13;
+      --info: #9fcfff;
+      --bg: #101820;
+      --page: #0e1720;
+      --panel: rgba(28, 43, 56, 0.96);
+      --panel-solid: #223445;
+      --text: #f3fbff;
+      --muted: #c4d4df;
+      --muted-strong: #dbe8ef;
+      --border: #40576a;
+      --sidebar: #081018;
+      --sidebar-text: #f4fbff;
+      --sidebar-muted: #b6c9d4;
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+      color-scheme: dark;
+    }
+
+    body[data-theme="blue"] {
+      --primary: #1769d4;
+      --primary-strong: #0b3f8a;
+      --primary-soft: #e7f0ff;
+      --accent: #11a7a2;
+      --accent-soft: #e3faf7;
+      --info: #315f96;
+      --bg: #f4f8ff;
+      --page: #eaf2ff;
+      --panel: rgba(255, 255, 255, 0.92);
+      --panel-solid: #ffffff;
+      --text: #142033;
+      --muted: #5d6b80;
+      --muted-strong: #3c4a5e;
+      --border: #d7e3f3;
+      --sidebar: #123a70;
+      --sidebar-text: #f1f7ff;
+      --sidebar-muted: #b8d2f2;
+      --shadow: 0 18px 52px rgba(26, 79, 139, 0.16);
+    }
+
+    body[data-theme="plum"] {
+      --primary: #7b4e8f;
+      --primary-strong: #4c2c5c;
+      --primary-soft: #f2e8f6;
+      --accent: #3f8c77;
+      --accent-soft: #e6f4ef;
+      --info: #7b607b;
+      --bg: #fbf7fb;
+      --page: #f3eef6;
+      --panel: rgba(255, 255, 255, 0.9);
+      --panel-solid: #ffffff;
+      --text: #231c2a;
+      --muted: #706375;
+      --muted-strong: #514657;
+      --border: #e5dbe9;
+      --sidebar: #36243f;
+      --sidebar-text: #f9f0fb;
+      --sidebar-muted: #d3bddb;
+      --shadow: 0 18px 52px rgba(81, 57, 93, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 1180px;
+      color: var(--text);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.58), transparent 34%),
+        linear-gradient(330deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent 42%),
+        var(--page);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      padding: 22px 16px 18px;
+      color: var(--sidebar-text);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--sidebar) 98%, white), var(--sidebar));
+      box-shadow: inset -1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.13);
+      font-size: 20px;
+      font-weight: 850;
+    }
+
+    .brand-title {
+      font-size: 21px;
+      font-weight: 850;
+      line-height: 1.1;
+    }
+
+    .brand-subtitle {
+      margin-top: 3px;
+      color: var(--sidebar-muted);
+      font-size: 12px;
+    }
+
+    .teacher {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.09);
+      font-size: 13px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 4px;
+    }
+
+    .nav-item,
+    .settings-entry {
+      display: flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--sidebar-muted);
+      background: transparent;
+      font-weight: 760;
+    }
+
+    .nav-item.active,
+    .settings-entry {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.12), 0 10px 22px rgba(0, 0, 0, 0.12);
+    }
+
+    .settings-entry {
+      margin-top: auto;
+    }
+
+    .workspace {
+      padding: 28px 32px 34px;
+      overflow: auto;
+    }
+
+    .page-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 30px;
+      line-height: 1.16;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .segmented {
+      display: flex;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel-solid);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+
+    .segmented button {
+      min-width: 48px;
+      min-height: 36px;
+      padding: 0 13px;
+      border: 0;
+      border-left: 1px solid var(--border);
+      color: var(--muted-strong);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .segmented button:first-child {
+      border-left: 0;
+    }
+
+    .segmented button.active {
+      color: #fff;
+      background: var(--primary);
+    }
+
+    .button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 36px;
+      padding: 0 13px;
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      color: #fff;
+      background: var(--primary);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .button.secondary {
+      color: var(--text);
+      border-color: var(--border);
+      background: var(--panel-solid);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--primary-strong);
+      background: var(--primary-soft);
+      font-size: 13px;
+      font-weight: 820;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .calendar,
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .calendar {
+      overflow: auto;
+    }
+
+    .week-head,
+    .week-grid {
+      display: grid;
+      grid-template-columns: 72px repeat(7, minmax(112px, 1fr));
+      min-width: 920px;
+    }
+
+    .day-mode .week-head,
+    .day-mode .week-grid {
+      grid-template-columns: 72px minmax(520px, 1fr);
+      min-width: 620px;
+    }
+
+    .week-head {
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-solid);
+    }
+
+    .week-head div {
+      min-height: 56px;
+      padding: 10px 8px;
+      border-left: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .week-head div:first-child {
+      border-left: 0;
+    }
+
+    .week-head small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+    }
+
+    .time-col,
+    .day-col {
+      min-height: 610px;
+      border-left: 1px solid var(--border);
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent 72px,
+          color-mix(in srgb, var(--border) 72%, transparent) 73px
+        );
+    }
+
+    .time-col {
+      border-left: 0;
+      background: var(--panel-solid);
+    }
+
+    .time {
+      height: 73px;
+      padding: 8px 8px 0;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .day-col {
+      position: relative;
+      padding: 0 7px;
+    }
+
+    .event {
+      position: absolute;
+      top: var(--top);
+      left: 7px;
+      right: 7px;
+      display: grid;
+      gap: 2px;
+      min-height: var(--height);
+      padding: 8px;
+      border: 0;
+      border-left: 4px solid var(--line, var(--primary));
+      border-radius: 7px;
+      color: var(--text);
+      background: var(--soft, var(--primary-soft));
+      box-shadow: 0 8px 18px rgba(27, 42, 54, 0.1);
+      text-align: left;
+    }
+
+    .event strong {
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .event span,
+    .event em {
+      color: var(--muted-strong);
+      font-size: 12px;
+      font-style: normal;
+      line-height: 1.3;
+    }
+
+    .month-head,
+    .month-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(112px, 1fr));
+      min-width: 920px;
+    }
+
+    .month-head {
+      border-bottom: 1px solid var(--border);
+      background: var(--panel-solid);
+    }
+
+    .month-head div {
+      min-height: 42px;
+      padding: 11px 10px;
+      border-left: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .month-head div:first-child {
+      border-left: 0;
+    }
+
+    .month-cell {
+      display: grid;
+      align-content: start;
+      gap: 6px;
+      min-height: 132px;
+      padding: 9px;
+      border: 0;
+      border-left: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      background: transparent;
+      text-align: left;
+    }
+
+    .month-cell:nth-child(7n + 1) {
+      border-left: 0;
+    }
+
+    .month-cell.muted {
+      color: var(--muted);
+      background: color-mix(in srgb, var(--panel-solid) 58%, transparent);
+    }
+
+    .month-cell.today > .date-num {
+      display: inline-grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--primary);
+      font-weight: 850;
+    }
+
+    .date-num {
+      width: fit-content;
+      color: inherit;
+      font-size: 13px;
+      font-weight: 850;
+    }
+
+    .month-event {
+      display: grid;
+      gap: 2px;
+      padding: 6px 7px;
+      border-left: 3px solid var(--primary);
+      border-radius: 6px;
+      color: var(--text);
+      background: var(--primary-soft);
+      font-size: 12px;
+      line-height: 1.25;
+      text-align: left;
+    }
+
+    .month-event em {
+      overflow: hidden;
+      color: var(--muted-strong);
+      font-style: normal;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .panel {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .panel h2 {
+      font-size: 18px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .input {
+      width: 100%;
+      min-height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--text);
+      background: var(--panel-solid);
+      font-size: 14px;
+    }
+
+    .today-list {
+      display: grid;
+      gap: 8px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .today-row {
+      display: grid;
+      gap: 3px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: color-mix(in srgb, var(--panel-solid) 76%, var(--primary-soft));
+      font-size: 13px;
+    }
+
+    .today-row span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .theme-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .theme-card {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 8px 22px rgba(27, 42, 54, 0.08);
+    }
+
+    .theme-card.active {
+      border-color: var(--primary);
+      outline: 3px solid color-mix(in srgb, var(--primary) 18%, transparent);
+    }
+
+    .theme-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .theme-title strong {
+      font-size: 14px;
+    }
+
+    .theme-title span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+    }
+
+    .swatches i {
+      display: block;
+      height: 26px;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      border-radius: 6px;
+      background: var(--c);
+    }
+
+    .mini {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      overflow: hidden;
+      min-height: 70px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--mini-bg);
+    }
+
+    .mini-side {
+      background: var(--mini-side);
+    }
+
+    .mini-body {
+      display: grid;
+      gap: 6px;
+      padding: 8px;
+    }
+
+    .mini-line {
+      height: 8px;
+      border-radius: 99px;
+      background: var(--mini-line);
+    }
+
+    .mini-block {
+      border-radius: 5px;
+      background: var(--mini-soft);
+    }
+
+    .hint {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--border));
+      border-radius: 8px;
+      color: var(--primary-strong);
+      background: var(--primary-soft);
+      font-size: 13px;
+      font-weight: 780;
+    }
+  </style>
+</head>
+<body data-view="week" data-theme="turquoise">
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="mark">C</div>
+        <div>
+          <div class="brand-title">C-teacher</div>
+          <div class="brand-subtitle">本机教学工作台</div>
+        </div>
+      </div>
+      <div class="teacher"><span>王老师</span><span>退出</span></div>
+      <nav class="nav">
+        <div class="nav-item">工作台</div>
+        <div class="nav-item">学生管理</div>
+        <div class="nav-item">学习计划</div>
+        <div class="nav-item active">课程表</div>
+        <div class="nav-item">课堂记录</div>
+        <div class="nav-item">资料库</div>
+        <div class="nav-item">提醒</div>
+        <div class="nav-item">学习报告</div>
+      </nav>
+      <div class="settings-entry">App 设置</div>
+    </aside>
+
+    <main class="workspace">
+      <div class="page-top">
+        <div>
+          <h1>课程表</h1>
+          <p class="subtitle">这里是 H5 预览，月/周/日是三个不同视图，点击顶部切换可以直接看到布局变化。</p>
+        </div>
+        <div class="toolbar">
+          <div class="segmented" aria-label="日历视图切换">
+            <button data-mode="month">月</button>
+            <button data-mode="week" class="active">周</button>
+            <button data-mode="day">日</button>
+          </div>
+          <button class="button secondary" id="prevBtn">‹</button>
+          <button class="button secondary" id="todayBtn">今天</button>
+          <button class="button secondary" id="nextBtn">›</button>
+          <span class="tag" id="titleText">2026/06/01 - 2026/06/07</span>
+          <button class="button">新建课程</button>
+        </div>
+      </div>
+
+      <section class="layout">
+        <div class="calendar" id="calendar"></div>
+
+        <aside class="panel">
+          <h2>编辑课程</h2>
+          <div class="form-grid">
+            <div class="field">
+              <label>学生</label>
+              <select class="input">
+                <option>陈一诺</option>
+                <option>孟然</option>
+                <option>何青</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>科目</label>
+              <select class="input">
+                <option>数学</option>
+                <option>英语</option>
+                <option>物理</option>
+                <option>语文</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>开始时间</label>
+              <input class="input" value="2026-06-03 20:00">
+            </div>
+            <div class="field">
+              <label>时长</label>
+              <select class="input">
+                <option>60 分钟</option>
+                <option>90 分钟</option>
+                <option>120 分钟</option>
+              </select>
+            </div>
+            <button class="button">保存课程</button>
+          </div>
+
+          <div class="today-list">
+            <h2>今日课程</h2>
+            <div class="today-row">
+              <strong>20:00 孟然 · 英语</strong>
+              <span>阅读理解训练 · 60 分钟</span>
+            </div>
+            <div class="today-row">
+              <strong>待安排学生</strong>
+              <span>何青本周只有 2 节课，可视情况加课</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <div class="theme-strip">
+        <button class="theme-card active" data-theme-key="turquoise">
+          <div class="theme-title">
+            <div><strong>松石白板</strong><span>现有明亮主题</span></div>
+            <span>当前</span>
+          </div>
+          <div class="swatches">
+            <i style="--c:#0d6f65"></i><i style="--c:#cc5a3c"></i><i style="--c:#f5f7f4"></i><i style="--c:#143c3a"></i><i style="--c:#ffffff"></i>
+          </div>
+          <div class="mini" style="--mini-bg:#f5f7f4;--mini-side:#143c3a;--mini-line:#dfe6df;--mini-soft:#e5f3ef">
+            <div class="mini-side"></div><div class="mini-body"><div class="mini-line"></div><div class="mini-line" style="width:68%"></div><div class="mini-block"></div></div>
+          </div>
+        </button>
+
+        <button class="theme-card" data-theme-key="night">
+          <div class="theme-title">
+            <div><strong>墨蓝夜读</strong><span>已提升文字对比度</span></div>
+            <span>优化</span>
+          </div>
+          <div class="swatches">
+            <i style="--c:#78d9c8"></i><i style="--c:#ffd082"></i><i style="--c:#101820"></i><i style="--c:#081018"></i><i style="--c:#f3fbff"></i>
+          </div>
+          <div class="mini" style="--mini-bg:#101820;--mini-side:#081018;--mini-line:#40576a;--mini-soft:#153f3b">
+            <div class="mini-side"></div><div class="mini-body"><div class="mini-line"></div><div class="mini-line" style="width:68%"></div><div class="mini-block"></div></div>
+          </div>
+        </button>
+
+        <button class="theme-card" data-theme-key="blue">
+          <div class="theme-title">
+            <div><strong>晴蓝讲台</strong><span>新增蓝色主题</span></div>
+            <span>新增</span>
+          </div>
+          <div class="swatches">
+            <i style="--c:#1769d4"></i><i style="--c:#11a7a2"></i><i style="--c:#f4f8ff"></i><i style="--c:#123a70"></i><i style="--c:#ffffff"></i>
+          </div>
+          <div class="mini" style="--mini-bg:#f4f8ff;--mini-side:#123a70;--mini-line:#d7e3f3;--mini-soft:#e7f0ff">
+            <div class="mini-side"></div><div class="mini-body"><div class="mini-line"></div><div class="mini-line" style="width:68%"></div><div class="mini-block"></div></div>
+          </div>
+        </button>
+
+        <button class="theme-card" data-theme-key="plum">
+          <div class="theme-title">
+            <div><strong>梅紫书房</strong><span>新增非蓝主题</span></div>
+            <span>新增</span>
+          </div>
+          <div class="swatches">
+            <i style="--c:#7b4e8f"></i><i style="--c:#3f8c77"></i><i style="--c:#fbf7fb"></i><i style="--c:#36243f"></i><i style="--c:#ffffff"></i>
+          </div>
+          <div class="mini" style="--mini-bg:#fbf7fb;--mini-side:#36243f;--mini-line:#e5dbe9;--mini-soft:#f2e8f6">
+            <div class="mini-side"></div><div class="mini-body"><div class="mini-line"></div><div class="mini-line" style="width:68%"></div><div class="mini-block"></div></div>
+          </div>
+        </button>
+      </div>
+
+      <div class="hint">请重点看：顶部“月/周/日”切换是否够明显；墨蓝夜读的文字是否已经更清楚；新增蓝色和梅紫两个主题是否符合方向。</div>
+    </main>
+  </div>
+
+  <script>
+    const events = [
+      { student: "陈一诺", subject: "数学", date: "2026-06-01", start: "18:00", duration: 90, topic: "函数图像与性质", color: "primary" },
+      { student: "孟然", subject: "英语", date: "2026-06-03", start: "20:00", duration: 60, topic: "阅读理解训练", color: "accent" },
+      { student: "何青", subject: "物理", date: "2026-06-05", start: "19:30", duration: 90, topic: "受力分析入门", color: "info" },
+      { student: "陈一诺", subject: "英语", date: "2026-06-12", start: "18:30", duration: 90, topic: "长难句拆解", color: "accent" },
+      { student: "何青", subject: "数学", date: "2026-06-20", start: "16:00", duration: 60, topic: "基础计算巩固", color: "info" }
+    ];
+
+    let mode = "week";
+    let anchor = new Date("2026-06-03T12:00:00+08:00");
+
+    const calendar = document.querySelector("#calendar");
+    const titleText = document.querySelector("#titleText");
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function dateKey(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function labelDate(date) {
+      return `${pad(date.getMonth() + 1)}/${pad(date.getDate())}`;
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function addMonths(date, months) {
+      const next = new Date(date);
+      next.setMonth(next.getMonth() + months);
+      return next;
+    }
+
+    function startOfWeek(date) {
+      const next = new Date(date);
+      const day = next.getDay() || 7;
+      next.setDate(next.getDate() - day + 1);
+      next.setHours(0, 0, 0, 0);
+      return next;
+    }
+
+    function startOfMonth(date) {
+      const next = new Date(date);
+      next.setDate(1);
+      next.setHours(0, 0, 0, 0);
+      return next;
+    }
+
+    function eventsForDay(key) {
+      return events.filter((event) => event.date === key);
+    }
+
+    function eventStyle(event) {
+      const [hour, minute] = event.start.split(":").map(Number);
+      const start = hour + minute / 60;
+      const top = Math.max((start - 14) * 73, 4);
+      const height = Math.max((event.duration / 60) * 73, 48);
+      const line = event.color === "accent" ? "var(--accent)" : event.color === "info" ? "var(--info)" : "var(--primary)";
+      const soft = event.color === "accent" ? "var(--accent-soft)" : event.color === "info" ? "color-mix(in srgb, var(--info) 14%, var(--panel-solid))" : "var(--primary-soft)";
+      return `--top:${top}px;--height:${height}px;--line:${line};--soft:${soft}`;
+    }
+
+    function renderMonth() {
+      const monthStart = startOfMonth(anchor);
+      const gridStart = startOfWeek(monthStart);
+      const cells = [];
+      for (let index = 0; index < 42; index += 1) {
+        const day = addDays(gridStart, index);
+        const key = dateKey(day);
+        const dayEvents = eventsForDay(key);
+        cells.push(`
+          <button class="month-cell ${day.getMonth() !== monthStart.getMonth() ? "muted" : ""} ${key === "2026-06-03" ? "today" : ""}">
+            <span class="date-num">${day.getDate()}</span>
+            ${dayEvents.map((event) => `
+              <span class="month-event">
+                <strong>${event.start} ${event.student}</strong>
+                <em>${event.subject} · ${event.duration} 分钟</em>
+              </span>
+            `).join("")}
+          </button>
+        `);
+      }
+      titleText.textContent = `${monthStart.getFullYear()}年${monthStart.getMonth() + 1}月`;
+      calendar.className = "calendar month-mode";
+      calendar.innerHTML = `
+        <div class="month-head">${["周一", "周二", "周三", "周四", "周五", "周六", "周日"].map((label) => `<div>${label}</div>`).join("")}</div>
+        <div class="month-grid">${cells.join("")}</div>
+      `;
+    }
+
+    function renderWeekOrDay() {
+      const days = mode === "day"
+        ? [new Date(anchor)]
+        : Array.from({ length: 7 }, (_, index) => addDays(startOfWeek(anchor), index));
+      const hours = [14, 15, 16, 17, 18, 19, 20, 21];
+      const head = days.map((day) => `
+        <div>${new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(day)}<small>${labelDate(day)}</small></div>
+      `).join("");
+      const columns = days.map((day) => `
+        <div class="day-col">
+          ${eventsForDay(dateKey(day)).map((event) => `
+            <button class="event" style="${eventStyle(event)}">
+              <strong>${event.student} · ${event.subject}</strong>
+              <span>${event.start} · ${event.duration} 分钟</span>
+              <em>${event.topic}</em>
+            </button>
+          `).join("")}
+        </div>
+      `).join("");
+
+      if (mode === "day") {
+        titleText.textContent = `${anchor.getFullYear()}年${labelDate(anchor)} ${new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(anchor)}`;
+      } else {
+        const start = startOfWeek(anchor);
+        const end = addDays(start, 6);
+        titleText.textContent = `${labelDate(start)} - ${labelDate(end)}`;
+      }
+      calendar.className = `calendar ${mode === "day" ? "day-mode" : "week-mode"}`;
+      calendar.innerHTML = `
+        <div class="week-head"><div></div>${head}</div>
+        <div class="week-grid">
+          <div class="time-col">${hours.map((hour) => `<div class="time">${hour}:00</div>`).join("")}</div>
+          ${columns}
+        </div>
+      `;
+    }
+
+    function render() {
+      document.body.dataset.view = mode;
+      document.querySelectorAll("[data-mode]").forEach((button) => {
+        button.classList.toggle("active", button.dataset.mode === mode);
+      });
+      if (mode === "month") renderMonth();
+      else renderWeekOrDay();
+    }
+
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        mode = button.dataset.mode;
+        render();
+      });
+    });
+
+    document.querySelector("#prevBtn").addEventListener("click", () => {
+      anchor = mode === "month" ? addMonths(anchor, -1) : addDays(anchor, mode === "week" ? -7 : -1);
+      render();
+    });
+
+    document.querySelector("#nextBtn").addEventListener("click", () => {
+      anchor = mode === "month" ? addMonths(anchor, 1) : addDays(anchor, mode === "week" ? 7 : 1);
+      render();
+    });
+
+    document.querySelector("#todayBtn").addEventListener("click", () => {
+      anchor = new Date("2026-06-03T12:00:00+08:00");
+      render();
+    });
+
+    document.querySelectorAll("[data-theme-key]").forEach((card) => {
+      card.addEventListener("click", () => {
+        document.body.dataset.theme = card.dataset.themeKey;
+        document.querySelectorAll("[data-theme-key]").forEach((item) => item.classList.remove("active"));
+        card.classList.add("active");
+      });
+    });
+
+    render();
+  </script>
+</body>
+</html>

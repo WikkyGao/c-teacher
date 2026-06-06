@@ -1,0 +1,21 @@
+{
+  "name": "c-teacher",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:desktop": "npm run dev --workspace @c-teacher/desktop",
+    "build:desktop": "npm run build --workspace @c-teacher/desktop",
+    "tauri:dev": "npm run tauri --workspace @c-teacher/desktop -- dev",
+    "build:dmg": "npm run tauri --workspace @c-teacher/desktop -- build --bundles dmg",
+    "build:windows": "npm run tauri --workspace @c-teacher/desktop -- build --bundles nsis",
+    "dev:server": "go run ./services/api/cmd/server",
+    "test": "npm run test --workspace @c-teacher/desktop",
+    "lint": "npm run lint --workspace @c-teacher/desktop"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0"
+  }
+}

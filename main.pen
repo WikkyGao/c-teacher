@@ -1,0 +1,3794 @@
+{
+  "version": "2.13",
+  "children": [
+    {
+      "type": "frame",
+      "id": "f31",
+      "x": 0,
+      "y": 0,
+      "name": "01-macos-dashboard",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "#F4F8FF",
+      "children": [
+        {
+          "type": "frame",
+          "id": "f10",
+          "name": "sidebar-blue",
+          "width": 260,
+          "height": "fill_container",
+          "fill": "#123A70",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "f6",
+              "name": "brand-block",
+              "width": "fill_container",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f2",
+                  "name": "brand-mark",
+                  "width": 42,
+                  "height": 42,
+                  "fill": "#1769D4",
+                  "cornerRadius": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t1",
+                      "name": "brand-mark-text",
+                      "fill": "#FFFFFF",
+                      "content": "C",
+                      "fontFamily": "Inter",
+                      "fontSize": 21,
+                      "fontWeight": "bold"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "f5",
+                  "name": "brand-copy",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t3",
+                      "name": "brand",
+                      "fill": "#FFFFFF",
+                      "content": "C-teacher",
+                      "fontFamily": "Inter",
+                      "fontSize": 22,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "t4",
+                      "name": "brand-subtitle",
+                      "fill": "#B8D2F2",
+                      "content": "本机教学工作台",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f8",
+              "name": "teacher-session",
+              "width": "fill_container",
+              "fill": "#1D4E89",
+              "cornerRadius": 14,
+              "padding": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t7",
+                  "name": "teacher-session-text",
+                  "fill": "#F1F7FF",
+                  "content": "王老师 · 今日 3 项待办",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fb",
+              "name": "nav-工作台",
+              "width": "fill_container",
+              "fill": "#FFFFFF22",
+              "cornerRadius": 14,
+              "stroke": "#FFFFFF33",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t9",
+                  "name": "nav-工作台-icon",
+                  "fill": "#FFFFFF",
+                  "content": "●",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "ta",
+                  "name": "nav-工作台-text",
+                  "fill": "#FFFFFF",
+                  "content": "工作台",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fe",
+              "name": "nav-学生管理",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tc",
+                  "name": "nav-学生管理-icon",
+                  "fill": "#B8D2F2",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "td",
+                  "name": "nav-学生管理-text",
+                  "fill": "#B8D2F2",
+                  "content": "学生管理",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fh",
+              "name": "nav-课程表",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tf",
+                  "name": "nav-课程表-icon",
+                  "fill": "#B8D2F2",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "tg",
+                  "name": "nav-课程表-text",
+                  "fill": "#B8D2F2",
+                  "content": "课程表",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fk",
+              "name": "nav-课堂记录",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "ti",
+                  "name": "nav-课堂记录-icon",
+                  "fill": "#B8D2F2",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "tj",
+                  "name": "nav-课堂记录-text",
+                  "fill": "#B8D2F2",
+                  "content": "课堂记录",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fn",
+              "name": "nav-资料库",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tl",
+                  "name": "nav-资料库-icon",
+                  "fill": "#B8D2F2",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "tm",
+                  "name": "nav-资料库-text",
+                  "fill": "#B8D2F2",
+                  "content": "资料库",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fq",
+              "name": "nav-提醒",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "to",
+                  "name": "nav-提醒-icon",
+                  "fill": "#B8D2F2",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "tp",
+                  "name": "nav-提醒-text",
+                  "fill": "#B8D2F2",
+                  "content": "提醒",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ft",
+              "name": "nav-手机预览",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tr",
+                  "name": "nav-手机预览-icon",
+                  "fill": "#B8D2F2",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "ts",
+                  "name": "nav-手机预览-text",
+                  "fill": "#B8D2F2",
+                  "content": "手机预览",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fw",
+              "name": "nav-诊断",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tu",
+                  "name": "nav-诊断-icon",
+                  "fill": "#B8D2F2",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "tv",
+                  "name": "nav-诊断-text",
+                  "fill": "#B8D2F2",
+                  "content": "诊断",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "fz",
+              "name": "nav-App 设置",
+              "width": "fill_container",
+              "fill": "#00000000",
+              "cornerRadius": 14,
+              "gap": 10,
+              "padding": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tx",
+                  "name": "nav-App 设置-icon",
+                  "fill": "#B8D2F2",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "ty",
+                  "name": "nav-App 设置-text",
+                  "fill": "#B8D2F2",
+                  "content": "App 设置",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f30",
+          "name": "dashboard-main-blue",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "#F4F8FF",
+          "layout": "vertical",
+          "gap": 18,
+          "padding": 32,
+          "children": [
+            {
+              "type": "frame",
+              "id": "f16",
+              "name": "dashboard-top",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f13",
+                  "name": "dashboard-title",
+                  "layout": "vertical",
+                  "gap": 5,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t11",
+                      "name": "h1",
+                      "fill": "#142033",
+                      "content": "工作台",
+                      "fontFamily": "Inter",
+                      "fontSize": 34,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "t12",
+                      "name": "h2",
+                      "fill": "#5D6B80",
+                      "content": "今天的课程、学生进度与待办提醒",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "f15",
+                  "name": "sync-button",
+                  "fill": "#1769D4",
+                  "cornerRadius": 999,
+                  "padding": [
+                    12,
+                    18
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t14",
+                      "name": "sync-button-text",
+                      "fill": "#FFFFFF",
+                      "content": "同步到移动端",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f1m",
+              "name": "metrics-blue",
+              "width": "fill_container",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f1b",
+                  "name": "metric-students",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "stroke": "#D7E3F3",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "f18",
+                      "name": "metric-students-mark",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#E7F0FF",
+                      "cornerRadius": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t17",
+                          "name": "metric-students-mark-dot",
+                          "fill": "#1769D4",
+                          "content": "■",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "t19",
+                      "name": "metric-students-value",
+                      "fill": "#0B3F8A",
+                      "content": "3",
+                      "fontFamily": "Inter",
+                      "fontSize": 30,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "t1a",
+                      "name": "metric-students-label",
+                      "fill": "#5D6B80",
+                      "content": "学生数",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "f1g",
+                  "name": "metric-lessons",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "stroke": "#D7E3F3",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "f1d",
+                      "name": "metric-lessons-mark",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#E3FAF7",
+                      "cornerRadius": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t1c",
+                          "name": "metric-lessons-mark-dot",
+                          "fill": "#11A7A2",
+                          "content": "■",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "t1e",
+                      "name": "metric-lessons-value",
+                      "fill": "#0B3F8A",
+                      "content": "2",
+                      "fontFamily": "Inter",
+                      "fontSize": 30,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "t1f",
+                      "name": "metric-lessons-label",
+                      "fill": "#5D6B80",
+                      "content": "今日课程",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "f1l",
+                  "name": "metric-homework",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "stroke": "#D7E3F3",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "f1i",
+                      "name": "metric-homework-mark",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#FFF4E6",
+                      "cornerRadius": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t1h",
+                          "name": "metric-homework-mark-dot",
+                          "fill": "#F59E42",
+                          "content": "■",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "bold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "t1j",
+                      "name": "metric-homework-value",
+                      "fill": "#0B3F8A",
+                      "content": "1",
+                      "fontFamily": "Inter",
+                      "fontSize": 30,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "t1k",
+                      "name": "metric-homework-label",
+                      "fill": "#5D6B80",
+                      "content": "待批改作业",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f2z",
+              "name": "dashboard-grid-blue",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f2m",
+                  "name": "main-column",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "f25",
+                      "name": "today-course-panel",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "stroke": "#D7E3F3",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 14,
+                      "padding": 20,
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "f1p",
+                          "name": "today-course-head",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "t1n",
+                              "name": "today-course-title",
+                              "fill": "#142033",
+                              "content": "今日课程安排",
+                              "fontFamily": "Inter",
+                              "fontSize": 22,
+                              "fontWeight": "bold"
+                            },
+                            {
+                              "type": "text",
+                              "id": "t1o",
+                              "name": "today-course-action",
+                              "fill": "#1769D4",
+                              "content": "查看课程表",
+                              "fontFamily": "Inter",
+                              "fontSize": 14,
+                              "fontWeight": "600"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "f1y",
+                          "name": "course-row-1",
+                          "width": "fill_container",
+                          "fill": "#E7F0FF",
+                          "cornerRadius": 14,
+                          "gap": 14,
+                          "padding": 16,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "f1r",
+                              "name": "time-badge-1",
+                              "width": 74,
+                              "fill": "#1769D4",
+                              "cornerRadius": 12,
+                              "padding": 10,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "t1q",
+                                  "name": "time-badge-1-text",
+                                  "fill": "#FFFFFF",
+                                  "content": "18:00",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 18,
+                                  "fontWeight": "bold"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "f1u",
+                              "name": "course-copy-1",
+                              "layout": "vertical",
+                              "gap": 4,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "t1s",
+                                  "name": "course-name-1",
+                                  "fill": "#142033",
+                                  "content": "陈一诺 · 数学",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 18,
+                                  "fontWeight": "bold"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "t1t",
+                                  "name": "course-meta-1",
+                                  "fill": "#3C4A5E",
+                                  "textGrowth": "fixed-width",
+                                  "width": 560,
+                                  "content": "函数图像与性质 · 带函数图像讲义.pdf",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "f24",
+                          "name": "course-row-2",
+                          "width": 707,
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 14,
+                          "stroke": "#D7E3F3",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "gap": 14,
+                          "padding": 16,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "f20",
+                              "name": "time-badge-2",
+                              "width": 74,
+                              "fill": "#E3FAF7",
+                              "cornerRadius": 12,
+                              "padding": 10,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "t1z",
+                                  "name": "time-badge-2-text",
+                                  "fill": "#11A7A2",
+                                  "content": "20:00",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 18,
+                                  "fontWeight": "bold"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "f23",
+                              "name": "course-copy-2",
+                              "width": 308,
+                              "layout": "vertical",
+                              "gap": 4,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "t21",
+                                  "name": "course-name-2",
+                                  "fill": "#142033",
+                                  "content": "孟然 · 英语",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 18,
+                                  "fontWeight": "bold"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "t22",
+                                  "name": "course-meta-2",
+                                  "fill": "#5D6B80",
+                                  "textGrowth": "fixed-width",
+                                  "width": 560,
+                                  "content": "阅读理解训练 · 短任务 + 高频反馈",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f2l",
+                      "name": "student-progress-panel",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "stroke": "#D7E3F3",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "padding": 20,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t26",
+                          "name": "student-progress-title",
+                          "fill": "#142033",
+                          "content": "学生进度",
+                          "fontFamily": "Inter",
+                          "fontSize": 22,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "frame",
+                          "id": "f2d",
+                          "name": "progress-chen",
+                          "width": "fill_container",
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 14,
+                          "stroke": "#D7E3F3",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 10,
+                          "padding": 16,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "f29",
+                              "name": "progress-chen-top",
+                              "width": "fill_container",
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "t27",
+                                  "name": "progress-chen-title",
+                                  "fill": "#142033",
+                                  "content": "陈一诺 · 数学",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 16,
+                                  "fontWeight": "bold"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "t28",
+                                  "name": "progress-chen-meta",
+                                  "fill": "#1769D4",
+                                  "content": "50%",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 16,
+                                  "fontWeight": "bold"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "t2a",
+                              "name": "progress-chen-desc",
+                              "fill": "#5D6B80",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "期中数学 90+ · 第 8/16 节",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "f2c",
+                              "name": "progress-chen-track",
+                              "width": "fill_container",
+                              "height": 8,
+                              "fill": "#E7F0FF",
+                              "cornerRadius": 999,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "f2b",
+                                  "name": "progress-chen-bar",
+                                  "width": 160,
+                                  "height": 8,
+                                  "fill": "#1769D4",
+                                  "cornerRadius": 999
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "f2k",
+                          "name": "progress-meng",
+                          "width": "fill_container",
+                          "fill": "#FFFFFF",
+                          "cornerRadius": 14,
+                          "stroke": "#D7E3F3",
+                          "strokeWidth": 1,
+                          "strokeAlignment": "inner",
+                          "layout": "vertical",
+                          "gap": 10,
+                          "padding": 16,
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "f2g",
+                              "name": "progress-meng-top",
+                              "width": "fill_container",
+                              "justifyContent": "space_between",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "t2e",
+                                  "name": "progress-meng-title",
+                                  "fill": "#142033",
+                                  "content": "孟然 · 英语",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 16,
+                                  "fontWeight": "bold"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "t2f",
+                                  "name": "progress-meng-meta",
+                                  "fill": "#11A7A2",
+                                  "content": "30%",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 16,
+                                  "fontWeight": "bold"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "text",
+                              "id": "t2h",
+                              "name": "progress-meng-desc",
+                              "fill": "#5D6B80",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "阅读理解稳定提分 · 第 3/10 节",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "f2j",
+                              "name": "progress-meng-track",
+                              "width": "fill_container",
+                              "height": 8,
+                              "fill": "#E7F0FF",
+                              "cornerRadius": 999,
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "f2i",
+                                  "name": "progress-meng-bar",
+                                  "width": 96,
+                                  "height": 8,
+                                  "fill": "#11A7A2",
+                                  "cornerRadius": 999
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "f2y",
+                  "name": "right-rail",
+                  "width": 340,
+                  "height": "fill_container",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "f2r",
+                      "name": "reminder-panel",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 16,
+                      "stroke": "#D7E3F3",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t2n",
+                          "name": "reminder-title",
+                          "fill": "#142033",
+                          "content": "提醒",
+                          "fontFamily": "Inter",
+                          "fontSize": 20,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "t2o",
+                          "name": "reminder-1",
+                          "fill": "#3C4A5E",
+                          "content": "18:00 陈一诺函数专题课",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "t2p",
+                          "name": "reminder-2",
+                          "fill": "#3C4A5E",
+                          "content": "批改孟然阅读作业",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "t2q",
+                          "name": "reminder-3",
+                          "fill": "#3C4A5E",
+                          "content": "生成阶段学习报告",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f2u",
+                      "name": "sync-panel",
+                      "width": "fill_container",
+                      "fill": "#E3FAF7",
+                      "cornerRadius": 16,
+                      "stroke": "#BDEDEA",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t2s",
+                          "name": "sync-title",
+                          "fill": "#0D6E69",
+                          "content": "资料同步",
+                          "fontFamily": "Inter",
+                          "fontSize": 20,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "t2t",
+                          "name": "sync-copy",
+                          "fill": "#276C68",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "3 份资料已同步到移动端，1 个资料源待测试。",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "f2x",
+                      "name": "ai-panel",
+                      "width": "fill_container",
+                      "fill": "#FFF4E6",
+                      "cornerRadius": 16,
+                      "stroke": "#F6D5A8",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 10,
+                      "padding": 18,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t2v",
+                          "name": "ai-title",
+                          "fill": "#9A5A12",
+                          "content": "AI 状态",
+                          "fontFamily": "Inter",
+                          "fontSize": 20,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "t2w",
+                          "name": "ai-copy",
+                          "fill": "#815015",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "错题分析待处理 3 题，报告模型已连接。",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "bDYs9",
+      "x": 1500,
+      "y": 0,
+      "name": "02-student-management",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "#FBFAF7",
+      "children": [
+        {
+          "type": "frame",
+          "id": "tBG1O",
+          "name": "side",
+          "width": 220,
+          "height": "fill_container",
+          "fill": "#113F3A",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "VRY9I",
+              "name": "brand",
+              "fill": "#FFFFFF",
+              "content": "C-teacher",
+              "fontFamily": "Inter",
+              "fontSize": 24,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "text",
+              "id": "ade0Y",
+              "name": "nav",
+              "fill": "#FFFFFF",
+              "content": "学生管理",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "600"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "HtCDC",
+          "name": "main",
+          "width": "fill_container",
+          "height": "fill_container",
+          "fill": "#FBFAF7",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 28,
+          "children": [
+            {
+              "type": "text",
+              "id": "aYkVr",
+              "name": "h",
+              "fill": "#1F2933",
+              "content": "学生管理",
+              "fontFamily": "Inter",
+              "fontSize": 32,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "frame",
+              "id": "WOHsc",
+              "name": "summary",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "T7n1Qw",
+                  "name": "profile",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "p3zLOj",
+                      "name": "p1",
+                      "fill": "#1F2933",
+                      "content": "卡片化管理学生、多学科课程、目标、风格和进度",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "lq0N1",
+                      "name": "p2",
+                      "fill": "#6B7280",
+                      "content": "学生详情不占用一级菜单，查看动作在管理页内完成",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "BUK4E",
+                  "name": "btn-create-reminder",
+                  "context": "{\"trigger\":\"click\",\"action\":\"create\",\"target\":\"system_reminder\"}",
+                  "width": 320,
+                  "fill": "#FFF0EB",
+                  "cornerRadius": 8,
+                  "stroke": "#D85D3F",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "I5qFo",
+                      "name": "r1",
+                      "fill": "#C2412B",
+                      "content": "AI 错题本入口",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "kTExf",
+                      "name": "r2",
+                      "fill": "#7F3A2D",
+                      "content": "不占一级菜单：从学生卡片进入，支持拍照改题、错误分析、类似题和知识点诊断",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "i8HY0",
+                  "name": "ai-mistake-workbench",
+                  "width": 360,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZD5ya",
+                      "fill": "#1F2933",
+                      "content": "陈一诺 · AI 错题本",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "XECd7",
+                      "fill": "#4B5563",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "数学 12 题 · 英语 4 题 · AI 待处理 3 题",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "hYZ6L",
+                      "fill": "#7F3A2D",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "拍照改题：识别题目、学生答案和标准答案，生成待教师确认结果",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Cz7Co",
+                      "fill": "#107B68",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "错误分析：函数图像平移与参数变化关系不稳定",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "rnSUd",
+                      "fill": "#355C9C",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "类似题型：函数图像平移 3 题，参数取值判断 2 题",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "eJfAg",
+                      "fill": "#B7791F",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "知识点分析：函数图像掌握 72%，几何证明掌握 44%",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Vt6gG",
+              "name": "grid",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "M7q73y",
+                  "name": "plan",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ecix0",
+                      "name": "pt",
+                      "fill": "#1F2933",
+                      "content": "陈一诺 · 多学科课程卡片",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "EV7JO",
+                      "name": "pa",
+                      "fill": "#1F2933",
+                      "content": "数学 · 第 8/16 节 · 75%  |  英语 · 第 3/10 节 · 40%",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "n5p0c",
+                      "name": "pb",
+                      "fill": "#107B68",
+                      "content": "目标：期中数学 90+ · 风格：图像化讲解 + 例题驱动 · 资料：函数图像讲义.pdf、练习 A 组",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "IHD8g",
+                      "name": "actions",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ZOtk7",
+                          "fill": "#107B68",
+                          "content": "查看",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "N3DOJ",
+                          "fill": "#107B68",
+                          "content": "编辑",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "CR9sz",
+                          "fill": "#C2412B",
+                          "content": "删除",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "pO32R",
+                      "name": "mistake-book-entry",
+                      "width": "fill_container",
+                      "fill": "#FFF7F3",
+                      "cornerRadius": 8,
+                      "stroke": "#F0B6A5",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "padding": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "X7Sw3",
+                          "fill": "#C2412B",
+                          "content": "错题本 · 数学 12 题 / 英语 4 题",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "b5Fbb",
+                          "fill": "#7F3A2D",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "AI 待处理 3 题 · 薄弱点：函数图像、长难句拆解",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ZXXL2",
+                          "fill": "#D85D3F",
+                          "content": "进入错题本",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "bold"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "HaBwC",
+                  "name": "records",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "VqlTO",
+                      "name": "rt",
+                      "fill": "#1F2933",
+                      "content": "孟然 · 多学科课程卡片",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "gqxht",
+                      "name": "ra",
+                      "fill": "#1F2933",
+                      "content": "语文 · 第 5/12 节 · 58%  |  英语 · 第 2/8 节 · 30%",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "s4czm",
+                      "name": "rb",
+                      "fill": "#1F2933",
+                      "content": "目标：阅读理解稳定提分 · 风格：短任务 + 高频反馈 · 操作：查看 / 编辑 / 删除",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "B2v8s",
+                      "name": "actions",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lRgwZ",
+                          "fill": "#107B68",
+                          "content": "查看",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "cyPX6",
+                          "fill": "#107B68",
+                          "content": "编辑",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "ZXCwm",
+                          "fill": "#C2412B",
+                          "content": "删除",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bnA6L",
+                      "name": "mistake-book-entry",
+                      "width": "fill_container",
+                      "fill": "#FFF7F3",
+                      "cornerRadius": 8,
+                      "stroke": "#F0B6A5",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "padding": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "a34nv",
+                          "fill": "#C2412B",
+                          "content": "错题本 · 语文 8 题 / 英语 2 题",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "s2isdL",
+                          "fill": "#7F3A2D",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "AI 待处理 1 题 · 薄弱点：阅读推断、完形上下文",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "p4yDf",
+                          "fill": "#D85D3F",
+                          "content": "进入错题本",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "bold"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "T86g7U",
+                  "name": "student-card-he",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Ipevs",
+                      "fill": "#1F2933",
+                      "content": "何青 · 多学科课程卡片",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "lvHc9",
+                      "fill": "#1F2933",
+                      "content": "数学 · 第 3/10 节 · 40%  |  物理 · 第 1/8 节 · 18%",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "UoL1n",
+                      "fill": "#107B68",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "目标：夯实基础 · 风格：慢节奏 + 复述确认 · 资料：入门讲义 01、课堂记录模板",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "yquZe",
+                      "name": "actions",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "AIzWw",
+                          "fill": "#107B68",
+                          "content": "查看",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "DQlH6",
+                          "fill": "#107B68",
+                          "content": "编辑",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "g9cZ1",
+                          "fill": "#C2412B",
+                          "content": "删除",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "CmHGW",
+                      "name": "mistake-book-entry",
+                      "width": "fill_container",
+                      "fill": "#FFF7F3",
+                      "cornerRadius": 8,
+                      "stroke": "#F0B6A5",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "gap": 6,
+                      "padding": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "HFnWy",
+                          "fill": "#C2412B",
+                          "content": "错题本 · 数学 6 题 / 物理 3 题",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "jUT0g",
+                          "fill": "#7F3A2D",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "AI 待处理 2 题 · 薄弱点：基础概念、受力分析",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "wFVc4",
+                          "fill": "#D85D3F",
+                          "content": "进入错题本",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "bold"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "htLHQ",
+      "x": 0,
+      "y": 960,
+      "name": "03-class-record",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "#FBFAF7",
+      "children": [
+        {
+          "type": "frame",
+          "id": "yt8EY",
+          "name": "rmain",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 28,
+          "children": [
+            {
+              "type": "text",
+              "id": "HRRt4",
+              "name": "rh",
+              "fill": "#1F2933",
+              "content": "课堂记录",
+              "fontFamily": "Inter",
+              "fontSize": 32,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "frame",
+              "id": "tysQB",
+              "name": "rbody",
+              "width": "fill_container",
+              "height": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vu43X",
+                  "name": "form",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "AbuLY",
+                      "name": "f1",
+                      "fill": "#1F2933",
+                      "content": "授课内容",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "H5gSzG",
+                      "name": "f1b",
+                      "width": "fill_container",
+                      "height": 130,
+                      "fill": "#FBFAF7",
+                      "cornerRadius": 8,
+                      "stroke": "#E7DFD2",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": 14,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "cdJ9Y",
+                          "name": "f1bt",
+                          "fill": "#6B7280",
+                          "content": "函数图像与性质...",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "nIevV",
+                      "name": "f2",
+                      "fill": "#1F2933",
+                      "content": "学生表现",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "SADh5",
+                      "name": "f2b",
+                      "width": "fill_container",
+                      "height": 100,
+                      "fill": "#FBFAF7",
+                      "cornerRadius": 8,
+                      "stroke": "#E7DFD2",
+                      "strokeWidth": 1,
+                      "strokeAlignment": "inner",
+                      "layout": "vertical",
+                      "padding": 14,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "x4dVF",
+                          "name": "f2bt",
+                          "fill": "#6B7280",
+                          "content": "课堂参与积极，图像变换仍需练习",
+                          "fontFamily": "Inter",
+                          "fontSize": 15,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gfjTo",
+                      "name": "btn-save-record",
+                      "context": "{\"trigger\":\"click\",\"action\":\"submit\",\"loading\":true,\"onSuccess\":\"toast:已保存课堂记录\",\"onError\":\"toast:保存失败\"}",
+                      "fill": "#D85D3F",
+                      "cornerRadius": 8,
+                      "padding": [
+                        10,
+                        16
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "LSPVn",
+                          "name": "sbt",
+                          "fill": "#FFFFFF",
+                          "content": "保存课堂记录",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ImiI9",
+                  "name": "sidepanel",
+                  "width": 360,
+                  "height": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "x0aRZf",
+                      "name": "spt",
+                      "fill": "#1F2933",
+                      "content": "关联资料与历史记录",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "P5c01j",
+                      "name": "sp1",
+                      "fill": "#1F2933",
+                      "content": "函数图像讲义.pdf",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Ax84L",
+                      "name": "sp2",
+                      "fill": "#1F2933",
+                      "content": "上一节：函数定义域复盘",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "R3gpK9",
+      "x": 1500,
+      "y": 960,
+      "name": "04-material-library-assign",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "#FBFAF7",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 28,
+      "children": [
+        {
+          "type": "text",
+          "id": "F3o0K",
+          "name": "lh",
+          "fill": "#1F2933",
+          "content": "资料库与分配",
+          "fontFamily": "Inter",
+          "fontSize": 32,
+          "fontWeight": "bold"
+        },
+        {
+          "type": "frame",
+          "id": "Ifo0S",
+          "name": "search-material",
+          "context": "{\"type\":\"search\",\"field\":\"keyword\",\"debounce\":300}",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 8,
+          "stroke": "#E7DFD2",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "padding": [
+            12,
+            16
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "e4xmV",
+              "name": "searcht",
+              "fill": "#9CA3AF",
+              "content": "搜索资料、标签、学生进度...",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "jc0r7",
+          "name": "libbody",
+          "width": "fill_container",
+          "height": "fill_container",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "s7qenw",
+              "name": "list",
+              "width": "fill_container",
+              "height": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "pNE3V",
+                  "name": "card1",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "MMYpF",
+                      "name": "c1",
+                      "fill": "#1F2933",
+                      "content": "函数图像讲义.pdf",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "e4Za2Q",
+                      "name": "c1b",
+                      "fill": "#6B7280",
+                      "content": "分类：数学 · 标签：函数 / 图像 / P0 · 可复用",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "bJIBa",
+                  "name": "card2",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ktzD7",
+                      "name": "c2",
+                      "fill": "#1F2933",
+                      "content": "阅读理解训练 A 组",
+                      "fontFamily": "Inter",
+                      "fontSize": 18,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "T2jNRq",
+                      "name": "c2b",
+                      "fill": "#6B7280",
+                      "content": "分类：语文 · 标签：阅读 / 推断",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Cc3xk",
+                  "name": "empty",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": 18,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "DEB8r",
+                      "name": "et",
+                      "fill": "#1F2933",
+                      "content": "空状态：没有找到匹配资料",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "DqCfp",
+                      "name": "ed",
+                      "fill": "#6B7280",
+                      "content": "建议更换关键词或上传新资料。",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "N7mb3y",
+              "name": "assign-and-external-source",
+              "width": 380,
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 8,
+              "stroke": "#E7DFD2",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "OXi0P",
+                  "name": "dt",
+                  "fill": "#1F2933",
+                  "content": "分配资料",
+                  "fontFamily": "Inter",
+                  "fontSize": 22,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "wUYCz",
+                  "name": "d1",
+                  "fill": "#1F2933",
+                  "content": "选择学生：陈一诺",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "wWX7R",
+                  "name": "d2",
+                  "fill": "#1F2933",
+                  "content": "资料：函数图像讲义.pdf",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "Yv1zt",
+                  "name": "btn-assign-material",
+                  "context": "{\"trigger\":\"click\",\"action\":\"assign_material\",\"loading\":true}",
+                  "fill": "#D85D3F",
+                  "cornerRadius": 8,
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "GMORV",
+                      "name": "dbt",
+                      "fill": "#FFFFFF",
+                      "content": "确认分配",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tnScu",
+                  "name": "external-shared-source",
+                  "width": "fill_container",
+                  "fill": "#FBFAF7",
+                  "cornerRadius": 8,
+                  "stroke": "#E7DFD2",
+                  "strokeWidth": 1,
+                  "strokeAlignment": "inner",
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 14,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OxIcV",
+                      "fill": "#1F2933",
+                      "content": "外部共享资料源",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "CiP9o",
+                      "fill": "#1F2933",
+                      "content": "协议：SMB / FTP / SFTP",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "EUdTW",
+                      "fill": "#1F2933",
+                      "content": "服务器：smb://studio-nas.local",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ek4Zz",
+                      "fill": "#1F2933",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "路径：/C-teacher/teaching-materials",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Y8fhhL",
+                      "fill": "#6B7280",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "认证：账号密码 / 访客只读 / 系统钥匙串",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "XwXdp",
+                      "name": "source-actions",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "NoV0k",
+                          "fill": "#107B68",
+                          "content": "测试连接",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VgcdP",
+                          "fill": "#D85D3F",
+                          "content": "保存资料源",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "XgvLf",
+                      "fill": "#0B6354",
+                      "content": "状态：连接正常，可同步资料索引",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "O8fJr",
+      "x": 0,
+      "y": 1920,
+      "name": "05-reminder-settings",
+      "clip": true,
+      "width": 1440,
+      "height": 900,
+      "fill": "#FBFAF7",
+      "layout": "vertical",
+      "gap": 16,
+      "padding": 28,
+      "children": [
+        {
+          "type": "text",
+          "id": "zV51q",
+          "name": "rh",
+          "fill": "#1F2933",
+          "content": "提醒设置",
+          "fontFamily": "Inter",
+          "fontSize": 32,
+          "fontWeight": "bold"
+        },
+        {
+          "type": "frame",
+          "id": "pZ1ag",
+          "name": "rbody",
+          "width": "fill_container",
+          "height": "fill_container",
+          "gap": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "UKX0u",
+              "name": "rlist",
+              "width": "fill_container",
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 8,
+              "stroke": "#E7DFD2",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "vbBPy",
+                  "name": "rlt",
+                  "fill": "#1F2933",
+                  "content": "提醒列表",
+                  "fontFamily": "Inter",
+                  "fontSize": 22,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "qbqa6",
+                  "name": "rl1",
+                  "fill": "#1F2933",
+                  "content": "今天 18:00 · 陈一诺函数专题课 · 课前 15 分钟",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "beRx1",
+                  "name": "rl2",
+                  "fill": "#1F2933",
+                  "content": "明天 10:00 · 批改孟然作业",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "L2lis",
+              "name": "form",
+              "width": 430,
+              "height": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 8,
+              "stroke": "#E7DFD2",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 12,
+              "padding": 20,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "hfCfm",
+                  "name": "ft",
+                  "fill": "#1F2933",
+                  "content": "创建系统提醒",
+                  "fontFamily": "Inter",
+                  "fontSize": 22,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "FPiGK",
+                  "name": "f1",
+                  "fill": "#1F2933",
+                  "content": "标题：陈一诺数学课",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "gDEsV",
+                  "name": "f2",
+                  "fill": "#1F2933",
+                  "content": "关联类型：课程 / 作业 / 批改 / 报告",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "H57pQ0",
+                  "name": "f3",
+                  "fill": "#1F2933",
+                  "content": "提醒时间：2026-05-30 17:45",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "P70pTG",
+                  "name": "f4",
+                  "fill": "#C2412B",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "系统目标：待确认（通知中心 / 提醒事项 / 日历 / 跨端推送）",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "WyeSK",
+                  "name": "btn-create-reminder",
+                  "context": "{\"trigger\":\"click\",\"action\":\"create_system_reminder\",\"loading\":true}",
+                  "fill": "#D85D3F",
+                  "cornerRadius": 8,
+                  "padding": [
+                    10,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "T145oc",
+                      "name": "fbt",
+                      "fill": "#FFFFFF",
+                      "content": "创建提醒",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "600"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "f4w",
+      "x": 1500,
+      "y": 1920,
+      "name": "06-mobile-core",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "#F4F8FF",
+      "layout": "vertical",
+      "gap": 12,
+      "padding": 18,
+      "children": [
+        {
+          "type": "frame",
+          "id": "f49",
+          "name": "mobile-status",
+          "width": "fill_container",
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "t46",
+              "name": "mobile-app-name",
+              "fill": "#142033",
+              "content": "C-teacher App",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "frame",
+              "id": "f48",
+              "name": "mobile-network",
+              "fill": "#FFFFFF",
+              "cornerRadius": 999,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "padding": [
+                5,
+                9
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t47",
+                  "name": "mobile-network-text",
+                  "fill": "#142033",
+                  "content": "5G 100%",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "bold"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f4f",
+          "name": "mobile-header",
+          "width": "fill_container",
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "f4c",
+              "name": "mobile-title-copy",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t4a",
+                  "name": "mobile-caption",
+                  "fill": "#5D6B80",
+                  "content": "C-teacher",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "t4b",
+                  "name": "mobile-title",
+                  "fill": "#142033",
+                  "content": "工作台",
+                  "fontFamily": "Inter",
+                  "fontSize": 28,
+                  "fontWeight": "bold"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f4e",
+              "name": "mobile-bell",
+              "width": 42,
+              "height": 42,
+              "fill": "#FFFFFF",
+              "cornerRadius": 999,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t4d",
+                  "name": "mobile-bell-icon",
+                  "fill": "#1769D4",
+                  "content": "!",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "bold"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f3b",
+          "name": "student-hero",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 18,
+          "stroke": "#CFE1F8",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "gap": 12,
+          "padding": 16,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "f37",
+              "name": "student-hero-copy",
+              "layout": "vertical",
+              "gap": 5,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t32",
+                  "name": "student-current",
+                  "fill": "#5D6B80",
+                  "content": "当前学生",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "t33",
+                  "name": "student-name",
+                  "fill": "#0B3F8A",
+                  "content": "陈一诺",
+                  "fontFamily": "Inter",
+                  "fontSize": 26,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t34",
+                  "name": "student-goal",
+                  "fill": "#3C4A5E",
+                  "content": "期中数学 90+",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "f36",
+                  "name": "student-sync",
+                  "fill": "#1769D4",
+                  "cornerRadius": 999,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t35",
+                      "name": "student-sync-text",
+                      "fill": "#FFFFFF",
+                      "content": "同步到 App",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "bold"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f3a",
+              "name": "student-illustration",
+              "width": 96,
+              "height": 104,
+              "fill": "#E7F0FF",
+              "cornerRadius": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f38",
+                  "name": "student-ill-paper",
+                  "width": 58,
+                  "height": 74,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 12
+                },
+                {
+                  "type": "frame",
+                  "id": "f39",
+                  "name": "student-ill-dot",
+                  "width": 34,
+                  "height": 34,
+                  "fill": "#11A7A2",
+                  "cornerRadius": 12
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f3r",
+          "name": "mobile-stats",
+          "width": "fill_container",
+          "gap": 8,
+          "children": [
+            {
+              "type": "frame",
+              "id": "f3g",
+              "name": "m-stat-course",
+              "width": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f3d",
+                  "name": "m-stat-course-mark",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "#E7F0FF",
+                  "cornerRadius": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t3c",
+                      "name": "m-stat-course-mark-dot",
+                      "fill": "#1769D4",
+                      "content": "■",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "bold"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "t3e",
+                  "name": "m-stat-course-value",
+                  "fill": "#0B3F8A",
+                  "content": "2",
+                  "fontFamily": "Inter",
+                  "fontSize": 30,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t3f",
+                  "name": "m-stat-course-label",
+                  "fill": "#5D6B80",
+                  "content": "课程",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f3l",
+              "name": "m-stat-reminder",
+              "width": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f3i",
+                  "name": "m-stat-reminder-mark",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "#E3FAF7",
+                  "cornerRadius": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t3h",
+                      "name": "m-stat-reminder-mark-dot",
+                      "fill": "#11A7A2",
+                      "content": "■",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "bold"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "t3j",
+                  "name": "m-stat-reminder-value",
+                  "fill": "#0B3F8A",
+                  "content": "1",
+                  "fontFamily": "Inter",
+                  "fontSize": 30,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t3k",
+                  "name": "m-stat-reminder-label",
+                  "fill": "#5D6B80",
+                  "content": "提醒",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f3q",
+              "name": "m-stat-material",
+              "width": "fill_container",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "layout": "vertical",
+              "gap": 8,
+              "padding": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f3n",
+                  "name": "m-stat-material-mark",
+                  "width": 36,
+                  "height": 36,
+                  "fill": "#FFF4E6",
+                  "cornerRadius": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t3m",
+                      "name": "m-stat-material-mark-dot",
+                      "fill": "#F59E42",
+                      "content": "■",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "bold"
+                    }
+                  ]
+                },
+                {
+                  "type": "text",
+                  "id": "t3o",
+                  "name": "m-stat-material-value",
+                  "fill": "#0B3F8A",
+                  "content": "3",
+                  "fontFamily": "Inter",
+                  "fontSize": 30,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t3p",
+                  "name": "m-stat-material-label",
+                  "fill": "#5D6B80",
+                  "content": "资料",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f3y",
+          "name": "m-progress-math",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 14,
+          "stroke": "#D7E3F3",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "f3u",
+              "name": "m-progress-math-top",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t3s",
+                  "name": "m-progress-math-title",
+                  "fill": "#142033",
+                  "content": "数学 · 50%",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t3t",
+                  "name": "m-progress-math-meta",
+                  "fill": "#1769D4",
+                  "content": "50%",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "t3v",
+              "name": "m-progress-math-desc",
+              "fill": "#5D6B80",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "第 8/16 节",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "f3x",
+              "name": "m-progress-math-track",
+              "width": "fill_container",
+              "height": 8,
+              "fill": "#E7F0FF",
+              "cornerRadius": 999,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f3w",
+                  "name": "m-progress-math-bar",
+                  "width": 160,
+                  "height": 8,
+                  "fill": "#1769D4",
+                  "cornerRadius": 999
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f45",
+          "name": "m-progress-english",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 14,
+          "stroke": "#D7E3F3",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "layout": "vertical",
+          "gap": 10,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "f41",
+              "name": "m-progress-english-top",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t3z",
+                  "name": "m-progress-english-title",
+                  "fill": "#142033",
+                  "content": "英语 · 30%",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t40",
+                  "name": "m-progress-english-meta",
+                  "fill": "#11A7A2",
+                  "content": "30%",
+                  "fontFamily": "Inter",
+                  "fontSize": 16,
+                  "fontWeight": "bold"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "t42",
+              "name": "m-progress-english-desc",
+              "fill": "#5D6B80",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "第 3/10 节",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "f44",
+              "name": "m-progress-english-track",
+              "width": "fill_container",
+              "height": 8,
+              "fill": "#E7F0FF",
+              "cornerRadius": 999,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "f43",
+                  "name": "m-progress-english-bar",
+                  "width": 96,
+                  "height": 8,
+                  "fill": "#11A7A2",
+                  "cornerRadius": 999
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f4g",
+          "name": "mobile-spacer",
+          "width": "fill_container",
+          "height": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "f4v",
+          "name": "floating-tabbar",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 24,
+          "stroke": "#D7E3F3",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "gap": 6,
+          "padding": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "f4j",
+              "name": "tab-工作台",
+              "fill": "#1769D4",
+              "cornerRadius": 14,
+              "stroke": "#1769D4",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                10,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t4h",
+                  "name": "tab-工作台-icon",
+                  "fill": "#FFFFFF",
+                  "content": "●",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t4i",
+                  "name": "tab-工作台-text",
+                  "fill": "#FFFFFF",
+                  "content": "工作台",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f4m",
+              "name": "tab-学生管理",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                10,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t4k",
+                  "name": "tab-学生管理-icon",
+                  "fill": "#1769D4",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t4l",
+                  "name": "tab-学生管理-text",
+                  "fill": "#3C4A5E",
+                  "content": "学生管理",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f4o",
+              "name": "main-action",
+              "width": 54,
+              "height": 54,
+              "fill": "#1769D4",
+              "cornerRadius": 999,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t4n",
+                  "name": "main-action-plus",
+                  "fill": "#FFFFFF",
+                  "content": "+",
+                  "fontFamily": "Inter",
+                  "fontSize": 28,
+                  "fontWeight": "bold"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f4r",
+              "name": "tab-课程表",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                10,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t4p",
+                  "name": "tab-课程表-icon",
+                  "fill": "#1769D4",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t4q",
+                  "name": "tab-课程表-text",
+                  "fill": "#3C4A5E",
+                  "content": "课程表",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f4u",
+              "name": "tab-资料库",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                10,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t4s",
+                  "name": "tab-资料库-icon",
+                  "fill": "#1769D4",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t4t",
+                  "name": "tab-资料库-text",
+                  "fill": "#3C4A5E",
+                  "content": "资料库",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "f60",
+      "x": 1920,
+      "y": 1920,
+      "name": "07-mobile-student-material",
+      "clip": true,
+      "width": 390,
+      "height": 844,
+      "fill": "#F4F8FF",
+      "layout": "vertical",
+      "gap": 12,
+      "padding": 18,
+      "children": [
+        {
+          "type": "frame",
+          "id": "f5d",
+          "name": "mobile-status",
+          "width": "fill_container",
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "t5a",
+              "name": "mobile-app-name",
+              "fill": "#142033",
+              "content": "C-teacher App",
+              "fontFamily": "Inter",
+              "fontSize": 12,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "frame",
+              "id": "f5c",
+              "name": "mobile-network",
+              "fill": "#FFFFFF",
+              "cornerRadius": 999,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "padding": [
+                5,
+                9
+              ],
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t5b",
+                  "name": "mobile-network-text",
+                  "fill": "#142033",
+                  "content": "5G 100%",
+                  "fontFamily": "Inter",
+                  "fontSize": 11,
+                  "fontWeight": "bold"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f5j",
+          "name": "mobile-header",
+          "width": "fill_container",
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "f5g",
+              "name": "mobile-title-copy",
+              "layout": "vertical",
+              "gap": 2,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t5e",
+                  "name": "mobile-caption",
+                  "fill": "#5D6B80",
+                  "content": "C-teacher",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "t5f",
+                  "name": "mobile-title",
+                  "fill": "#142033",
+                  "content": "课程表",
+                  "fontFamily": "Inter",
+                  "fontSize": 28,
+                  "fontWeight": "bold"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f5i",
+              "name": "mobile-bell",
+              "width": 42,
+              "height": 42,
+              "fill": "#FFFFFF",
+              "cornerRadius": 999,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t5h",
+                  "name": "mobile-bell-icon",
+                  "fill": "#1769D4",
+                  "content": "!",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "bold"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f53",
+          "name": "timeline-card",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 18,
+          "stroke": "#D7E3F3",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "t4x",
+              "name": "timeline-title",
+              "fill": "#142033",
+              "content": "今天",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "frame",
+              "id": "f52",
+              "name": "timeline-row",
+              "width": "fill_container",
+              "fill": "#E7F0FF",
+              "cornerRadius": 14,
+              "gap": 12,
+              "padding": 14,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t4y",
+                  "name": "timeline-time",
+                  "fill": "#1769D4",
+                  "content": "18:00",
+                  "fontFamily": "Inter",
+                  "fontSize": 22,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "frame",
+                  "id": "f51",
+                  "name": "timeline-copy",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "t4z",
+                      "name": "timeline-subject",
+                      "fill": "#142033",
+                      "content": "数学 · 函数图像与性质",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "t50",
+                      "name": "timeline-note",
+                      "fill": "#3C4A5E",
+                      "textGrowth": "fixed-width",
+                      "width": 200,
+                      "content": "90 分钟 · 带函数图像讲义.pdf",
+                      "fontFamily": "Inter",
+                      "fontSize": 12,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f56",
+          "name": "material-entry",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 16,
+          "stroke": "#D7E3F3",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "t54",
+              "name": "material-entry-title",
+              "fill": "#142033",
+              "content": "资料入口",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "text",
+              "id": "t55",
+              "name": "material-entry-copy",
+              "fill": "#5D6B80",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "函数图像讲义.pdf · 阅读句型卡片 · 练习 A 组",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f59",
+          "name": "grading-reminder",
+          "width": "fill_container",
+          "fill": "#FFF4E6",
+          "cornerRadius": 16,
+          "stroke": "#F6D5A8",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "layout": "vertical",
+          "gap": 8,
+          "padding": 16,
+          "children": [
+            {
+              "type": "text",
+              "id": "t57",
+              "name": "grading-reminder-title",
+              "fill": "#9A5A12",
+              "content": "待批改提醒",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "text",
+              "id": "t58",
+              "name": "grading-reminder-copy",
+              "fill": "#815015",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "孟然阅读作业待批改，建议课前完成。",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "f5k",
+          "name": "mobile-spacer",
+          "width": "fill_container",
+          "height": "fill_container"
+        },
+        {
+          "type": "frame",
+          "id": "f5z",
+          "name": "floating-tabbar",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "cornerRadius": 24,
+          "stroke": "#D7E3F3",
+          "strokeWidth": 1,
+          "strokeAlignment": "inner",
+          "gap": 6,
+          "padding": 8,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "f5n",
+              "name": "tab-工作台",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                10,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t5l",
+                  "name": "tab-工作台-icon",
+                  "fill": "#1769D4",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t5m",
+                  "name": "tab-工作台-text",
+                  "fill": "#3C4A5E",
+                  "content": "工作台",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f5q",
+              "name": "tab-学生管理",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                10,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t5o",
+                  "name": "tab-学生管理-icon",
+                  "fill": "#1769D4",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t5p",
+                  "name": "tab-学生管理-text",
+                  "fill": "#3C4A5E",
+                  "content": "学生管理",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f5s",
+              "name": "main-action",
+              "width": 54,
+              "height": 54,
+              "fill": "#1769D4",
+              "cornerRadius": 999,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t5r",
+                  "name": "main-action-plus",
+                  "fill": "#FFFFFF",
+                  "content": "+",
+                  "fontFamily": "Inter",
+                  "fontSize": 28,
+                  "fontWeight": "bold"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f5v",
+              "name": "tab-课程表",
+              "fill": "#1769D4",
+              "cornerRadius": 14,
+              "stroke": "#1769D4",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                10,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t5t",
+                  "name": "tab-课程表-icon",
+                  "fill": "#FFFFFF",
+                  "content": "●",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t5u",
+                  "name": "tab-课程表-text",
+                  "fill": "#FFFFFF",
+                  "content": "课程表",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "f5y",
+              "name": "tab-资料库",
+              "fill": "#FFFFFF",
+              "cornerRadius": 14,
+              "stroke": "#D7E3F3",
+              "strokeWidth": 1,
+              "strokeAlignment": "inner",
+              "gap": 8,
+              "padding": [
+                10,
+                12
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "t5w",
+                  "name": "tab-资料库-icon",
+                  "fill": "#1769D4",
+                  "content": "○",
+                  "fontFamily": "Inter",
+                  "fontSize": 12,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "t5x",
+                  "name": "tab-资料库-text",
+                  "fill": "#3C4A5E",
+                  "content": "资料库",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

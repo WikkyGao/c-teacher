@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pencil version *)",
+      "Bash(pencil status *)",
+      "Bash(npm list *)",
+      "Bash(python3 -c ' *)"
+    ]
+  }
+}
