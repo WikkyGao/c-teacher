@@ -31,6 +31,15 @@ export type Student = {
   mistakeBook: MistakeBookSummary;
 };
 
+export type StudentGroup = {
+  id: string;
+  name: string;
+  description: string;
+  type: "class" | "group";
+  color: string;
+  memberIds: string[];
+};
+
 export type StudentDraft = Pick<Student, "name" | "goal" | "style" | "courses" | "materials"> & {
   gender?: Student["gender"];
 };
@@ -193,6 +202,7 @@ type PersistedState = {
   reminders: ReminderItem[];
   scheduledLessons?: ScheduledLesson[];
   appSettings?: AppSettings;
+  groups?: StudentGroup[];
 };
 
 export type { PersistedState };
@@ -310,6 +320,36 @@ const seedStudents: Student[] = [
       similarQuestions: "基础概念辨析 5 题，受力分析入门 3 题。",
       knowledgeInsight: "基础概念掌握 40%，受力分析掌握 18%。"
     }
+  }
+];
+
+export const GROUP_COLORS = [
+  "#1769d4",
+  "#cc5a3c",
+  "#0d6f65",
+  "#7b4e8f",
+  "#d4962e",
+  "#3f8c77",
+  "#b84d8c",
+  "#4a7db4"
+];
+
+const seedGroups: StudentGroup[] = [
+  {
+    id: "class-weekend-math",
+    name: "周六数学班",
+    description: "每周六下午的数学提高班",
+    type: "class",
+    color: GROUP_COLORS[0],
+    memberIds: ["chen", "he"]
+  },
+  {
+    id: "group-competition",
+    name: "竞赛突击组",
+    description: "为准备数学竞赛的学生开设的强化小组",
+    type: "group",
+    color: GROUP_COLORS[1],
+    memberIds: ["chen"]
   }
 ];
 
@@ -619,7 +659,8 @@ function createPersistedState(
   classRecords: ClassRecord[],
   reminders: ReminderItem[],
   scheduledLessons: ScheduledLesson[],
-  appSettings: AppSettings
+  appSettings: AppSettings,
+  groups: StudentGroup[]
 ): PersistedState {
   return {
     students,
@@ -628,7 +669,8 @@ function createPersistedState(
     classRecords,
     reminders,
     scheduledLessons,
-    appSettings
+    appSettings,
+    groups
   };
 }
 
@@ -640,6 +682,7 @@ export const useStudentStore = defineStore("students", () => {
   const classRecords = ref<ClassRecord[]>(clone(persisted?.classRecords ?? seedRecords).map(normalizeClassRecord));
   const reminders = ref<ReminderItem[]>(clone(persisted?.reminders ?? seedReminders).map(normalizeReminder));
   const scheduledLessons = ref<ScheduledLesson[]>(clone(persisted?.scheduledLessons ?? seedScheduledLessons).map(normalizeScheduledLesson));
+  const groups = ref<StudentGroup[]>(clone(persisted?.groups ?? seedGroups));
   const appSettings = ref<AppSettings>(normalizeAppSettings(persisted?.appSettings));
   const activeStudentId = ref(seedStudents[0].id);
   const isHydrated = ref(false);
@@ -684,6 +727,12 @@ export const useStudentStore = defineStore("students", () => {
         endsAt: lesson.startsAt + lesson.durationMinutes * 60 * 1000
       }))
       .sort((left, right) => left.startsAt - right.startsAt);
+  });
+  const classes = computed(() => groups.value.filter((g) => g.type === "class"));
+  const studentGroups = computed(() => groups.value.filter((g) => g.type === "group"));
+  const ungroupedStudents = computed(() => {
+    const groupedIds = new Set(groups.value.flatMap((g) => g.memberIds));
+    return items.value.filter((s) => !groupedIds.has(s.id));
   });
   const defaultAiModel = computed<DefaultAiModel | null>(() => {
     const provider = appSettings.value.aiProviders.find((item) => item.id === appSettings.value.defaultAiProviderId);
@@ -764,6 +813,10 @@ export const useStudentStore = defineStore("students", () => {
     activeStudentId.value = studentId;
   }
 
+  function studentGroupsFor(studentId: string) {
+    return groups.value.filter((g) => g.memberIds.includes(studentId));
+  }
+
   function materialTitlesForStudent(studentId: string) {
     const student = items.value.find((item) => item.id === studentId);
     const profileMaterials = student?.materials ?? [];
@@ -780,6 +833,7 @@ function applyPersistedState(state: PersistedState) {
     classRecords.value = clone(state.classRecords).map(normalizeClassRecord);
     reminders.value = clone(state.reminders);
     scheduledLessons.value = clone(state.scheduledLessons ?? seedScheduledLessons).map(normalizeScheduledLesson);
+    groups.value = clone(state.groups ?? seedGroups);
     appSettings.value = normalizeAppSettings(state.appSettings);
     if (!items.value.some((student) => student.id === activeStudentId.value)) {
       activeStudentId.value = items.value[0]?.id ?? "";
@@ -814,7 +868,8 @@ function applyPersistedState(state: PersistedState) {
       classRecords.value,
       reminders.value,
       scheduledLessons.value,
-      appSettings.value
+      appSettings.value,
+      groups.value
     );
   }
 
@@ -918,6 +973,10 @@ function applyPersistedState(state: PersistedState) {
     classRecords.value = classRecords.value.filter((record) => record.studentId !== studentId);
     reminders.value = reminders.value.filter((reminder) => reminder.studentId !== studentId);
     scheduledLessons.value = scheduledLessons.value.filter((lesson) => lesson.studentId !== studentId);
+    groups.value = groups.value.map((g) => ({
+      ...g,
+      memberIds: g.memberIds.filter((id) => id !== studentId)
+    }));
     if (activeStudentId.value === studentId) {
       activeStudentId.value = items.value[0]?.id ?? "";
     }
@@ -931,6 +990,46 @@ function applyPersistedState(state: PersistedState) {
       ...student.mistakeBook,
       ...patch
     };
+  }
+
+  function createGroup(draft: Omit<StudentGroup, "id">) {
+    const id = createId("group");
+    groups.value.push({ ...draft, id });
+    return id;
+  }
+
+  function updateGroup(groupId: string, patch: Partial<Omit<StudentGroup, "id">>) {
+    const index = groups.value.findIndex((g) => g.id === groupId);
+    if (index === -1) return false;
+    Object.assign(groups.value[index], patch);
+    return true;
+  }
+
+  function deleteGroup(groupId: string) {
+    const beforeCount = groups.value.length;
+    groups.value = groups.value.filter((g) => g.id !== groupId);
+    return groups.value.length < beforeCount;
+  }
+
+  function addStudentToGroup(groupId: string, studentId: string) {
+    const group = groups.value.find((g) => g.id === groupId);
+    if (!group) return false;
+    if (group.memberIds.includes(studentId)) return false;
+    group.memberIds.push(studentId);
+    return true;
+  }
+
+  function removeStudentFromGroup(groupId: string, studentId: string) {
+    const group = groups.value.find((g) => g.id === groupId);
+    if (!group) return false;
+    const beforeCount = group.memberIds.length;
+    group.memberIds = group.memberIds.filter((id) => id !== studentId);
+    return group.memberIds.length < beforeCount;
+  }
+
+  function moveStudentToGroup(studentId: string, fromGroupId: string | null, toGroupId: string | null) {
+    if (fromGroupId) removeStudentFromGroup(fromGroupId, studentId);
+    if (toGroupId) addStudentToGroup(toGroupId, studentId);
   }
 
   function createMaterial(material: Omit<TeachingMaterial, "id" | "syncStatus">) {
@@ -1179,7 +1278,7 @@ function applyPersistedState(state: PersistedState) {
   }
 
   watch(
-    [items, materials, materialSources, classRecords, reminders, scheduledLessons, appSettings],
+    [items, materials, materialSources, classRecords, reminders, scheduledLessons, groups, appSettings],
     () => {
       const state = currentPersistedState();
       writePersistedState(state);
@@ -1249,6 +1348,17 @@ function applyPersistedState(state: PersistedState) {
     updateTeacherProfile,
     reloadWorkspace,
     updateMistakeAnalysis,
-    applyPersistedState
+    applyPersistedState,
+    groups,
+    classes,
+    studentGroups,
+    ungroupedStudents,
+    studentGroupsFor,
+    createGroup,
+    updateGroup,
+    deleteGroup,
+    addStudentToGroup,
+    removeStudentFromGroup,
+    moveStudentToGroup
   };
 });
