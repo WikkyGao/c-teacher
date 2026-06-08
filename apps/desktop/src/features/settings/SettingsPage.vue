@@ -5,6 +5,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { Download, LogOut, Paintbrush, Plus, Upload } from "lucide-vue-next";
 import { useDialog, useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
+import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "../backup/workspaceBackup";
 import DiagnosticsPage from "../diagnostics/DiagnosticsPage.vue";
 import type { AiProviderConfig, AiProviderDraft, AppThemeKey } from "../students/studentStore";
 import { appThemes, useStudentStore } from "../students/studentStore";
@@ -158,40 +159,24 @@ function switchTheme(themeKey: AppThemeKey) {
 }
 
 async function exportBackup() {
+  isBackingUp.value = true;
   if (!isTauri()) {
-    const state = {
-      students: JSON.parse(JSON.stringify(workspace.items)),
-      materials: JSON.parse(JSON.stringify(workspace.materials)),
-      materialSources: JSON.parse(JSON.stringify(workspace.materialSources)),
-      classRecords: JSON.parse(JSON.stringify(workspace.classRecords)),
-      reminders: JSON.parse(JSON.stringify(workspace.reminders)),
-      scheduledLessons: JSON.parse(JSON.stringify(workspace.scheduledLessons)),
-      appSettings: JSON.parse(JSON.stringify(workspace.appSettings))
-    };
-    const backup = {
-      version: 1,
-      exportedAt: Math.floor(Date.now() / 1000).toString(),
-      state
-    };
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `c-teacher-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    message.success("备份已下载");
+    try {
+      triggerBackupDownload(backupBlobFromStore(workspace), backupFilename());
+      message.success("备份已下载");
+    } catch (error) {
+      message.error(`导出失败：${String(error)}`);
+    } finally {
+      isBackingUp.value = false;
+    }
     return;
   }
-  const path = await save({
-    defaultPath: `c-teacher-${new Date().toISOString().slice(0, 10)}.json`,
-    filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
-  });
-  if (!path) return;
-  isBackingUp.value = true;
   try {
+    const path = await save({
+      defaultPath: backupFilename(),
+      filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
+    });
+    if (!path) return;
     await invoke("export_workspace_backup", { path });
     message.success("数据备份已导出");
   } catch (error) {
@@ -203,25 +188,21 @@ async function exportBackup() {
 
 const backupFileInput = ref<HTMLInputElement>();
 
-function onBackupFilePicked(event: Event) {
+async function onBackupFilePicked(event: Event) {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (!file) return;
   target.value = "";
   isRestoring.value = true;
-  file.text().then((text) => {
-    const raw = JSON.parse(text);
-    if (raw.version !== 1 || !raw.state || !Array.isArray(raw.state.students)) {
-      message.error("备份文件格式无效");
-      return;
-    }
-    workspace.applyPersistedState(raw.state);
+  try {
+    const backup = await parseWorkspaceBackupFile(file);
+    workspace.applyPersistedState(backup.state);
     message.success("数据已恢复");
-  }).catch((error) => {
+  } catch (error) {
     message.error(`恢复失败：${String(error)}`);
-  }).finally(() => {
+  } finally {
     isRestoring.value = false;
-  });
+  }
 }
 
 function confirmRestore() {
@@ -231,17 +212,18 @@ function confirmRestore() {
     positiveText: "确认导入",
     negativeText: "取消",
     onPositiveClick: async () => {
+      isRestoring.value = true;
       if (!isTauri()) {
         backupFileInput.value?.click();
+        isRestoring.value = false;
         return;
       }
-      const path = await open({
-        multiple: false,
-        filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
-      });
-      if (typeof path !== "string") return;
-      isRestoring.value = true;
       try {
+        const path = await open({
+          multiple: false,
+          filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
+        });
+        if (typeof path !== "string") return;
         await invoke("import_workspace_backup", { path });
         await workspace.reloadWorkspace();
         message.success("数据已恢复，工作台已刷新");

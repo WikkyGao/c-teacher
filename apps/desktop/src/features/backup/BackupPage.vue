@@ -4,17 +4,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { useDialog, useMessage } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
-import type { PersistedState } from "../students/studentStore";
 import { useStudentStore } from "../students/studentStore";
-
-const BACKUP_VERSION = 1;
-
-/** Rust #[serde(rename_all = "camelCase")] → JSON 字段是 exportedAt */
-type WorkspaceBackup = {
-  version: number;
-  exportedAt: string;
-  state: PersistedState;
-};
+import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "./workspaceBackup";
 
 type BackupSummary = {
   students: number;
@@ -53,61 +44,14 @@ const storageEnv = computed(() => {
   return "local";
 });
 
-function buildBackupBlob(): Blob {
-  const state: PersistedState = {
-    students: JSON.parse(JSON.stringify(workspace.items)),
-    materials: JSON.parse(JSON.stringify(workspace.materials)),
-    materialSources: JSON.parse(JSON.stringify(workspace.materialSources)),
-    classRecords: JSON.parse(JSON.stringify(workspace.classRecords)),
-    reminders: JSON.parse(JSON.stringify(workspace.reminders)),
-    scheduledLessons: JSON.parse(JSON.stringify(workspace.scheduledLessons)),
-    appSettings: JSON.parse(JSON.stringify(workspace.appSettings))
-  };
-
-  const backup: WorkspaceBackup = {
-    version: BACKUP_VERSION,
-    exportedAt: Math.floor(Date.now() / 1000).toString(),
-    state
-  };
-
-  return new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-}
-
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function validateBackup(raw: unknown): raw is WorkspaceBackup {
-  if (!raw || typeof raw !== "object") return false;
-  const b = raw as Record<string, unknown>;
-  if (b.version !== BACKUP_VERSION) return false;
-  if (typeof b.exported_at !== "string" && typeof (b as Record<string, unknown>).exportedAt !== "string") return false;
-  if (!b.state || typeof b.state !== "object") return false;
-  const s = b.state as Record<string, unknown>;
-  return (
-    Array.isArray(s.students) &&
-    Array.isArray(s.materials) &&
-    Array.isArray(s.materialSources) &&
-    Array.isArray(s.classRecords) &&
-    Array.isArray(s.reminders)
-  );
-}
-
 async function exportDesktop() {
-  const path = await save({
-    defaultPath: `c-teacher-${new Date().toISOString().slice(0, 10)}.json`,
-    filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
-  });
-  if (!path) return false;
   isExporting.value = true;
   try {
+    const path = await save({
+      defaultPath: backupFilename(),
+      filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
+    });
+    if (!path) return false;
     await invoke("export_workspace_backup", { path });
     message.success("备份已导出");
     return true;
@@ -120,9 +64,7 @@ async function exportDesktop() {
 }
 
 function exportWeb() {
-  const blob = buildBackupBlob();
-  const filename = `c-teacher-${new Date().toISOString().slice(0, 10)}.json`;
-  triggerDownload(blob, filename);
+  triggerBackupDownload(backupBlobFromStore(workspace), backupFilename());
   message.success("备份已下载");
 }
 
@@ -150,13 +92,8 @@ async function importDesktop(path: string) {
 async function importWeb(file: File) {
   isImporting.value = true;
   try {
-    const text = await file.text();
-    const raw: unknown = JSON.parse(text);
-    if (!validateBackup(raw)) {
-      message.error("备份文件格式无效或版本不兼容");
-      return;
-    }
-    workspace.applyPersistedState(raw.state);
+    const backup = await parseWorkspaceBackupFile(file);
+    workspace.applyPersistedState(backup.state);
     message.success(`数据已恢复（共 ${totalItems.value} 项）`);
   } catch (error) {
     message.error(`恢复失败：${String(error)}`);
@@ -184,12 +121,19 @@ function confirmImport() {
         fileInput.value?.click();
         return;
       }
-      const path = await open({
-        multiple: false,
-        filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
-      });
-      if (typeof path !== "string") return;
-      await importDesktop(path);
+      isImporting.value = true;
+      try {
+        const path = await open({
+          multiple: false,
+          filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
+        });
+        if (typeof path !== "string") return;
+        await importDesktop(path);
+      } catch (error) {
+        message.error(`恢复失败：${String(error)}`);
+      } finally {
+        isImporting.value = false;
+      }
     }
   });
 }
