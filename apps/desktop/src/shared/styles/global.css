@@ -1835,7 +1835,6 @@ svg {
   gap: 10px;
   min-width: 980px;
   padding: 12px;
-  overflow: auto;
 }
 
 .schedule-week-day {

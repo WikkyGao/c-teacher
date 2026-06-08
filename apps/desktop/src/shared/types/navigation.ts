@@ -7,7 +7,8 @@ export type NavKey =
   | "reminders"
   | "mobile"
   | "diagnostics"
-  | "settings";
+  | "settings"
+  | "backup";
 
 export type NavItem = {
   key: NavKey;

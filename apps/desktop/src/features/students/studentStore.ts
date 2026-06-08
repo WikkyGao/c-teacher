@@ -195,6 +195,8 @@ type PersistedState = {
   appSettings?: AppSettings;
 };
 
+export type { PersistedState };
+
 const storageKey = "c-teacher.workspace.v1";
 
 export const appThemes: AppThemeDefinition[] = [
@@ -1246,6 +1248,7 @@ function applyPersistedState(state: PersistedState) {
     setAppTheme,
     updateTeacherProfile,
     reloadWorkspace,
-    updateMistakeAnalysis
+    updateMistakeAnalysis,
+    applyPersistedState
   };
 });

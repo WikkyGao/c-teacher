@@ -5,6 +5,7 @@ import {
   BellRing,
   CalendarDays,
   ClipboardList,
+  Database,
   LibraryBig,
   Pencil,
   Smartphone,
@@ -44,7 +45,8 @@ const navIcons: Record<NavKey, Component> = {
   reminders: BellRing,
   mobile: Smartphone,
   diagnostics: Activity,
-  settings: Settings
+  settings: Settings,
+  backup: Database
 };
 
 function openTeacherEditor() {

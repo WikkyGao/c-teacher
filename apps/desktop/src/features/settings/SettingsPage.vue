@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { LogOut, Paintbrush, Plus } from "lucide-vue-next";
-import { useMessage } from "naive-ui";
+import { isTauri } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { Download, LogOut, Paintbrush, Plus, Upload } from "lucide-vue-next";
+import { useDialog, useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import DiagnosticsPage from "../diagnostics/DiagnosticsPage.vue";
 import type { AiProviderConfig, AiProviderDraft, AppThemeKey } from "../students/studentStore";
@@ -11,13 +14,16 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
-  navigate: [value: "mobile"];
+  navigate: [value: "mobile" | "backup"];
   logout: [];
 }>();
 
 const workspace = useStudentStore();
 const message = useMessage();
+const dialog = useDialog();
 const settingsPanel = ref<"main" | "diagnostics">("main");
+const isBackingUp = ref(false);
+const isRestoring = ref(false);
 const editingProviderId = ref<string | null>(workspace.appSettings.aiProviders[0]?.id ?? null);
 const form = reactive({
   name: "",
@@ -150,6 +156,103 @@ function switchTheme(themeKey: AppThemeKey) {
   workspace.setAppTheme(themeKey);
   message.success(`已切换到 ${appThemes.find((theme) => theme.key === themeKey)?.name}`);
 }
+
+async function exportBackup() {
+  if (!isTauri()) {
+    const state = {
+      students: JSON.parse(JSON.stringify(workspace.items)),
+      materials: JSON.parse(JSON.stringify(workspace.materials)),
+      materialSources: JSON.parse(JSON.stringify(workspace.materialSources)),
+      classRecords: JSON.parse(JSON.stringify(workspace.classRecords)),
+      reminders: JSON.parse(JSON.stringify(workspace.reminders)),
+      scheduledLessons: JSON.parse(JSON.stringify(workspace.scheduledLessons)),
+      appSettings: JSON.parse(JSON.stringify(workspace.appSettings))
+    };
+    const backup = {
+      version: 1,
+      exportedAt: Math.floor(Date.now() / 1000).toString(),
+      state
+    };
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `c-teacher-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    message.success("备份已下载");
+    return;
+  }
+  const path = await save({
+    defaultPath: `c-teacher-${new Date().toISOString().slice(0, 10)}.json`,
+    filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
+  });
+  if (!path) return;
+  isBackingUp.value = true;
+  try {
+    await invoke("export_workspace_backup", { path });
+    message.success("数据备份已导出");
+  } catch (error) {
+    message.error(`导出失败：${String(error)}`);
+  } finally {
+    isBackingUp.value = false;
+  }
+}
+
+const backupFileInput = ref<HTMLInputElement>();
+
+function onBackupFilePicked(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+  target.value = "";
+  isRestoring.value = true;
+  file.text().then((text) => {
+    const raw = JSON.parse(text);
+    if (raw.version !== 1 || !raw.state || !Array.isArray(raw.state.students)) {
+      message.error("备份文件格式无效");
+      return;
+    }
+    workspace.applyPersistedState(raw.state);
+    message.success("数据已恢复");
+  }).catch((error) => {
+    message.error(`恢复失败：${String(error)}`);
+  }).finally(() => {
+    isRestoring.value = false;
+  });
+}
+
+function confirmRestore() {
+  dialog.warning({
+    title: "恢复数据",
+    content: "导入备份将覆盖当前所有数据，包括学生、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？",
+    positiveText: "确认导入",
+    negativeText: "取消",
+    onPositiveClick: async () => {
+      if (!isTauri()) {
+        backupFileInput.value?.click();
+        return;
+      }
+      const path = await open({
+        multiple: false,
+        filters: [{ name: "C-teacher 备份", extensions: ["json"] }]
+      });
+      if (typeof path !== "string") return;
+      isRestoring.value = true;
+      try {
+        await invoke("import_workspace_backup", { path });
+        await workspace.reloadWorkspace();
+        message.success("数据已恢复，工作台已刷新");
+      } catch (error) {
+        message.error(`恢复失败：${String(error)}`);
+      } finally {
+        isRestoring.value = false;
+      }
+    }
+  });
+}
 </script>
 
 <template>
@@ -165,6 +268,13 @@ function switchTheme(themeKey: AppThemeKey) {
       </n-space>
     </div>
 
+    <input
+      ref="backupFileInput"
+      type="file"
+      accept=".json"
+      style="display:none"
+      @change="onBackupFilePicked"
+    />
     <DiagnosticsPage v-if="settingsPanel === 'diagnostics'" />
 
     <div v-else class="settings-layout">
@@ -264,10 +374,38 @@ function switchTheme(themeKey: AppThemeKey) {
               <strong>应用诊断</strong>
               <span>查看本地数据、备份和恢复状态</span>
             </button>
+            <button type="button" @click="emit('navigate', 'backup')">
+              <strong>数据备份</strong>
+              <span>导出或恢复工作台数据</span>
+            </button>
             <button type="button" @click="emit('logout')">
               <strong>退出登录</strong>
               <span>{{ teacherName || "当前账号" }}</span>
               <LogOut :size="17" />
+            </button>
+          </div>
+        </section>
+
+        <section class="side-panel">
+          <h2>数据备份与恢复</h2>
+          <p style="margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+            导出账号下所有数据（学生、课程、课堂记录、提醒、设置等）为备份文件，
+            或从备份文件恢复数据。
+          </p>
+          <div class="settings-action-list">
+            <button type="button" @click="exportBackup" :disabled="isBackingUp || isRestoring">
+              <Download :size="17" />
+              <div>
+                <strong>{{ isBackingUp ? "导出中…" : "导出备份" }}</strong>
+                <span>保存为 .json 文件</span>
+              </div>
+            </button>
+            <button type="button" class="restore-btn" @click="confirmRestore" :disabled="isBackingUp || isRestoring">
+              <Upload :size="17" />
+              <div>
+                <strong>{{ isRestoring ? "恢复中…" : "恢复数据" }}</strong>
+                <span>从备份文件导入</span>
+              </div>
             </button>
           </div>
         </section>

@@ -2,6 +2,7 @@
 import { computed, ref, watchEffect } from "vue";
 import LoginPage from "../features/auth/LoginPage.vue";
 import { clearAuthSession, getAuthSession, saveAuthSession } from "../features/auth/authSession";
+import BackupPage from "../features/backup/BackupPage.vue";
 import DashboardPage from "../features/dashboard/DashboardPage.vue";
 import DiagnosticsPage from "../features/diagnostics/DiagnosticsPage.vue";
 import MaterialLibraryPage from "../features/materials/MaterialLibraryPage.vue";
@@ -24,19 +25,20 @@ const workspace = useStudentStore();
 const naiveThemeOverrides = computed(() => naiveThemeOverridesFor(workspace.appSettings.themeKey));
 
 const activeComponent = computed(() => {
-  const pages: Record<NavKey, unknown> = {
-    dashboard: DashboardPage,
-    students: StudentManagementPage,
-    schedule: SchedulePage,
-    records: ClassRecordPage,
-    materials: MaterialLibraryPage,
-    reminders: ReminderPage,
-    mobile: MobilePreviewPage,
-    diagnostics: DiagnosticsPage,
-    settings: SettingsPage
-  };
-  return pages[activeNav.value];
-});
+    const pages: Record<NavKey, unknown> = {
+      dashboard: DashboardPage,
+      students: StudentManagementPage,
+      schedule: SchedulePage,
+      records: ClassRecordPage,
+      materials: MaterialLibraryPage,
+      reminders: ReminderPage,
+      mobile: MobilePreviewPage,
+      diagnostics: DiagnosticsPage,
+      settings: SettingsPage,
+      backup: BackupPage
+    };
+    return pages[activeNav.value];
+  });
 
 watchEffect(() => {
   if (typeof document === "undefined") return;
@@ -79,23 +81,25 @@ function saveTeacherProfile(profile: TeacherProfile) {
 <template>
   <n-config-provider :theme-overrides="naiveThemeOverrides">
     <n-message-provider>
-      <LoginPage v-if="!authSession.isAuthenticated" @login="login" />
-      <Shell
-        v-else
-        :active-nav="activeNav"
-        :reminder-count="workspace.incompleteReminders.length"
-        :teacher-profile="workspace.appSettings.teacherProfile"
-        @update:active-nav="navigateFromShell"
-        @save:teacher-profile="saveTeacherProfile"
-      >
-        <component
-          :is="activeComponent"
-          :teacher-name="authSession.teacherName"
-          :initial-mode="activeNav === 'students' ? studentPageTarget : undefined"
-          @navigate="navigateFromPage"
-          @logout="logout"
-        />
-      </Shell>
+      <n-dialog-provider>
+        <LoginPage v-if="!authSession.isAuthenticated" @login="login" />
+        <Shell
+          v-else
+          :active-nav="activeNav"
+          :reminder-count="workspace.incompleteReminders.length"
+          :teacher-profile="workspace.appSettings.teacherProfile"
+          @update:active-nav="navigateFromShell"
+          @save:teacher-profile="saveTeacherProfile"
+        >
+          <component
+            :is="activeComponent"
+            :teacher-name="authSession.teacherName"
+            :initial-mode="activeNav === 'students' ? studentPageTarget : undefined"
+            @navigate="navigateFromPage"
+            @logout="logout"
+          />
+        </Shell>
+      </n-dialog-provider>
     </n-message-provider>
   </n-config-provider>
 </template>
