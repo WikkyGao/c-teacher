@@ -7,9 +7,11 @@ import { computed, reactive, ref } from "vue";
 import type { MaterialSourceProtocol, ScannedMaterial, TeachingMaterial } from "../students/studentStore";
 import { useStudentStore } from "../students/studentStore";
 import { createMaterialFileDraft } from "./materialFile";
+import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 
 const workspace = useStudentStore();
 const message = useMessage();
+const { confirmDelete } = useConfirmDelete();
 const query = ref("");
 const isScanning = ref(false);
 const editingMaterialId = ref<string | null>(null);
@@ -106,11 +108,16 @@ function saveMaterial() {
 }
 
 function removeMaterial(materialId: string) {
-  const deleted = workspace.deleteMaterial(materialId);
-  if (deleted) {
-    if (editingMaterialId.value === materialId) resetMaterialForm();
-    message.success("资料已删除");
-  }
+  confirmDelete({
+    content: "确定要删除这份资料吗？已分配该资料的学生将不再能访问。",
+    onOk: () => {
+      const deleted = workspace.deleteMaterial(materialId);
+      if (deleted) {
+        if (editingMaterialId.value === materialId) resetMaterialForm();
+        message.success("资料已删除");
+      }
+    }
+  });
 }
 
 async function chooseMaterialFile() {
@@ -171,8 +178,13 @@ function testSource(sourceId: string) {
 }
 
 function removeSource(sourceId: string) {
-  const deleted = workspace.deleteMaterialSource(sourceId);
-  if (deleted) message.success("资料源已删除");
+  confirmDelete({
+    content: "确定要删除这个外部资料源吗？已索引的资料不受影响。",
+    onOk: () => {
+      const deleted = workspace.deleteMaterialSource(sourceId);
+      if (deleted) message.success("资料源已删除");
+    }
+  });
 }
 
 function normalizeSourcePath(protocol: MaterialSourceProtocol, host: string, path: string) {

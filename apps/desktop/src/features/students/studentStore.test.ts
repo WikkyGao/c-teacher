@@ -606,6 +606,7 @@ describe("studentStore", () => {
       name: "测试供应商",
       baseUrl: "https://api.example.com/v1",
       apiKey: "test-key",
+      apiFormat: "openai-chat",
       models: [
         {
           id: "model-test",
@@ -624,6 +625,7 @@ describe("studentStore", () => {
         name: "已编辑供应商",
         baseUrl: "https://api.edited.com/v1",
         apiKey: "edited-key",
+        apiFormat: "openai-chat",
         models: [
           {
             id: "model-edited",

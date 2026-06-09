@@ -35,8 +35,9 @@ export type StudentGroup = {
   id: string;
   name: string;
   description: string;
-  type: "class" | "group";
+  type: "class" | "subject";
   color: string;
+  subjects: string[];
   memberIds: string[];
 };
 
@@ -156,12 +157,16 @@ export type AiModelConfig = {
   isDefault: boolean;
 };
 
+export type AiApiFormat = "openai-chat" | "openai-responses" | "anthropic-messages";
+
 export type AiProviderConfig = {
   id: string;
   name: string;
   baseUrl: string;
   apiKey: string;
+  apiFormat: AiApiFormat;
   models: AiModelConfig[];
+  connectionStatus?: "待测试" | "可用" | "异常";
 };
 
 export type AiProviderDraft = Omit<AiProviderConfig, "id">;
@@ -341,14 +346,16 @@ const seedGroups: StudentGroup[] = [
     description: "每周六下午的数学提高班",
     type: "class",
     color: GROUP_COLORS[0],
+    subjects: [],
     memberIds: ["chen", "he"]
   },
   {
     id: "group-competition",
-    name: "竞赛突击组",
+    name: "竞赛突击科目组",
     description: "为准备数学竞赛的学生开设的强化小组",
-    type: "group",
+    type: "subject",
     color: GROUP_COLORS[1],
+    subjects: ["数学"],
     memberIds: ["chen"]
   }
 ];
@@ -457,6 +464,8 @@ const seedAppSettings: AppSettings = {
       name: "OpenAI",
       baseUrl: "https://api.openai.com/v1",
       apiKey: "",
+      apiFormat: "openai-chat",
+      connectionStatus: "待测试",
       models: [
         {
           id: "model-gpt-54",
@@ -477,6 +486,8 @@ const seedAppSettings: AppSettings = {
       name: "兼容接口",
       baseUrl: "https://api.example.com/v1",
       apiKey: "",
+      apiFormat: "openai-chat",
+      connectionStatus: "待测试",
       models: [
         {
           id: "model-compatible-report",
@@ -581,6 +592,8 @@ function normalizeAiProvider(provider: AiProviderConfig): AiProviderConfig {
     name: provider.name.trim() || "未命名供应商",
     baseUrl: provider.baseUrl.trim(),
     apiKey: provider.apiKey,
+    apiFormat: provider.apiFormat ?? "openai-chat",
+    connectionStatus: provider.connectionStatus ?? "待测试",
     models: provider.models.map((model) => ({
       ...model,
       name: model.name.trim() || "未命名模型",
@@ -729,7 +742,7 @@ export const useStudentStore = defineStore("students", () => {
       .sort((left, right) => left.startsAt - right.startsAt);
   });
   const classes = computed(() => groups.value.filter((g) => g.type === "class"));
-  const studentGroups = computed(() => groups.value.filter((g) => g.type === "group"));
+  const subjectGroups = computed(() => groups.value.filter((g) => g.type === "subject"));
   const ungroupedStudents = computed(() => {
     const groupedIds = new Set(groups.value.flatMap((g) => g.memberIds));
     return items.value.filter((s) => !groupedIds.has(s.id));
@@ -1351,7 +1364,7 @@ function applyPersistedState(state: PersistedState) {
     applyPersistedState,
     groups,
     classes,
-    studentGroups,
+    subjectGroups,
     ungroupedStudents,
     studentGroupsFor,
     createGroup,

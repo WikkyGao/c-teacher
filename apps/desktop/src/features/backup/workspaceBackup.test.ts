@@ -48,6 +48,7 @@ function sampleState(): CompletePersistedState {
           name: "供应商 A",
           baseUrl: "https://api.example.com/v1",
           apiKey: "secret",
+          apiFormat: "openai-chat",
           models: [{ id: "model-a", name: "model-a", purpose: "通用", isDefault: true }]
         }
       ],

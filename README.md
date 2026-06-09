@@ -55,6 +55,16 @@ npm run tauri:dev
 npm run build:dmg
 ```
 
+按 macOS 芯片架构分别打包 DMG 到 `outputs/`:
+
+```bash
+# Intel 芯片 Mac
+./build-dmg-intel.sh
+
+# M 系列芯片 Mac
+./build-dmg-apple-silicon.sh
+```
+
 Windows `.exe` 安装包构建需要在 Windows 环境执行:
 
 ```bash

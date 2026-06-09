@@ -2,13 +2,16 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { Download, LogOut, Paintbrush, Plus, Upload } from "lucide-vue-next";
-import { useDialog, useMessage } from "naive-ui";
+import { Download, LogOut, Plus, Upload } from "lucide-vue-next";
+import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "../backup/workspaceBackup";
 import DiagnosticsPage from "../diagnostics/DiagnosticsPage.vue";
-import type { AiProviderConfig, AiProviderDraft, AppThemeKey } from "../students/studentStore";
+import type { AiModelConfig, AiProviderConfig, AiProviderDraft, AppThemeKey } from "../students/studentStore";
 import { appThemes, useStudentStore } from "../students/studentStore";
+import { useConfirmDelete } from "../../shared/utils/confirmDelete";
+import { testProviderConnection } from "../ai/aiClient";
+import { fetchProviderModels, mergeFetchedModels } from "./aiModelCatalog";
 
 defineProps<{
   teacherName?: string;
@@ -21,78 +24,165 @@ const emit = defineEmits<{
 
 const workspace = useStudentStore();
 const message = useMessage();
-const dialog = useDialog();
+const { confirmDelete } = useConfirmDelete();
 const settingsPanel = ref<"main" | "diagnostics">("main");
 const isBackingUp = ref(false);
 const isRestoring = ref(false);
-const editingProviderId = ref<string | null>(workspace.appSettings.aiProviders[0]?.id ?? null);
-const form = reactive({
+
+// Provider modal
+const showProviderModal = ref(false);
+const editingProviderId = ref<string | null>(null);
+const providerForm = reactive({
   name: "",
   baseUrl: "",
   apiKey: "",
-  modelName: "",
-  modelPurpose: "通用"
+  apiFormat: "openai-chat" as "openai-chat" | "openai-responses" | "anthropic-messages"
+});
+const providerFormModels = ref<AiModelConfig[]>([]);
+
+type ProviderPreset = {
+  name: string;
+  baseUrl: string;
+  apiFormat: "openai-chat" | "openai-responses" | "anthropic-messages";
+  docUrl: string;
+};
+
+const providerPresets: ProviderPreset[] = [
+  {
+    name: "OpenRouter",
+    baseUrl: "https://openrouter.ai/api/v1",
+    apiFormat: "openai-chat",
+    docUrl: "https://openrouter.ai/docs"
+  },
+  {
+    name: "DeepSeek",
+    baseUrl: "https://api.deepseek.com",
+    apiFormat: "openai-chat",
+    docUrl: "https://api-docs.deepseek.com/"
+  },
+  {
+    name: "Anthropic",
+    baseUrl: "https://api.anthropic.com",
+    apiFormat: "anthropic-messages",
+    docUrl: "https://docs.anthropic.com/en/api"
+  }
+];
+
+const providerNameOptions = [
+  ...providerPresets.map((preset) => ({ label: preset.name, value: preset.name })),
+  { label: "自定义", value: "__custom__" }
+];
+const selectedFetchedModelNames = ref<string[]>([]);
+
+// Model modal
+const showModelModal = ref(false);
+const editingProviderForModel = ref<AiProviderConfig | null>(null);
+const editingModelId = ref<string | null>(null);
+const modelForm = reactive({
+  name: "",
+  purpose: ""
 });
 
-const selectedProvider = computed(() => {
-  return workspace.appSettings.aiProviders.find((provider) => provider.id === editingProviderId.value) ?? null;
-});
+const isTestingModel = ref(false);
+
+const isFetchingModels = ref(false);
+
 const currentTheme = computed(() => appThemes.find((theme) => theme.key === workspace.appSettings.themeKey) ?? appThemes[0]);
-
-function loadProvider(provider: AiProviderConfig | null) {
-  editingProviderId.value = provider?.id ?? null;
-  form.name = provider?.name ?? "";
-  form.baseUrl = provider?.baseUrl ?? "";
-  form.apiKey = provider?.apiKey ?? "";
-  form.modelName = provider?.models[0]?.name ?? "";
-  form.modelPurpose = provider?.models[0]?.purpose ?? "通用";
-}
-
-loadProvider(selectedProvider.value);
 
 function providerStatus(provider: AiProviderConfig) {
   if (!provider.apiKey.trim()) return "待配置";
-  if (provider.id === workspace.appSettings.defaultAiProviderId) return "默认供应商";
-  return "已配置";
+  if (provider.connectionStatus === "异常") return "连接异常";
+  if (provider.connectionStatus === "可用") return "已连接";
+  return "待测试";
 }
 
-function providerDraft(): AiProviderDraft {
-  const existingModels = selectedProvider.value?.models ?? [];
-  const modelName = form.modelName.trim();
-  const models =
-    existingModels.length > 0
-      ? existingModels.map((model, index) =>
-          index === 0
-            ? {
-                ...model,
-                name: modelName || model.name,
-                purpose: form.modelPurpose.trim() || "通用",
-                isDefault: model.isDefault || existingModels.length === 1
-              }
-            : model
-        )
-      : [
-          {
-            id: "",
-            name: modelName || "default-model",
-            purpose: form.modelPurpose.trim() || "通用",
-            isDefault: true
-          }
-        ];
-  return {
-    name: form.name.trim(),
-    baseUrl: form.baseUrl.trim(),
-    apiKey: form.apiKey,
-    models
-  };
+function providerStatusType(provider: AiProviderConfig) {
+  if (!provider.apiKey.trim() || provider.connectionStatus === "异常") return "warning" as const;
+  if (provider.connectionStatus === "可用") return "success" as const;
+  return "default" as const;
+}
+
+// --- Provider modal ---
+function openCreateProvider() {
+  editingProviderId.value = null;
+  providerForm.name = "";
+  providerForm.baseUrl = "";
+  providerForm.apiKey = "";
+  providerForm.apiFormat = "openai-chat";
+  providerFormModels.value = [];
+  selectedFetchedModelNames.value = [];
+  showProviderModal.value = true;
+}
+
+function openEditProvider(provider: AiProviderConfig) {
+  editingProviderId.value = provider.id;
+  providerForm.name = provider.name;
+  providerForm.baseUrl = provider.baseUrl;
+  providerForm.apiKey = provider.apiKey;
+  providerForm.apiFormat = provider.apiFormat ?? "openai-chat";
+  providerFormModels.value = provider.models.map((model) => ({ ...model }));
+  selectedFetchedModelNames.value = provider.models.map((model) => model.name);
+  showProviderModal.value = true;
+}
+
+function onSelectProviderName(value: string) {
+  if (editingProviderId.value) return;
+  const preset = providerPresets.find((p) => p.name === value);
+  if (preset) {
+    providerForm.baseUrl = preset.baseUrl;
+    providerForm.apiFormat = preset.apiFormat;
+  }
+}
+
+async function fetchModelsFromForm() {
+  if (!providerForm.baseUrl.trim() || !providerForm.apiKey.trim()) {
+    message.warning("请先填写接口地址和密钥");
+    return;
+  }
+  isFetchingModels.value = true;
+  try {
+    const fetched = await fetchProviderModels({
+      baseUrl: providerForm.baseUrl.trim(),
+      apiKey: providerForm.apiKey
+    });
+    if (fetched.length === 0) {
+      message.warning("接口正常但未返回任何模型数据，请手动添加");
+      return;
+    }
+    const existingSelectedNames = new Set(selectedFetchedModelNames.value);
+    providerFormModels.value = mergeFetchedModels(providerFormModels.value, fetched);
+    // 不自动选中任何模型
+    const finalSelected: string[] = [];
+    for (const name of selectedFetchedModelNames.value) {
+      if (providerFormModels.value.some((m) => m.name === name)) {
+        finalSelected.push(name);
+      }
+    }
+    selectedFetchedModelNames.value = finalSelected;
+    message.success(`已获取 ${fetched.length} 个模型：${fetched.map((m: { name: string }) => m.name).join("、")}`);
+  } catch (error) {
+    message.error(`获取模型列表失败：${String(error)}`);
+  } finally {
+    isFetchingModels.value = false;
+  }
 }
 
 function saveProvider() {
-  if (!form.name.trim() || !form.baseUrl.trim()) {
-    message.warning("请填写供应商名称和 API Base URL");
+  if (!providerForm.name.trim() || !providerForm.baseUrl.trim()) {
+    message.warning("请填写供应商名称和接口地址");
     return;
   }
-  const draft = providerDraft();
+  const existing = editingProviderId.value ? workspace.appSettings.aiProviders.find((p) => p.id === editingProviderId.value) : null;
+  const selectedNames = new Set(selectedFetchedModelNames.value);
+  const models = providerFormModels.value.filter((model) => selectedNames.has(model.name));
+  const fallbackModels = existing?.models ?? [];
+  const draft: AiProviderDraft = {
+    name: providerForm.name.trim(),
+    baseUrl: providerForm.baseUrl.trim(),
+    apiKey: providerForm.apiKey,
+    apiFormat: providerForm.apiFormat,
+    models: models.length > 0 ? models : fallbackModels.length > 0 ? fallbackModels : [{ id: "", name: "默认模型", purpose: "通用", isDefault: true }]
+  };
   if (editingProviderId.value) {
     workspace.updateAiProvider(editingProviderId.value, draft);
     message.success("供应商已更新");
@@ -100,38 +190,87 @@ function saveProvider() {
     workspace.createAiProvider(draft);
     message.success("供应商已新增");
   }
-  loadProvider(workspace.appSettings.aiProviders[0] ?? null);
-}
-
-function createProvider() {
-  editingProviderId.value = null;
-  form.name = "";
-  form.baseUrl = "";
-  form.apiKey = "";
-  form.modelName = "";
-  form.modelPurpose = "通用";
+  showProviderModal.value = false;
 }
 
 function removeProvider(providerId: string) {
-  const deleted = workspace.deleteAiProvider(providerId);
-  message[deleted ? "success" : "warning"](deleted ? "供应商已删除" : "未找到供应商");
-  loadProvider(workspace.appSettings.aiProviders[0] ?? null);
+  confirmDelete({
+    content: "确定要删除这个 AI 供应商吗？关联的模型也将一并移除。",
+    onOk: () => {
+      const deleted = workspace.deleteAiProvider(providerId);
+      message[deleted ? "success" : "warning"](deleted ? "供应商已删除" : "未找到供应商");
+    }
+  });
 }
 
-function addModel(provider: AiProviderConfig) {
-  const model = {
-    id: "",
-    name: "new-model",
-    purpose: "通用",
-    isDefault: provider.models.length === 0
-  };
+// --- Model modal ---
+function openCreateModel(provider: AiProviderConfig) {
+  editingProviderForModel.value = provider;
+  editingModelId.value = null;
+  modelForm.name = "";
+  modelForm.purpose = "通用";
+  showModelModal.value = true;
+}
+
+function openEditModel(provider: AiProviderConfig, model: { id: string; name: string; purpose: string }) {
+  editingProviderForModel.value = provider;
+  editingModelId.value = model.id;
+  modelForm.name = model.name;
+  modelForm.purpose = model.purpose;
+  showModelModal.value = true;
+}
+
+function saveModel() {
+  const provider = editingProviderForModel.value;
+  if (!provider || !modelForm.name.trim()) return;
+  const models = [...provider.models];
+  if (editingModelId.value) {
+    const idx = models.findIndex((m) => m.id === editingModelId.value);
+    if (idx >= 0) {
+      models[idx] = { ...models[idx], name: modelForm.name.trim(), purpose: modelForm.purpose.trim() || "通用" };
+    }
+  } else {
+    models.push({ id: "", name: modelForm.name.trim(), purpose: modelForm.purpose.trim() || "通用", isDefault: models.length === 0 });
+  }
   workspace.updateAiProvider(provider.id, {
     name: provider.name,
     baseUrl: provider.baseUrl,
     apiKey: provider.apiKey,
-    models: [...provider.models, model]
+    apiFormat: provider.apiFormat,
+    models
   });
-  message.success("模型已新增，请编辑供应商后调整名称");
+  message.success(editingModelId.value ? "模型已更新" : "模型已新增");
+  showModelModal.value = false;
+}
+
+async function testConnectionFromModel() {
+  const provider = editingProviderForModel.value;
+  const modelName = modelForm.name.trim();
+  if (!provider || !modelName) {
+    message.warning("请先填写模型名称");
+    return;
+  }
+  if (!provider.baseUrl.trim() || !provider.apiKey.trim()) {
+    message.warning("请先在供应商中配置接口地址和密钥");
+    return;
+  }
+  isTestingModel.value = true;
+  const testProvider: AiProviderConfig = {
+    ...provider,
+    models: [{ id: editingModelId.value ?? "__test_model__", name: modelName, purpose: modelForm.purpose.trim() || "通用", isDefault: true }]
+  };
+  try {
+    const ok = await testProviderConnection(testProvider);
+    const providerRef = workspace.appSettings.aiProviders.find((item) => item.id === provider.id);
+    if (providerRef) providerRef.connectionStatus = ok ? "可用" : "异常";
+    message[ok ? "success" : "warning"](ok ? "模型连接成功" : "模型连接失败，请检查接口地址、密钥和模型名称");
+  } catch (error) {
+    const providerRef = workspace.appSettings.aiProviders.find((item) => item.id === provider.id);
+    if (providerRef) providerRef.connectionStatus = "异常";
+    message.error(`模型连接测试失败：${String(error)}`);
+  } finally {
+    isTestingModel.value = false;
+  }
 }
 
 function deleteModel(provider: AiProviderConfig, modelId: string) {
@@ -139,18 +278,36 @@ function deleteModel(provider: AiProviderConfig, modelId: string) {
     message.warning("至少保留一个模型");
     return;
   }
-  workspace.updateAiProvider(provider.id, {
-    name: provider.name,
-    baseUrl: provider.baseUrl,
-    apiKey: provider.apiKey,
-    models: provider.models.filter((model) => model.id !== modelId)
+  confirmDelete({
+    content: `确定要删除模型「${provider.models.find((m) => m.id === modelId)?.name ?? modelId}」吗？`,
+    onOk: () => {
+      workspace.updateAiProvider(provider.id, {
+        name: provider.name,
+        baseUrl: provider.baseUrl,
+        apiKey: provider.apiKey,
+        apiFormat: provider.apiFormat,
+        models: provider.models.filter((model) => model.id !== modelId)
+      });
+      message.success("模型已删除");
+    }
   });
-  message.success("模型已删除");
 }
 
 function setDefault(providerId: string, modelId: string) {
   const updated = workspace.setDefaultAiModel(providerId, modelId);
   message[updated ? "success" : "warning"](updated ? "默认模型已更新" : "未找到模型");
+}
+
+function setDefaultProvider(providerId: string) {
+  const provider = workspace.appSettings.aiProviders.find((p) => p.id === providerId);
+  if (!provider) return;
+  const defaultModel = provider.models.find((m) => m.isDefault) ?? provider.models[0];
+  if (defaultModel) {
+    workspace.setDefaultAiModel(providerId, defaultModel.id);
+    message.success(`默认供应商已切换为「${provider.name}」`);
+  } else {
+    message.warning("该供应商没有可用模型");
+  }
 }
 
 function switchTheme(themeKey: AppThemeKey) {
@@ -206,12 +363,12 @@ async function onBackupFilePicked(event: Event) {
 }
 
 function confirmRestore() {
-  dialog.warning({
+  const { confirmAction } = useConfirmDelete();
+  confirmAction({
     title: "恢复数据",
     content: "导入备份将覆盖当前所有数据，包括学生、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？",
     positiveText: "确认导入",
-    negativeText: "取消",
-    onPositiveClick: async () => {
+    onOk: async () => {
       isRestoring.value = true;
       if (!isTauri()) {
         backupFileInput.value?.click();
@@ -241,11 +398,10 @@ function confirmRestore() {
   <div>
     <div class="page-top">
       <div>
-        <h1 class="page-title">App 设置</h1>
+        <h1 class="page-title">应用设置</h1>
         <p class="page-subtitle">管理 AI 供应商、大模型和应用皮肤。配置保存在本机工作区。</p>
       </div>
       <n-space align="center">
-        <n-tag type="success" round>{{ currentTheme.name }}</n-tag>
         <n-button v-if="settingsPanel === 'diagnostics'" secondary @click="settingsPanel = 'main'">返回设置</n-button>
       </n-space>
     </div>
@@ -259,94 +415,88 @@ function confirmRestore() {
     />
     <DiagnosticsPage v-if="settingsPanel === 'diagnostics'" />
 
-    <div v-else class="settings-layout">
-      <section class="side-panel wide-panel">
-        <div class="panel-heading settings-heading">
-          <div>
-            <h2>AI 供应商与模型</h2>
-            <p>维护 API 地址、密钥、模型清单和默认模型。</p>
-          </div>
-          <n-button type="primary" @click="createProvider">
-            <template #icon>
-              <Plus :size="16" />
-            </template>
-            新增供应商
-          </n-button>
-        </div>
-
-        <div v-for="provider in workspace.appSettings.aiProviders" :key="provider.id" class="provider-card">
-          <div class="provider-main">
-            <h3>{{ provider.name }}</h3>
-            <p>{{ provider.baseUrl }} · {{ provider.apiKey.trim() ? "API Key 已填写" : "API Key 未填写" }}</p>
-            <n-tag :type="providerStatus(provider) === '待配置' ? 'warning' : 'success'" round>{{ providerStatus(provider) }}</n-tag>
-          </div>
-          <n-space>
-            <n-button size="small" secondary @click="loadProvider(provider)">编辑</n-button>
-            <n-button size="small" secondary type="error" @click="removeProvider(provider.id)">删除</n-button>
-          </n-space>
-          <div class="model-list">
-            <div v-for="model in provider.models" :key="model.id" class="model-row">
-              <div>
-                <strong>{{ model.name }}</strong>
-                <span>{{ model.purpose }}</span>
-              </div>
-              <n-space>
-                <n-tag v-if="model.isDefault" type="success" round>默认</n-tag>
-                <n-button v-else size="tiny" secondary @click="setDefault(provider.id, model.id)">设为默认</n-button>
-                <n-button size="tiny" quaternary type="error" @click="deleteModel(provider, model.id)">删除</n-button>
-              </n-space>
+    <div v-else>
+      <section class="settings-grid">
+        <!-- AI 供应商 -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <h2>AI 供应商</h2>
+              <p>维护 API 地址、密钥和模型清单</p>
             </div>
-            <n-button size="small" secondary @click="addModel(provider)">新增模型</n-button>
+            <n-button type="primary" size="small" @click="openCreateProvider">
+              <template #icon><Plus :size="14" /></template>
+              新增供应商
+            </n-button>
+          </div>
+
+          <div v-if="workspace.appSettings.aiProviders.length === 0" class="settings-empty">
+            暂无供应商，点击上方按钮新增
+          </div>
+          <div v-for="provider in workspace.appSettings.aiProviders" :key="provider.id" class="provider-list-item">
+            <div class="provider-info">
+              <div class="provider-name-row">
+                <n-switch
+                  :value="provider.id === workspace.appSettings.defaultAiProviderId"
+                  @update:value="(val: boolean) => val && setDefaultProvider(provider.id)"
+                  size="small"
+                />
+                <strong>{{ provider.name }}</strong>
+                <span class="provider-url">{{ provider.baseUrl }}</span>
+              </div>
+              <n-tag round size="small" :type="providerStatusType(provider)">{{ providerStatus(provider) }}</n-tag>
+            </div>
+            <div class="provider-models">
+              <div v-for="model in provider.models" :key="model.id" class="model-chip">
+                <span>{{ model.name }}</span>
+                <span class="model-chip-purpose">{{ model.purpose }}</span>
+                <n-tag v-if="model.isDefault && provider.id === workspace.appSettings.defaultAiProviderId" size="tiny" type="success" round>默认</n-tag>
+                <button class="model-chip-edit" @click="openEditModel(provider, model)">✎</button>
+                <button class="model-chip-del" @click="deleteModel(provider, model.id)">✕</button>
+              </div>
+              <n-button size="tiny" quaternary @click="openCreateModel(provider)">+ 新增模型</n-button>
+            </div>
+            <div class="provider-actions">
+              <n-button size="tiny" secondary @click="openEditProvider(provider)">编辑</n-button>
+              <n-button size="tiny" secondary type="error" @click="removeProvider(provider.id)">删除</n-button>
+            </div>
           </div>
         </div>
-      </section>
 
-      <aside>
-        <section class="side-panel">
-          <h2>{{ editingProviderId ? "编辑供应商" : "新增供应商" }}</h2>
-          <n-form label-placement="top">
-            <n-form-item label="供应商名称">
-              <n-input v-model:value="form.name" placeholder="例如：OpenAI" />
-            </n-form-item>
-            <n-form-item label="API Base URL">
-              <n-input v-model:value="form.baseUrl" placeholder="https://api.example.com/v1" />
-            </n-form-item>
-            <n-form-item label="API Key">
-              <n-input v-model:value="form.apiKey" type="password" show-password-on="click" />
-            </n-form-item>
-            <n-form-item label="首个模型名称">
-              <n-input v-model:value="form.modelName" placeholder="例如：gpt-5.4" />
-            </n-form-item>
-            <n-form-item label="模型用途">
-              <n-input v-model:value="form.modelPurpose" placeholder="通用、报告生成、错题分析" />
-            </n-form-item>
-          </n-form>
-          <n-button type="primary" @click="saveProvider">保存供应商</n-button>
-        </section>
-
-        <section class="side-panel theme-panel">
-          <div class="panel-heading">
-            <Paintbrush :size="18" />
-            <h2>皮肤</h2>
+        <!-- 皮肤 -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <h2>皮肤</h2>
+              <p>四套主题快速切换</p>
+            </div>
+            <n-tag round size="small">{{ currentTheme.name }}</n-tag>
           </div>
-          <p>四套皮肤快速切换，并持久化到本机；墨蓝夜读已优化文字对比度。</p>
           <div v-for="theme in appThemes" :key="theme.key" class="theme-option" :class="{ active: workspace.appSettings.themeKey === theme.key }">
             <div class="theme-option-top">
               <div>
                 <strong>{{ theme.name }}</strong>
                 <span>{{ theme.description }}</span>
               </div>
-              <n-button v-if="workspace.appSettings.themeKey !== theme.key" size="small" secondary @click="switchTheme(theme.key)">切换</n-button>
-              <n-tag v-else type="success" round>当前</n-tag>
+              <n-button
+                v-if="workspace.appSettings.themeKey !== theme.key"
+                size="tiny"
+                secondary
+                @click="switchTheme(theme.key)"
+              >切换</n-button>
+              <n-tag v-else size="tiny" type="success" round>当前</n-tag>
             </div>
             <div class="theme-swatches">
               <span v-for="color in theme.swatches" :key="color" :style="{ background: color }"></span>
             </div>
           </div>
-        </section>
+        </div>
 
-        <section class="side-panel">
-          <h2>账号与工具</h2>
+        <!-- 账号与工具 -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <h2>账号与工具</h2>
+          </div>
           <div class="settings-action-list">
             <button type="button" @click="emit('navigate', 'mobile')">
               <strong>手机预览</strong>
@@ -366,13 +516,15 @@ function confirmRestore() {
               <LogOut :size="17" />
             </button>
           </div>
-        </section>
+        </div>
 
-        <section class="side-panel">
-          <h2>数据备份与恢复</h2>
-          <p style="margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
-            导出账号下所有数据（学生、课程、课堂记录、提醒、设置等）为备份文件，
-            或从备份文件恢复数据。
+        <!-- 数据备份与恢复 -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <h2>数据备份与恢复</h2>
+          </div>
+          <p class="settings-card-desc">
+            导出所有数据（学生、课程、课堂记录、提醒、设置等）为备份文件，或从备份文件恢复数据。
           </p>
           <div class="settings-action-list">
             <button type="button" @click="exportBackup" :disabled="isBackingUp || isRestoring">
@@ -390,8 +542,84 @@ function confirmRestore() {
               </div>
             </button>
           </div>
-        </section>
-      </aside>
+        </div>
+      </section>
+
+      <!-- Provider Modal -->
+      <n-modal v-model:show="showProviderModal" preset="card" :title="editingProviderId ? '编辑供应商' : '新增供应商'" class="form-modal">
+        <n-form label-placement="top">
+          <n-form-item label="供应商名称">
+            <n-select
+              v-if="!editingProviderId"
+              v-model:value="providerForm.name"
+              :options="providerNameOptions"
+              placeholder="选择已研究的供应商或自定义"
+              filterable
+              tag
+              @update:value="onSelectProviderName"
+            />
+            <n-input
+              v-else
+              v-model:value="providerForm.name"
+              readonly
+            />
+          </n-form-item>
+          <n-form-item label="接口地址">
+            <n-input v-model:value="providerForm.baseUrl" placeholder="https://api.example.com/v1" />
+          </n-form-item>
+          <n-form-item label="接口密钥">
+            <n-input v-model:value="providerForm.apiKey" type="password" show-password-on="click" :placeholder="providerPresets.some(p => p.name === providerForm.name) ? '输入你的 API Key' : 'sk-...'" />
+          </n-form-item>
+          <n-form-item label="API 格式">
+            <n-radio-group v-model:value="providerForm.apiFormat">
+              <n-radio value="openai-chat">OpenAI Chat</n-radio>
+              <n-radio value="openai-responses">OpenAI Responses</n-radio>
+              <n-radio value="anthropic-messages">Anthropic Messages</n-radio>
+            </n-radio-group>
+          </n-form-item>
+          <div v-if="providerPresets.some(p => p.name === providerForm.name)" class="muted-text" style="margin-top:-8px;">
+            {{ providerPresets.find(p => p.name === providerForm.name)?.docUrl }} — 接口地址和格式已自动填写
+          </div>
+        </n-form>
+        <div v-if="providerFormModels.length > 0" class="fetched-model-list">
+          <n-form-item label="选择模型（可搜索）">
+            <n-select
+              v-model:value="selectedFetchedModelNames"
+              :options="providerFormModels.map(m => ({ label: m.name, value: m.name }))"
+              multiple
+              filterable
+              placeholder="搜索并选择要添加的模型"
+              clearable
+            />
+          </n-form-item>
+        </div>
+        <template #footer>
+          <n-space justify="end">
+            <n-button @click="showProviderModal = false">取消</n-button>
+            <n-button :loading="isFetchingModels" @click="fetchModelsFromForm">获取模型</n-button>
+            <n-button type="primary" @click="saveProvider">保存</n-button>
+          </n-space>
+        </template>
+      </n-modal>
+
+      <!-- Model Modal -->
+      <n-modal v-model:show="showModelModal" preset="card" :title="editingModelId ? '编辑模型' : '新增模型'" class="form-modal">
+        <n-form label-placement="top">
+          <n-form-item label="模型名称">
+            <n-input v-model:value="modelForm.name" placeholder="例如：gpt-5.4 / claude-sonnet-4-6" />
+          </n-form-item>
+          <n-form-item label="模型用途">
+            <n-input v-model:value="modelForm.purpose" placeholder="通用、报告生成、错题分析" />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <n-space justify="end">
+            <n-button @click="showModelModal = false">取消</n-button>
+            <n-button :loading="isTestingModel" @click="testConnectionFromModel">测试连接</n-button>
+            <n-button type="primary" @click="saveModel">保存</n-button>
+          </n-space>
+        </template>
+      </n-modal>
     </div>
   </div>
 </template>

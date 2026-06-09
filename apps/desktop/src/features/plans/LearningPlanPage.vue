@@ -3,9 +3,11 @@ import { useMessage } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useStudentStore } from "../students/studentStore";
 import { buildLearningPlanSubjectOptions, learningPlanSubjectCountText } from "./learningPlanSubjects";
+import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 
 const workspace = useStudentStore();
 const message = useMessage();
+const { confirmDelete } = useConfirmDelete();
 const form = reactive({
   studentId: workspace.activeStudentId,
   subject: workspace.activeStudent.courses[0]?.subject ?? "",
@@ -71,14 +73,20 @@ function createCourseReminder() {
 }
 
 function deleteCoursePlan(studentId: string, subject: string) {
-  const deleted = workspace.deleteStudentCourse(studentId, subject);
-  message[deleted ? "success" : "warning"](deleted ? "课程已删除" : "至少保留一个课程");
-  if (deleted && form.studentId === studentId) {
-    const firstCourse = selectedStudent.value.courses[0];
-    if (firstCourse) {
-      loadCourse(firstCourse.subject);
+  const student = workspace.items.find((s) => s.id === studentId);
+  confirmDelete({
+    content: `确定要删除 ${student?.name ?? ""} 的「${subject}」课程吗？`,
+    onOk: () => {
+      const deleted = workspace.deleteStudentCourse(studentId, subject);
+      message[deleted ? "success" : "warning"](deleted ? "课程已删除" : "至少保留一个课程");
+      if (deleted && form.studentId === studentId) {
+        const firstCourse = selectedStudent.value.courses[0];
+        if (firstCourse) {
+          loadCourse(firstCourse.subject);
+        }
+      }
     }
-  }
+  });
 }
 </script>
 

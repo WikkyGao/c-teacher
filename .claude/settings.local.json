@@ -7,7 +7,17 @@
       "Bash(python3 -c ' *)",
       "Bash(npx vue-tsc *)",
       "Bash(python3 *)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(grep -oP '>[^<]{2,30}<')",
+      "Bash(grep *)",
+      "Bash(npx vite *)",
+      "Bash(npm run *)",
+      "Bash(node *)",
+      "Bash(curl -s \"https://api.deepseek.com/v1/models\" -H \"Authorization: Bearer test\")",
+      "Bash(curl *)",
+      "WebFetch(domain:openrouter.ai)",
+      "WebSearch",
+      "WebFetch(domain:openrouter.hconeai.com)"
     ]
   }
 }

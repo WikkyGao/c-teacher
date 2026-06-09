@@ -5,9 +5,11 @@ import { isPermissionGranted, requestPermission, sendNotification } from "@tauri
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useStudentStore } from "../students/studentStore";
+import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 
 const workspace = useStudentStore();
 const message = useMessage();
+const { confirmDelete } = useConfirmDelete();
 const showCompleted = ref(false);
 const form = reactive({
   studentId: workspace.activeStudentId,
@@ -85,10 +87,15 @@ async function createReminder() {
 }
 
 function removeReminder(reminderId: string) {
-  const deleted = workspace.deleteReminder(reminderId);
-  if (deleted) {
-    message.success("应用内提醒已删除；如已写入系统提醒事项，请在提醒事项 App 中同步处理");
-  }
+  confirmDelete({
+    content: "确定要删除这个提醒吗？",
+    onOk: () => {
+      const deleted = workspace.deleteReminder(reminderId);
+      if (deleted) {
+        message.success("应用内提醒已删除；如已写入系统提醒事项，请在提醒事项 App 中同步处理");
+      }
+    }
+  });
 }
 
 function completeReminder(reminderId: string) {

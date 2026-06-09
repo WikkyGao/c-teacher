@@ -39,11 +39,11 @@ export const mobilePlatforms: Record<MobilePlatformKey, MobilePlatform> = {
   },
   app: {
     key: "app",
-    label: "App",
-    previewTitle: "App 预览",
-    shellLabel: "C-teacher App",
-    headerCaption: "独立 App · 高频学习管理",
-    primaryActionLabel: "同步到 App",
+    label: "应用",
+    previewTitle: "应用预览",
+    shellLabel: "C-teacher 应用",
+    headerCaption: "独立应用 · 高频学习管理",
+    primaryActionLabel: "同步到应用",
     capabilities: ["离线资料缓存", "系统级推送提醒", "课堂记录快录", "学习报告归档"]
   }
 };

@@ -165,7 +165,7 @@ function openStudentDetail(studentId: string) {
               <span class="workbench-course-icon" :class="`tone-${index % 4}`">
                 <BookOpen v-if="index % 4 === 1" :size="22" />
                 <FlaskConical v-else-if="index % 4 === 3" :size="22" />
-                <span v-else-if="index % 4 === 2">En</span>
+                <span v-else-if="index % 4 === 2">英语</span>
                 <ClipboardList v-else :size="22" />
               </span>
               <div>

@@ -120,7 +120,7 @@ onMounted(() => {
         <span>数据加载</span>
       </div>
       <div class="metric-card">
-        <strong>{{ isTauri() ? "Tauri" : "Web" }}</strong>
+        <strong>{{ isTauri() ? "桌面端" : "浏览器" }}</strong>
         <span>运行环境</span>
       </div>
     </section>
