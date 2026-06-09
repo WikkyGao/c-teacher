@@ -7,7 +7,13 @@
       "Bash(python3 -c ' *)",
       "Bash(npx vue-tsc *)",
       "Bash(python3 *)",
-      "Bash(npx vitest *)"
+      "Bash(npx vitest *)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(cargo --version)",
+      "Bash(rustc --version)",
+      "Bash(curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs)",
+      "Bash(sh -s -- -y)"
     ]
   }
 }
