@@ -31,7 +31,6 @@ export type Student = {
   mistakeBook: MistakeBookSummary;
 };
 
-<<<<<<< HEAD
 export type StudentGroup = {
   id: string;
   name: string;
@@ -41,9 +40,6 @@ export type StudentGroup = {
   subjects: string[];
   memberIds: string[];
 };
-
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 export type StudentDraft = Pick<Student, "name" | "goal" | "style" | "courses" | "materials"> & {
   gender?: Student["gender"];
 };
@@ -330,7 +326,6 @@ const seedStudents: Student[] = [
   }
 ];
 
-<<<<<<< HEAD
 export const GROUP_COLORS = [
   "#1769d4",
   "#cc5a3c",
@@ -362,9 +357,6 @@ const seedGroups: StudentGroup[] = [
     memberIds: ["chen"]
   }
 ];
-
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 const seedMaterials: TeachingMaterial[] = [
   {
     id: "material-function",
@@ -743,15 +735,12 @@ export const useStudentStore = defineStore("students", () => {
       }))
       .sort((left, right) => left.startsAt - right.startsAt);
   });
-<<<<<<< HEAD
   const classes = computed(() => groups.value.filter((g) => g.type === "class"));
   const subjectGroups = computed(() => groups.value.filter((g) => g.type === "subject"));
   const ungroupedStudents = computed(() => {
     const groupedIds = new Set(groups.value.flatMap((g) => g.memberIds));
     return items.value.filter((s) => !groupedIds.has(s.id));
   });
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   const defaultAiModel = computed<DefaultAiModel | null>(() => {
     const provider = appSettings.value.aiProviders.find((item) => item.id === appSettings.value.defaultAiProviderId);
     const model = provider?.models.find((item) => item.id === appSettings.value.defaultAiModelId);
