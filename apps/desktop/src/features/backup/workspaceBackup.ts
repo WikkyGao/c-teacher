@@ -6,7 +6,6 @@ import type {
   ReminderItem,
   ScheduledLesson,
   Student,
-  StudentGroup,
   TeachingMaterial
 } from "../students/studentStore";
 
@@ -26,7 +25,6 @@ export type WorkspaceStoreSnapshot = {
   reminders: ReminderItem[];
   scheduledLessons: ScheduledLesson[];
   appSettings: AppSettings;
-  groups: StudentGroup[];
 };
 
 function clone<T>(value: T): T {
@@ -41,8 +39,7 @@ export function workspaceStateFromStore(workspace: WorkspaceStoreSnapshot): Pers
     classRecords: clone(workspace.classRecords),
     reminders: clone(workspace.reminders),
     scheduledLessons: clone(workspace.scheduledLessons),
-    appSettings: clone(workspace.appSettings),
-    groups: clone(workspace.groups)
+    appSettings: clone(workspace.appSettings)
   };
 }
 

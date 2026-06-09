@@ -4,6 +4,7 @@
       "Bash(pencil version *)",
       "Bash(pencil status *)",
       "Bash(npm list *)",
+<<<<<<< HEAD
       "Bash(python3 -c ' *)",
       "Bash(npx vue-tsc *)",
       "Bash(python3 *)",
@@ -14,6 +15,9 @@
       "Bash(rustc --version)",
       "Bash(curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs)",
       "Bash(sh -s -- -y)"
+=======
+      "Bash(python3 -c ' *)"
+>>>>>>> parent of 7f2133e0 (新增分组功能)
     ]
   }
 }

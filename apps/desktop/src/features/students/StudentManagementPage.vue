@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Settings2, Sparkles, UserRound, UsersRound } from "lucide-vue-next";
+import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Sparkles, UserRound } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { analyzeMistake } from "../mistake-book/mistakeApi";
 import { studentAvatarSourceFor } from "../../shared/assets/studentAvatars";
 import { buildMistakeBookSubjectOptions, mistakeBookSubjectCountText } from "./mistakeBookPanel";
-import type { Course, Student, StudentGroup } from "./studentStore";
-import { GROUP_COLORS, K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
+import type { Course, Student } from "./studentStore";
+import { K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
 
 const students = useStudentStore();
 const props = defineProps<{
@@ -20,17 +20,8 @@ const message = useMessage();
 const showStudentModal = ref(false);
 const editingStudentId = ref<string | null>(null);
 const selectedMistakeImagePath = ref("");
-const pageMode = ref<"list" | "detail" | "mistakeBook" | "groupManage">("list");
+const pageMode = ref<"list" | "detail" | "mistakeBook">("list");
 const activeMistakeSubject = ref("");
-const selectedGroupId = ref<string | null>(null);
-const showGroupModal = ref(false);
-const editingGroupId = ref<string | null>(null);
-const groupForm = reactive({
-  name: "",
-  description: "",
-  type: "class" as "class" | "group",
-  color: GROUP_COLORS[0]
-});
 const form = reactive({
   name: "",
   gender: "female" as Student["gender"],
@@ -40,7 +31,6 @@ const form = reactive({
   materialsText: ""
 });
 const modalTitle = computed(() => (editingStudentId.value ? "编辑学生" : "新增学生"));
-const groupModalTitle = computed(() => (editingGroupId.value ? "编辑分组" : "新建分组"));
 const mistakeSubjectOptions = computed(() => buildMistakeBookSubjectOptions(activeStudent.value.mistakeBook.subjects));
 const activeMistakeSubjectLabel = computed(() => activeMistakeSubject.value || activeStudent.value.mistakeBook.subjects[0]);
 const mistakeSubjectCount = computed(() => mistakeBookSubjectCountText(activeStudent.value.mistakeBook.subjects));
@@ -57,39 +47,6 @@ const genderOptions = [
   { label: "女生", value: "female" },
   { label: "男生", value: "male" }
 ];
-const filteredStudents = computed(() => {
-  if (!selectedGroupId.value) return students.items;
-  const group = students.groups.find((g) => g.id === selectedGroupId.value);
-  if (!group) return students.items;
-  return students.items.filter((s) => group.memberIds.includes(s.id));
-});
-const treeItems = computed(() => {
-  const items: Array<{ key: string; label: string; count: number; type: "all" | "class" | "group" | "ungrouped"; group?: StudentGroup }> = [];
-  items.push({ key: "all", label: "全部学生", count: students.items.length, type: "all" });
-  if (students.classes.length > 0) {
-    items.push(...students.classes.map((g) => ({
-      key: g.id,
-      label: g.name,
-      count: g.memberIds.length,
-      type: "class" as const,
-      group: g
-    })));
-  }
-  if (students.studentGroups.length > 0) {
-    items.push(...students.studentGroups.map((g) => ({
-      key: g.id,
-      label: g.name,
-      count: g.memberIds.length,
-      type: "group" as const,
-      group: g
-    })));
-  }
-  const ungCount = students.ungroupedStudents.length;
-  if (ungCount > 0) {
-    items.push({ key: "ungrouped", label: "未分组", count: ungCount, type: "ungrouped" });
-  }
-  return items;
-});
 
 watch(
   () => props.initialMode,
@@ -263,108 +220,6 @@ async function chooseMistakeImageAndAnalyze() {
   selectedMistakeImagePath.value = selected;
   await runAiAnalysis();
 }
-
-// --- Group management ---
-
-function studentGroupsFor(studentId: string) {
-  return students.studentGroupsFor(studentId);
-}
-
-function openGroupManage() {
-  pageMode.value = "groupManage";
-}
-
-function openCreateGroup(type: "class" | "group") {
-  editingGroupId.value = null;
-  groupForm.name = "";
-  groupForm.description = "";
-  groupForm.type = type;
-  groupForm.color = GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)];
-  showGroupModal.value = true;
-}
-
-function openEditGroup(group: StudentGroup) {
-  editingGroupId.value = group.id;
-  groupForm.name = group.name;
-  groupForm.description = group.description;
-  groupForm.type = group.type;
-  groupForm.color = group.color;
-  showGroupModal.value = true;
-}
-
-function saveGroup() {
-  if (!groupForm.name.trim()) {
-    message.warning("请填写分组名称");
-    return;
-  }
-  if (editingGroupId.value) {
-    students.updateGroup(editingGroupId.value, {
-      name: groupForm.name.trim(),
-      description: groupForm.description.trim(),
-      type: groupForm.type,
-      color: groupForm.color
-    });
-    message.success("分组已更新");
-  } else {
-    students.createGroup({
-      name: groupForm.name.trim(),
-      description: groupForm.description.trim(),
-      type: groupForm.type,
-      color: groupForm.color,
-      memberIds: []
-    });
-    message.success("分组已创建");
-  }
-  showGroupModal.value = false;
-}
-
-function deleteGroup(groupId: string) {
-  const group = students.groups.find((g) => g.id === groupId);
-  if (!group) return;
-  if (group.memberIds.length > 0) {
-    message.warning("请先清空组成员再删除分组");
-    return;
-  }
-  students.deleteGroup(groupId);
-  message.success("分组已删除");
-}
-
-function toggleStudentInGroup(groupId: string, studentId: string) {
-  const group = students.groups.find((g) => g.id === groupId);
-  if (!group) return;
-  if (group.memberIds.includes(studentId)) {
-    students.removeStudentFromGroup(groupId, studentId);
-  } else {
-    students.addStudentToGroup(groupId, studentId);
-  }
-}
-
-// For group member management inside groupManage page
-const groupMemberDraft = ref<Record<string, string[]>>({});
-
-function initGroupMemberDraft(group: StudentGroup) {
-  groupMemberDraft.value[group.id] = [...group.memberIds];
-}
-
-function toggleMemberDraft(groupId: string, studentId: string) {
-  const draft = groupMemberDraft.value[groupId];
-  if (!draft) return;
-  const idx = draft.indexOf(studentId);
-  if (idx >= 0) {
-    draft.splice(idx, 1);
-  } else {
-    draft.push(studentId);
-  }
-}
-
-function saveGroupMembers(groupId: string) {
-  const draft = groupMemberDraft.value[groupId];
-  if (!draft) return;
-  const group = students.groups.find((g) => g.id === groupId);
-  if (!group) return;
-  group.memberIds = [...draft];
-  message.success("成员已更新");
-}
 </script>
 
 <template>
@@ -374,57 +229,17 @@ function saveGroupMembers(groupId: string) {
         <h1 class="page-title">学生管理</h1>
         <p class="page-subtitle">卡片化管理学生、多学科课程、错题本和 AI 分析入口</p>
       </div>
-      <n-space align="center">
-        <n-button secondary @click="openGroupManage">
-          <template #icon>
-            <Settings2 :size="16" />
-          </template>
-          管理分组
-        </n-button>
-        <n-button type="primary" @click="openCreateStudent">
-          <template #icon>
-            <Plus :size="16" />
-          </template>
-          新增学生
-        </n-button>
-      </n-space>
+      <n-button type="primary" @click="openCreateStudent">
+        <template #icon>
+          <Plus :size="16" />
+        </template>
+        新增学生
+      </n-button>
     </div>
 
     <section v-if="pageMode === 'list'" class="student-management-page">
-      <aside class="group-sidebar">
-        <div class="group-sidebar-header">
-          <UsersRound :size="16" />
-          <span>学生列表</span>
-        </div>
-        <nav class="group-tree">
-          <button
-            v-for="item in treeItems"
-            :key="item.key"
-            class="group-tree-item"
-            :class="{
-              active: selectedGroupId === item.key,
-              'group-type-class': item.type === 'class',
-              'group-type-group': item.type === 'group',
-            }"
-            :style="item.group && item.group.color ? { '--group-color': item.group.color } : {}"
-            @click="selectedGroupId = item.key === 'all' ? null : (item.type === 'ungrouped' ? 'ungrouped' : item.key)"
-          >
-            <span
-              v-if="item.type === 'class' || item.type === 'group'"
-              class="group-color-dot"
-              :style="{ background: item.group?.color }"
-            />
-            <span v-else-if="item.type === 'all'" class="group-icon">⊞</span>
-            <span v-else-if="item.type === 'ungrouped'" class="group-icon">⊟</span>
-            <span class="group-tree-label">{{ item.label }}</span>
-            <span class="group-tree-count">{{ item.count }}</span>
-          </button>
-        </nav>
-      </aside>
-
       <section class="student-grid">
-        <div v-if="filteredStudents.length === 0" class="list-empty-state">该分组暂无学生</div>
-        <article v-for="student in filteredStudents" :key="student.id" class="student-card">
+        <article v-for="student in students.items" :key="student.id" class="student-card">
           <header>
             <img class="student-card-avatar" :src="studentAvatar(student)" :alt="`${student.name}头像`" />
             <div>
@@ -432,15 +247,6 @@ function saveGroupMembers(groupId: string) {
               <p>{{ student.gender === "male" ? "男生" : "女生" }} · 目标：{{ student.goal }} · 风格：{{ student.style }}</p>
             </div>
           </header>
-
-          <div v-if="studentGroupsFor(student.id).length > 0" class="group-tags">
-            <span
-              v-for="sg in studentGroupsFor(student.id)"
-              :key="sg.id"
-              class="group-tag"
-              :style="{ '--tag-color': sg.color }"
-            >{{ sg.name }}</span>
-          </div>
 
           <div class="course-list">
             <div v-for="course in student.courses" :key="course.subject" class="course-row">
@@ -495,102 +301,9 @@ function saveGroupMembers(groupId: string) {
       </section>
     </section>
 
-    <section v-else-if="pageMode === 'groupManage'" class="group-manage-page">
-      <div class="student-page-toolbar">
-        <n-button secondary @click="pageMode = 'list'; selectedGroupId = null">
-          <template #icon>
-            <ArrowLeft :size="16" />
-          </template>
-          返回学生列表
-        </n-button>
-      </div>
-
-      <div class="group-manage-content">
-        <section class="group-section">
-          <div class="group-section-header">
-            <h2>班级</h2>
-            <n-button size="small" secondary @click="openCreateGroup('class')">
-              <template #icon><Plus :size="14" /></template>新建班级
-            </n-button>
-          </div>
-          <div v-if="students.classes.length === 0" class="muted-text">暂无班级</div>
-          <div v-for="group in students.classes" :key="group.id" class="group-manage-card">
-            <div class="group-manage-card-header">
-              <span class="group-color-dot" :style="{ background: group.color }" />
-              <strong>{{ group.name }}</strong>
-              <span class="group-count-badge">{{ group.memberIds.length }} 人</span>
-            </div>
-            <p class="group-desc">{{ group.description || "暂无描述" }}</p>
-            <details class="group-member-list">
-              <summary>成员管理（{{ group.memberIds.length }} 人）</summary>
-              <div class="group-member-grid">
-                <label
-                  v-for="student in students.items"
-                  :key="student.id"
-                  class="group-member-checkbox"
-                  :class="{ checked: group.memberIds.includes(student.id) }"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="group.memberIds.includes(student.id)"
-                    @change="toggleStudentInGroup(group.id, student.id)"
-                  />
-                  {{ student.name }}
-                </label>
-              </div>
-            </details>
-            <div class="group-manage-actions">
-              <n-button size="tiny" secondary @click="openEditGroup(group)">编辑</n-button>
-              <n-button size="tiny" secondary type="error" :disabled="group.memberIds.length > 0" @click="deleteGroup(group.id)">删除</n-button>
-            </div>
-          </div>
-        </section>
-
-        <section class="group-section">
-          <div class="group-section-header">
-            <h2>小组</h2>
-            <n-button size="small" secondary @click="openCreateGroup('group')">
-              <template #icon><Plus :size="14" /></template>新建小组
-            </n-button>
-          </div>
-          <div v-if="students.studentGroups.length === 0" class="muted-text">暂无小组</div>
-          <div v-for="group in students.studentGroups" :key="group.id" class="group-manage-card">
-            <div class="group-manage-card-header">
-              <span class="group-color-dot" :style="{ background: group.color }" />
-              <strong>{{ group.name }}</strong>
-              <span class="group-count-badge">{{ group.memberIds.length }} 人</span>
-            </div>
-            <p class="group-desc">{{ group.description || "暂无描述" }}</p>
-            <details class="group-member-list">
-              <summary>成员管理（{{ group.memberIds.length }} 人）</summary>
-              <div class="group-member-grid">
-                <label
-                  v-for="student in students.items"
-                  :key="student.id"
-                  class="group-member-checkbox"
-                  :class="{ checked: group.memberIds.includes(student.id) }"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="group.memberIds.includes(student.id)"
-                    @change="toggleStudentInGroup(group.id, student.id)"
-                  />
-                  {{ student.name }}
-                </label>
-              </div>
-            </details>
-            <div class="group-manage-actions">
-              <n-button size="tiny" secondary @click="openEditGroup(group)">编辑</n-button>
-              <n-button size="tiny" secondary type="error" :disabled="group.memberIds.length > 0" @click="deleteGroup(group.id)">删除</n-button>
-            </div>
-          </div>
-        </section>
-      </div>
-    </section>
-
     <section v-else class="student-detail-page">
       <div class="student-page-toolbar">
-        <n-button secondary @click="pageMode = 'list'; selectedGroupId = null">
+        <n-button secondary @click="pageMode = 'list'">
           <template #icon>
             <ArrowLeft :size="16" />
           </template>
@@ -603,14 +316,6 @@ function saveGroupMembers(groupId: string) {
           <div class="panel-heading">
             <UserRound :size="18" />
             <h2>{{ activeStudent.name }} · 学生详情</h2>
-          </div>
-          <div v-if="studentGroupsFor(activeStudent.id).length > 0" class="group-tags">
-            <span
-              v-for="sg in studentGroupsFor(activeStudent.id)"
-              :key="sg.id"
-              class="group-tag"
-              :style="{ '--tag-color': sg.color }"
-            >{{ sg.name }}</span>
           </div>
           <div class="detail-list">
             <div>
@@ -768,41 +473,6 @@ function saveGroupMembers(groupId: string) {
         <n-space justify="end">
           <n-button @click="showStudentModal = false">取消</n-button>
           <n-button type="primary" @click="saveStudent">保存</n-button>
-        </n-space>
-      </template>
-    </n-modal>
-
-    <n-modal v-model:show="showGroupModal" preset="card" :title="groupModalTitle" class="form-modal">
-      <n-form label-placement="top">
-        <n-form-item label="分组名称">
-          <n-input v-model:value="groupForm.name" :placeholder="groupForm.type === 'class' ? '例如：周六数学班' : '例如：竞赛突击组'" />
-        </n-form-item>
-        <n-form-item label="描述">
-          <n-input v-model:value="groupForm.description" type="textarea" placeholder="可选描述" :autosize="{ minRows: 1, maxRows: 2 }" />
-        </n-form-item>
-        <n-form-item label="类型">
-          <n-radio-group v-model:value="groupForm.type" :disabled="!!editingGroupId">
-            <n-radio value="class">班级</n-radio>
-            <n-radio value="group">小组</n-radio>
-          </n-radio-group>
-        </n-form-item>
-        <n-form-item label="颜色标签">
-          <div class="color-picker-row">
-            <button
-              v-for="c in GROUP_COLORS"
-              :key="c"
-              class="color-swatch"
-              :class="{ active: groupForm.color === c }"
-              :style="{ background: c }"
-              @click="groupForm.color = c"
-            />
-          </div>
-        </n-form-item>
-      </n-form>
-      <template #footer>
-        <n-space justify="end">
-          <n-button @click="showGroupModal = false">取消</n-button>
-          <n-button type="primary" @click="saveGroup">保存</n-button>
         </n-space>
       </template>
     </n-modal>
