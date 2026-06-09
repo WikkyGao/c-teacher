@@ -30,7 +30,6 @@ function sampleState(): CompletePersistedState {
     materialSources: [],
     classRecords: [],
     reminders: [],
-    groups: [],
     scheduledLessons: [
       {
         id: "lesson-a",
@@ -61,7 +60,8 @@ function sampleState(): CompletePersistedState {
         title: "数学老师",
         bio: "本机工作台"
       }
-    }
+    },
+    groups: []
   };
 }
 
@@ -92,7 +92,8 @@ describe("workspaceBackup", () => {
       classRecords: state.classRecords,
       reminders: state.reminders,
       scheduledLessons: state.scheduledLessons,
-      appSettings: state.appSettings
+      appSettings: state.appSettings,
+      groups: state.groups
     };
 
     expect(workspaceStateFromStore(storeLike)).toEqual(state);

@@ -4,6 +4,7 @@ import { useMessage } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import type { ScheduledLesson } from "../students/studentStore";
 import { useStudentStore } from "../students/studentStore";
+import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 import {
   addDays,
   buildMonthCells,
@@ -17,6 +18,7 @@ import {
 
 const workspace = useStudentStore();
 const message = useMessage();
+const { confirmDelete } = useConfirmDelete();
 const editingLessonId = ref<string | null>(null);
 const calendarMode = ref<CalendarMode>("week");
 const calendarAnchor = ref(Date.now());
@@ -74,6 +76,11 @@ const selectedStudent = computed(() => workspace.items.find((student) => student
 const subjectOptions = computed(() => {
   return selectedStudent.value.courses.map((course) => ({ label: course.subject, value: course.subject }));
 });
+const selectedGroupHasSubjects = computed(() => {
+  if (!form.groupId) return false;
+  const group = workspace.groups.find((g) => g.id === form.groupId);
+  return group?.type === "subject" && (group.subjects?.length ?? 0) > 0;
+});
 const weekDays = computed(() => {
   const weekStart = startOfWeek(calendarAnchor.value);
   return Array.from({ length: 7 }, (_, index) => {
@@ -114,7 +121,14 @@ const calendarItems = computed<CalendarLessonItem[]>(() => {
   const coveredLessons = new Set<string>();
 
   for (const lesson of visibleLessons.value) {
-    const studentGroups = workspace.groups.filter((g) => g.memberIds.includes(lesson.studentId));
+    const studentGroups = workspace.groups.filter((g) => {
+      if (!g.memberIds.includes(lesson.studentId)) return false;
+      // For subject groups, only group if the lesson's subject matches
+      if (g.type === "subject" && g.subjects.length > 0) {
+        return g.subjects.includes(lesson.subject);
+      }
+      return true;
+    });
     if (studentGroups.length === 0) continue;
     for (const group of studentGroups) {
       const key = `${group.id}:${lesson.startsAt}:${lesson.subject}`;
@@ -176,6 +190,13 @@ function lessonGroupColor(item: CalendarLessonItem): string {
   const studentGroups = workspace.groups.filter(
     (g) => g.type === "class" && g.memberIds.includes(item.studentId)
   );
+  // Fall back to subject group color if no class
+  if (!studentGroups[0]) {
+    const subjectGroup = workspace.groups.find(
+      (g) => g.type === "subject" && g.memberIds.includes(item.studentId) && g.subjects.includes(item.subject)
+    );
+    return subjectGroup?.color ?? "";
+  }
   return studentGroups[0]?.color ?? "";
 }
 
@@ -261,6 +282,13 @@ function openEditForm(item: CalendarLessonItem) {
   pageMode.value = "form";
 }
 
+function onGroupSelected(groupId: string) {
+  const group = workspace.groups.find((g) => g.id === groupId);
+  if (group?.type === "subject" && group.subjects && group.subjects.length > 0) {
+    form.subject = group.subjects[0];
+  }
+}
+
 function saveLesson() {
   if (!form.subject.trim() || !form.startsAt) {
     message.warning("请填写科目和开始时间");
@@ -311,11 +339,17 @@ function saveLesson() {
 }
 
 function removeLesson() {
-  if (!editingLessonId.value) return;
-  const deleted = workspace.deleteScheduledLesson(editingLessonId.value);
-  message[deleted ? "success" : "warning"](deleted ? "课程已删除" : "未找到课程");
-  pageMode.value = "calendar";
-  resetForm();
+  const lessonId = editingLessonId.value;
+  if (!lessonId) return;
+  confirmDelete({
+    content: "确定要删除这门课程吗？",
+    onOk: () => {
+      const deleted = workspace.deleteScheduledLesson(lessonId);
+      message[deleted ? "success" : "warning"](deleted ? "课程已删除" : "未找到课程");
+      pageMode.value = "calendar";
+      resetForm();
+    }
+  });
 }
 
 function goBack() {
@@ -507,16 +541,19 @@ watch(calendarMode, () => {
           <n-form-item label="课程归属">
             <n-radio-group v-model:value="assignMode" :disabled="!!editingLessonId">
               <n-radio value="student">单个学生</n-radio>
-              <n-radio value="group">班级/小组</n-radio>
+              <n-radio value="group">班级/科目分组</n-radio>
             </n-radio-group>
           </n-form-item>
           <n-form-item v-if="assignMode === 'student'" label="学生">
             <n-select v-model:value="form.studentId" :options="studentOptions" />
           </n-form-item>
-          <n-form-item v-else label="班级/小组">
-            <n-select v-model:value="form.groupId" :options="groupOptions" placeholder="选择班级或小组" />
+          <n-form-item v-else label="班级/分组">
+            <n-select v-model:value="form.groupId" :options="groupOptions" placeholder="选择班级或分组" @update:value="onGroupSelected" />
           </n-form-item>
-          <n-form-item label="科目">
+          <n-form-item v-if="assignMode === 'student'" label="科目">
+            <n-select v-model:value="form.subject" :options="subjectOptions" filterable tag />
+          </n-form-item>
+          <n-form-item v-else-if="!selectedGroupHasSubjects" label="科目">
             <n-select v-model:value="form.subject" :options="subjectOptions" filterable tag />
           </n-form-item>
           <n-form-item label="开始时间">
@@ -531,7 +568,7 @@ watch(calendarMode, () => {
           <n-form-item label="备注">
             <n-input v-model:value="form.note" type="textarea" placeholder="资料、作业或课前提醒" :autosize="{ minRows: 1, maxRows: 2 }" />
           </n-form-item>
-          <p v-if="assignMode === 'group'" class="muted-text">选择班级或小组后，课程将自动为该分组内的所有学生创建。</p>
+          <p v-if="assignMode === 'group'" class="muted-text">选择科目分组后，科目自动使用分组关联科目，课程将自动为该分组内的所有学生创建。</p>
         </n-form>
         <n-space>
           <n-button type="primary" @click="saveLesson">{{ editingLessonId ? "保存课程" : "创建课程" }}</n-button>

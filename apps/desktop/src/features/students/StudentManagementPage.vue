@@ -5,11 +5,12 @@ import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Sett
 import { storeToRefs } from "pinia";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
-import { analyzeMistake } from "../mistake-book/mistakeApi";
+import { analyzeMistakeStream, generateSimilarQuestionsStream } from "../mistake-book/mistakeApi";
 import { studentAvatarSourceFor } from "../../shared/assets/studentAvatars";
 import { buildMistakeBookSubjectOptions, mistakeBookSubjectCountText } from "./mistakeBookPanel";
 import type { Course, Student, StudentGroup } from "./studentStore";
 import { GROUP_COLORS, K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
+import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 
 const students = useStudentStore();
 const props = defineProps<{
@@ -17,9 +18,16 @@ const props = defineProps<{
 }>();
 const { activeStudent } = storeToRefs(students);
 const message = useMessage();
+const { confirmDelete } = useConfirmDelete();
 const showStudentModal = ref(false);
 const editingStudentId = ref<string | null>(null);
 const selectedMistakeImagePath = ref("");
+const mistakeQuestionText = ref("");
+const mistakeInputMode = ref<"text" | "image">("text");
+const streamingAnalysisText = ref("");
+const streamingSimilarQuestionsText = ref("");
+const isAnalyzingMistake = ref(false);
+const isGeneratingSimilarQuestions = ref(false);
 const pageMode = ref<"list" | "detail" | "mistakeBook" | "groupManage">("list");
 const activeMistakeSubject = ref("");
 const selectedGroupId = ref<string | null>(null);
@@ -28,8 +36,10 @@ const editingGroupId = ref<string | null>(null);
 const groupForm = reactive({
   name: "",
   description: "",
-  type: "class" as "class" | "group",
-  color: GROUP_COLORS[0]
+  type: "class" as "class" | "subject",
+  color: GROUP_COLORS[0],
+  subjects: [] as string[],
+  memberIds: [] as string[]
 });
 const form = reactive({
   name: "",
@@ -37,13 +47,16 @@ const form = reactive({
   goal: "",
   style: "",
   courses: [] as Course[],
-  materialsText: ""
+  materialsText: "",
+  groupIds: [] as string[]
 });
 const modalTitle = computed(() => (editingStudentId.value ? "编辑学生" : "新增学生"));
 const groupModalTitle = computed(() => (editingGroupId.value ? "编辑分组" : "新建分组"));
 const mistakeSubjectOptions = computed(() => buildMistakeBookSubjectOptions(activeStudent.value.mistakeBook.subjects));
 const activeMistakeSubjectLabel = computed(() => activeMistakeSubject.value || activeStudent.value.mistakeBook.subjects[0]);
 const mistakeSubjectCount = computed(() => mistakeBookSubjectCountText(activeStudent.value.mistakeBook.subjects));
+const readableStreamingAnalysis = computed(() => streamingAnalysisText.value.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim());
+const readableStreamingSimilarQuestions = computed(() => streamingSimilarQuestionsText.value.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim());
 const activeStudentPlans = computed(() =>
   students.calendarPlanItems.filter((item) => item.studentId === activeStudent.value.id).slice(0, 3)
 );
@@ -64,7 +77,7 @@ const filteredStudents = computed(() => {
   return students.items.filter((s) => group.memberIds.includes(s.id));
 });
 const treeItems = computed(() => {
-  const items: Array<{ key: string; label: string; count: number; type: "all" | "class" | "group" | "ungrouped"; group?: StudentGroup }> = [];
+  const items: Array<{ key: string; label: string; count: number; type: "all" | "class" | "subject" | "ungrouped"; group?: StudentGroup }> = [];
   items.push({ key: "all", label: "全部学生", count: students.items.length, type: "all" });
   if (students.classes.length > 0) {
     items.push(...students.classes.map((g) => ({
@@ -75,12 +88,12 @@ const treeItems = computed(() => {
       group: g
     })));
   }
-  if (students.studentGroups.length > 0) {
-    items.push(...students.studentGroups.map((g) => ({
+  if (students.subjectGroups.length > 0) {
+    items.push(...students.subjectGroups.map((g) => ({
       key: g.id,
       label: g.name,
       count: g.memberIds.length,
-      type: "group" as const,
+      type: "subject" as const,
       group: g
     })));
   }
@@ -120,6 +133,7 @@ function resetForm(student?: Student) {
     ? student.courses.map((course) => ({ ...course }))
     : [{ subject: "数学", currentLesson: 0, totalLessons: 12, progress: 0 }];
   form.materialsText = student?.materials.join("\n") ?? "";
+  form.groupIds = student ? students.groups.filter((g) => g.memberIds.includes(student.id)).map((g) => g.id) : [];
 }
 
 function openCreateStudent() {
@@ -159,9 +173,22 @@ function saveStudent() {
   };
   if (editingStudentId.value) {
     students.updateStudent(editingStudentId.value, draft);
+    // Update group memberships
+    const studentId = editingStudentId.value;
+    const prevGroupIds = students.groups.filter((g) => g.memberIds.includes(studentId)).map((g) => g.id);
+    for (const gid of prevGroupIds) {
+      if (!form.groupIds.includes(gid)) students.removeStudentFromGroup(gid, studentId);
+    }
+    for (const gid of form.groupIds) {
+      if (!prevGroupIds.includes(gid)) students.addStudentToGroup(gid, studentId);
+    }
     message.success("学生信息已更新");
   } else {
     students.createStudent(draft);
+    const newStudentId = students.activeStudentId;
+    for (const gid of form.groupIds) {
+      students.addStudentToGroup(gid, newStudentId);
+    }
     message.success("学生已新增");
   }
   showStudentModal.value = false;
@@ -209,12 +236,19 @@ function undoCourseCheckIn(studentId: string, subject: string) {
 }
 
 function removeStudent(studentId: string) {
-  const deleted = students.deleteStudent(studentId);
-  if (deleted) {
-    message.success("学生已删除");
-  } else {
-    message.warning("至少保留一个学生档案");
-  }
+  const student = students.items.find((s) => s.id === studentId);
+  if (!student) return;
+  confirmDelete({
+    content: `确定要删除学生「${student.name}」吗？该学生的所有课堂记录、提醒和课程也将一并删除。`,
+    onOk: () => {
+      const deleted = students.deleteStudent(studentId);
+      if (deleted) {
+        message.success("学生已删除");
+      } else {
+        message.warning("至少保留一个学生档案");
+      }
+    }
+  });
 }
 
 function openStudentDetail(studentId: string) {
@@ -230,27 +264,72 @@ function openMistakeBook(studentId: string) {
 }
 
 async function runAiAnalysis() {
+  const questionText = mistakeQuestionText.value.trim();
+  const imagePath = mistakeInputMode.value === "image" ? selectedMistakeImagePath.value : "";
+  if (mistakeInputMode.value === "text" && !questionText) {
+    message.warning("请输入题目内容");
+    return;
+  }
+  if (mistakeInputMode.value === "image" && !imagePath) {
+    message.warning("请先上传错题图片");
+    return;
+  }
+  isAnalyzingMistake.value = true;
+  streamingAnalysisText.value = "";
   try {
-    const result = await analyzeMistake({
+    const result = await analyzeMistakeStream({
       studentId: activeStudent.value.id,
-      subject: activeStudent.value.mistakeBook.subjects[0],
-      questionText: selectedMistakeImagePath.value ? "" : activeStudent.value.mistakeBook.summary,
+      subject: activeMistakeSubject.value || activeStudent.value.mistakeBook.subjects[0],
+      questionText,
       studentAnswer: "学生答案待补充",
-      imagePath: selectedMistakeImagePath.value || undefined
+      imagePath: imagePath || undefined
+    }, (_delta, fullContent) => {
+      streamingAnalysisText.value = fullContent;
     });
     students.updateMistakeAnalysis(activeStudent.value.id, {
       analysis: result.mistakeReason,
-      similarQuestions: result.similarQuestions.join("，"),
       knowledgeInsight: result.knowledgePoints.join("、"),
       aiPending: Math.max(activeStudent.value.mistakeBook.aiPending - 1, 0)
     });
     message.success("AI 已生成待教师确认的错题分析");
-  } catch {
-    message.error("AI 服务暂不可用，已保留当前错题本内容");
+  } catch (error) {
+    message.error(`AI 分析失败：${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    isAnalyzingMistake.value = false;
+  }
+}
+
+async function runGenerateSimilarQuestions() {
+  const questionText = mistakeQuestionText.value.trim();
+  if (!questionText) {
+    message.warning("请先输入题目内容");
+    return;
+  }
+  isGeneratingSimilarQuestions.value = true;
+  streamingSimilarQuestionsText.value = "";
+  try {
+    const questions = await generateSimilarQuestionsStream({
+      studentId: activeStudent.value.id,
+      subject: activeMistakeSubject.value || activeStudent.value.mistakeBook.subjects[0],
+      questionText,
+      studentAnswer: "学生答案待补充"
+    }, (_delta, fullContent) => {
+      streamingSimilarQuestionsText.value = fullContent;
+    });
+    students.updateMistakeAnalysis(activeStudent.value.id, {
+      similarQuestions: questions.join("，"),
+      aiPending: Math.max(activeStudent.value.mistakeBook.aiPending - 1, 0)
+    });
+    message.success("已生成类似题型建议");
+  } catch (error) {
+    message.error(`生成失败：${error instanceof Error ? error.message : String(error)}`);
+  } finally {
+    isGeneratingSimilarQuestions.value = false;
   }
 }
 
 async function chooseMistakeImageAndAnalyze() {
+  mistakeInputMode.value = "image";
   if (!isTauri()) {
     message.info("Web 预览环境请在桌面端上传错题图片");
     return;
@@ -264,6 +343,17 @@ async function chooseMistakeImageAndAnalyze() {
   await runAiAnalysis();
 }
 
+function switchMistakeInputMode(mode: "text" | "image") {
+  mistakeInputMode.value = mode;
+  if (mode === "text") {
+    selectedMistakeImagePath.value = "";
+  } else {
+    mistakeQuestionText.value = "";
+  }
+  streamingAnalysisText.value = "";
+  streamingSimilarQuestionsText.value = "";
+}
+
 // --- Group management ---
 
 function studentGroupsFor(studentId: string) {
@@ -274,12 +364,14 @@ function openGroupManage() {
   pageMode.value = "groupManage";
 }
 
-function openCreateGroup(type: "class" | "group") {
+function openCreateGroup(type: "class" | "subject") {
   editingGroupId.value = null;
   groupForm.name = "";
   groupForm.description = "";
   groupForm.type = type;
   groupForm.color = GROUP_COLORS[Math.floor(Math.random() * GROUP_COLORS.length)];
+  groupForm.subjects = [];
+  groupForm.memberIds = [];
   showGroupModal.value = true;
 }
 
@@ -289,6 +381,8 @@ function openEditGroup(group: StudentGroup) {
   groupForm.description = group.description;
   groupForm.type = group.type;
   groupForm.color = group.color;
+  groupForm.subjects = [...group.subjects];
+  groupForm.memberIds = [...group.memberIds];
   showGroupModal.value = true;
 }
 
@@ -302,8 +396,19 @@ function saveGroup() {
       name: groupForm.name.trim(),
       description: groupForm.description.trim(),
       type: groupForm.type,
-      color: groupForm.color
+      color: groupForm.color,
+      subjects: groupForm.type === "subject" ? groupForm.subjects : []
     });
+    // Sync members
+    const groupId = editingGroupId.value;
+    const group = students.groups.find((g) => g.id === groupId)!;
+    const prevIds = [...group.memberIds];
+    for (const sid of prevIds) {
+      if (!groupForm.memberIds.includes(sid)) students.removeStudentFromGroup(groupId, sid);
+    }
+    for (const sid of groupForm.memberIds) {
+      if (!prevIds.includes(sid)) students.addStudentToGroup(groupId, sid);
+    }
     message.success("分组已更新");
   } else {
     students.createGroup({
@@ -311,7 +416,8 @@ function saveGroup() {
       description: groupForm.description.trim(),
       type: groupForm.type,
       color: groupForm.color,
-      memberIds: []
+      subjects: groupForm.type === "subject" ? groupForm.subjects : [],
+      memberIds: groupForm.memberIds
     });
     message.success("分组已创建");
   }
@@ -321,12 +427,13 @@ function saveGroup() {
 function deleteGroup(groupId: string) {
   const group = students.groups.find((g) => g.id === groupId);
   if (!group) return;
-  if (group.memberIds.length > 0) {
-    message.warning("请先清空组成员再删除分组");
-    return;
-  }
-  students.deleteGroup(groupId);
-  message.success("分组已删除");
+  confirmDelete({
+    content: `确定要删除分组「${group.name}」吗？该分组下的学生不会受影响。`,
+    onOk: () => {
+      students.deleteGroup(groupId);
+      message.success("分组已删除");
+    }
+  });
 }
 
 function toggleStudentInGroup(groupId: string, studentId: string) {
@@ -404,13 +511,13 @@ function saveGroupMembers(groupId: string) {
             :class="{
               active: selectedGroupId === item.key,
               'group-type-class': item.type === 'class',
-              'group-type-group': item.type === 'group',
+              'group-type-subject': item.type === 'subject',
             }"
             :style="item.group && item.group.color ? { '--group-color': item.group.color } : {}"
             @click="selectedGroupId = item.key === 'all' ? null : (item.type === 'ungrouped' ? 'ungrouped' : item.key)"
           >
             <span
-              v-if="item.type === 'class' || item.type === 'group'"
+              v-if="item.type === 'class' || item.type === 'subject'"
               class="group-color-dot"
               :style="{ background: item.group?.color }"
             />
@@ -478,7 +585,7 @@ function saveGroupMembers(groupId: string) {
               <span>AI 待处理 {{ student.mistakeBook.aiPending }} 题</span>
             </div>
             <p>重点薄弱点：{{ student.mistakeBook.weakPoints.slice(0, 3).join("、") }}</p>
-            <n-button type="primary" strong secondary @click="openMistakeBook(student.id)">
+            <n-button type="primary" strong @click="openMistakeBook(student.id)">
               <template #icon>
                 <NotebookPen :size="16" />
               </template>
@@ -503,88 +610,31 @@ function saveGroupMembers(groupId: string) {
           </template>
           返回学生列表
         </n-button>
+        <n-space style="margin-left: auto;">
+          <n-button size="small" secondary @click="openCreateGroup('class')">
+            <template #icon><Plus :size="14" /></template>新建分组
+          </n-button>
+        </n-space>
       </div>
 
-      <div class="group-manage-content">
-        <section class="group-section">
-          <div class="group-section-header">
-            <h2>班级</h2>
-            <n-button size="small" secondary @click="openCreateGroup('class')">
-              <template #icon><Plus :size="14" /></template>新建班级
-            </n-button>
+      <div v-if="students.groups.length === 0" class="list-empty-state">暂无分组，点击上方按钮创建</div>
+      <div class="group-manage-grid">
+        <div v-for="group in students.groups" :key="group.id" class="group-manage-card">
+          <div class="group-manage-card-header">
+            <span class="group-color-dot" :style="{ background: group.color }" />
+            <strong>{{ group.name }}</strong>
+            <span class="group-type-badge">{{ group.type === "class" ? "班级" : "科目" }}</span>
+            <span class="group-count-badge">{{ group.memberIds.length }} 人</span>
           </div>
-          <div v-if="students.classes.length === 0" class="muted-text">暂无班级</div>
-          <div v-for="group in students.classes" :key="group.id" class="group-manage-card">
-            <div class="group-manage-card-header">
-              <span class="group-color-dot" :style="{ background: group.color }" />
-              <strong>{{ group.name }}</strong>
-              <span class="group-count-badge">{{ group.memberIds.length }} 人</span>
-            </div>
-            <p class="group-desc">{{ group.description || "暂无描述" }}</p>
-            <details class="group-member-list">
-              <summary>成员管理（{{ group.memberIds.length }} 人）</summary>
-              <div class="group-member-grid">
-                <label
-                  v-for="student in students.items"
-                  :key="student.id"
-                  class="group-member-checkbox"
-                  :class="{ checked: group.memberIds.includes(student.id) }"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="group.memberIds.includes(student.id)"
-                    @change="toggleStudentInGroup(group.id, student.id)"
-                  />
-                  {{ student.name }}
-                </label>
-              </div>
-            </details>
-            <div class="group-manage-actions">
-              <n-button size="tiny" secondary @click="openEditGroup(group)">编辑</n-button>
-              <n-button size="tiny" secondary type="error" :disabled="group.memberIds.length > 0" @click="deleteGroup(group.id)">删除</n-button>
-            </div>
+          <p class="group-desc">{{ group.description || "暂无描述" }}</p>
+          <div v-if="group.type === 'subject' && group.subjects.length > 0" class="group-tags" style="margin-top:4px;">
+            <span v-for="sub in group.subjects" :key="sub" class="group-tag" :style="{ '--tag-color': group.color }">{{ sub }}</span>
           </div>
-        </section>
-
-        <section class="group-section">
-          <div class="group-section-header">
-            <h2>小组</h2>
-            <n-button size="small" secondary @click="openCreateGroup('group')">
-              <template #icon><Plus :size="14" /></template>新建小组
-            </n-button>
+          <div class="group-manage-actions">
+            <n-button size="tiny" secondary @click="openEditGroup(group)">编辑</n-button>
+            <n-button size="tiny" secondary type="error" @click="deleteGroup(group.id)">删除</n-button>
           </div>
-          <div v-if="students.studentGroups.length === 0" class="muted-text">暂无小组</div>
-          <div v-for="group in students.studentGroups" :key="group.id" class="group-manage-card">
-            <div class="group-manage-card-header">
-              <span class="group-color-dot" :style="{ background: group.color }" />
-              <strong>{{ group.name }}</strong>
-              <span class="group-count-badge">{{ group.memberIds.length }} 人</span>
-            </div>
-            <p class="group-desc">{{ group.description || "暂无描述" }}</p>
-            <details class="group-member-list">
-              <summary>成员管理（{{ group.memberIds.length }} 人）</summary>
-              <div class="group-member-grid">
-                <label
-                  v-for="student in students.items"
-                  :key="student.id"
-                  class="group-member-checkbox"
-                  :class="{ checked: group.memberIds.includes(student.id) }"
-                >
-                  <input
-                    type="checkbox"
-                    :checked="group.memberIds.includes(student.id)"
-                    @change="toggleStudentInGroup(group.id, student.id)"
-                  />
-                  {{ student.name }}
-                </label>
-              </div>
-            </details>
-            <div class="group-manage-actions">
-              <n-button size="tiny" secondary @click="openEditGroup(group)">编辑</n-button>
-              <n-button size="tiny" secondary type="error" :disabled="group.memberIds.length > 0" @click="deleteGroup(group.id)">删除</n-button>
-            </div>
-          </div>
-        </section>
+        </div>
       </div>
     </section>
 
@@ -674,7 +724,17 @@ function saveGroupMembers(groupId: string) {
               <span>下一步：{{ activeStudentReport.nextActions.join("；") }}</span>
             </div>
           </section>
-          <n-button type="primary" secondary @click="pageMode = 'mistakeBook'">
+          <section class="student-follow-section">
+            <div class="panel-heading compact">
+              <UsersRound :size="17" />
+              <h3>所属分组</h3>
+            </div>
+            <div v-if="studentGroupsFor(activeStudent.id).length === 0" class="detail-empty">未加入任何分组</div>
+            <div v-for="g in studentGroupsFor(activeStudent.id)" :key="g.id" class="student-follow-item">
+              <span class="group-tag" :style="{ '--tag-color': g.color }">{{ g.type === "class" ? "班级" : "科目" }} · {{ g.name }}</span>
+            </div>
+          </section>
+          <n-button type="primary" @click="pageMode = 'mistakeBook'">
             <template #icon>
               <NotebookPen :size="16" />
             </template>
@@ -696,23 +756,76 @@ function saveGroupMembers(groupId: string) {
             <n-select v-model:value="activeMistakeSubject" :options="mistakeSubjectOptions" />
           </n-form-item>
 
-          <div class="ai-note">
-            <p><Sparkles :size="15" /> {{ activeMistakeSubjectLabel }}错误分析：{{ activeStudent.mistakeBook.analysis }}</p>
-            <p><FileText :size="15" /> 类似题型：{{ activeStudent.mistakeBook.similarQuestions }}</p>
-            <p>知识点分析：{{ activeStudent.mistakeBook.knowledgeInsight }}</p>
+          <div class="mistake-input-card">
+            <div class="mistake-input-tabs" aria-label="题目内容录入方式">
+              <button
+                type="button"
+                :class="{ active: mistakeInputMode === 'text' }"
+                @click="switchMistakeInputMode('text')"
+              >
+                手动输入
+              </button>
+              <button
+                type="button"
+                :class="{ active: mistakeInputMode === 'image' }"
+                @click="switchMistakeInputMode('image')"
+              >
+                上传图片改题
+              </button>
+            </div>
+            <n-form-item v-if="mistakeInputMode === 'text'" label="题目内容">
+              <n-input
+                v-model:value="mistakeQuestionText"
+                type="textarea"
+                placeholder="手动输入错题内容"
+                :autosize="{ minRows: 2, maxRows: 4 }"
+              />
+            </n-form-item>
+            <div v-else class="mistake-image-input">
+              <n-button type="primary" @click="chooseMistakeImageAndAnalyze" style="width:100%">
+                <template #icon>
+                  <FileImage :size="16" />
+                </template>
+                {{ selectedMistakeImagePath ? "重新选择错题图片" : "选择错题图片并分析" }}
+              </n-button>
+              <p class="muted-text">{{ selectedMistakeImagePath ? `已选择图片：${selectedMistakeImagePath}` : "支持 png、jpg、jpeg、webp" }}</p>
+            </div>
           </div>
 
-          <n-space>
-            <n-button type="primary" @click="chooseMistakeImageAndAnalyze">
-              <template #icon>
-                <FileImage :size="16" />
-              </template>
-              上传图片改题
-            </n-button>
-            <n-button secondary @click="runAiAnalysis">AI 分析</n-button>
-            <n-button secondary @click="runAiAnalysis">出类似题</n-button>
+          <n-space vertical>
+            <div class="mistake-action-section">
+              <n-button type="primary" :loading="isAnalyzingMistake" @click="runAiAnalysis" style="width:100%">
+                <Sparkles :size="15" />
+                AI 分析
+              </n-button>
+              <div class="ai-note mistake-analysis-output">
+                <template v-if="streamingAnalysisText || isAnalyzingMistake">
+                  <p>
+                    <Sparkles :size="15" />
+                    <span class="streaming-analysis-text">{{ readableStreamingAnalysis || "正在等待模型返回…" }}</span>
+                  </p>
+                </template>
+                <template v-else>
+                  <p><Sparkles :size="15" /> {{ activeMistakeSubjectLabel }}错误分析：{{ activeStudent.mistakeBook.analysis }}</p>
+                  <p>知识点分析：{{ activeStudent.mistakeBook.knowledgeInsight }}</p>
+                </template>
+              </div>
+            </div>
+            <div class="mistake-action-section">
+              <n-button type="primary" :loading="isGeneratingSimilarQuestions" @click="runGenerateSimilarQuestions" style="width:100%">
+                <FileText :size="15" />
+                出类似题
+              </n-button>
+              <div class="ai-note mistake-analysis-output similar-question-output">
+                <p>
+                  <FileText :size="15" />
+                  <span class="streaming-analysis-text">
+                    {{ readableStreamingSimilarQuestions || (isGeneratingSimilarQuestions ? "正在等待模型返回…" : `类似题型：${activeStudent.mistakeBook.similarQuestions}`) }}
+                  </span>
+                </p>
+              </div>
+            </div>
           </n-space>
-          <p v-if="selectedMistakeImagePath" class="muted-text">已选择错题图片：{{ selectedMistakeImagePath }}</p>
         </template>
       </section>
     </section>
@@ -763,6 +876,15 @@ function saveGroupMembers(groupId: string) {
             :autosize="{ minRows: 2, maxRows: 5 }"
           />
         </n-form-item>
+        <n-form-item v-if="students.groups.length > 0" label="所属分组">
+          <n-select
+            v-model:value="form.groupIds"
+            :options="students.groups.map((g) => ({ label: `${g.name}（${g.type === 'class' ? '班级' : '科目'}）`, value: g.id }))"
+            multiple
+            filterable
+            placeholder="选择所属分组"
+          />
+        </n-form-item>
       </n-form>
       <template #footer>
         <n-space justify="end">
@@ -783,8 +905,17 @@ function saveGroupMembers(groupId: string) {
         <n-form-item label="类型">
           <n-radio-group v-model:value="groupForm.type" :disabled="!!editingGroupId">
             <n-radio value="class">班级</n-radio>
-            <n-radio value="group">小组</n-radio>
+            <n-radio value="subject">科目分组</n-radio>
           </n-radio-group>
+        </n-form-item>
+        <n-form-item v-if="groupForm.type === 'subject'" label="关联科目（多选）">
+          <n-select
+            v-model:value="groupForm.subjects"
+            :options="courseSubjectOptions"
+            multiple
+            filterable
+            placeholder="选择关联科目"
+          />
         </n-form-item>
         <n-form-item label="颜色标签">
           <div class="color-picker-row">
@@ -798,6 +929,15 @@ function saveGroupMembers(groupId: string) {
             />
           </div>
         </n-form-item>
+        <n-form-item label="添加成员（多选）">
+          <n-select
+            v-model:value="groupForm.memberIds"
+            :options="students.items.map((s) => ({ label: s.name, value: s.id }))"
+            multiple
+            filterable
+            placeholder="选择学生"
+          />
+        </n-form-item>
       </n-form>
       <template #footer>
         <n-space justify="end">
@@ -806,5 +946,6 @@ function saveGroupMembers(groupId: string) {
         </n-space>
       </template>
     </n-modal>
+
   </div>
 </template>
