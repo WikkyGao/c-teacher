@@ -30,6 +30,7 @@ function sampleState(): CompletePersistedState {
     materialSources: [],
     classRecords: [],
     reminders: [],
+    groups: [],
     scheduledLessons: [
       {
         id: "lesson-a",
