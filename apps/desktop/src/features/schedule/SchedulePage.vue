@@ -81,7 +81,6 @@ const visibleLessons = computed(() => {
   return workspace.scheduledLessonCalendarItems.filter((lesson) => lesson.startsAt >= range.start && lesson.startsAt < range.end);
 });
 const titleText = computed(() => calendarTitle(calendarMode.value, calendarAnchor.value));
-<<<<<<< HEAD
 const dayHours = computed(() => hours.map((hour) => dayView.value.start + hour * 60 * 60 * 1000));
 
 const calendarItems = computed<CalendarLessonItem[]>(() => {
@@ -167,14 +166,6 @@ function lessonGroupColor(item: CalendarLessonItem): string {
   }
   return studentGroups[0]?.color ?? "";
 }
-=======
-const todayLessons = computed(() => {
-  const todayStart = startOfDay(Date.now());
-  const todayEnd = todayStart + 24 * 60 * 60 * 1000;
-  return workspace.scheduledLessonCalendarItems.filter((lesson) => lesson.startsAt >= todayStart && lesson.startsAt < todayEnd);
-});
-const dayHours = computed(() => hours.map((hour) => dayView.value.start + hour * 60 * 60 * 1000));
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 
 function nextHour() {
   const date = new Date();
@@ -286,7 +277,6 @@ function saveLesson() {
 }
 
 function removeLesson() {
-<<<<<<< HEAD
   const lessonId = editingLessonId.value;
   if (!lessonId) return;
   confirmDelete({
@@ -302,11 +292,6 @@ function removeLesson() {
 
 function goBack() {
   pageMode.value = "calendar";
-=======
-  if (!editingLessonId.value) return;
-  const deleted = workspace.deleteScheduledLesson(editingLessonId.value);
-  message[deleted ? "success" : "warning"](deleted ? "课程已删除" : "未找到课程");
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   resetForm();
 }
 
@@ -435,7 +420,6 @@ watch(calendarMode, () => {
       <aside class="side-panel schedule-form-panel">
         <h2>{{ editingLessonId ? "编辑课程" : "新建课程" }}</h2>
         <n-form label-placement="top" :show-feedback="false">
-<<<<<<< HEAD
           <n-form-item label="课程归属">
             <n-radio-group v-model:value="assignMode" :disabled="!!editingLessonId">
               <n-radio value="student">单个学生</n-radio>
@@ -452,12 +436,6 @@ watch(calendarMode, () => {
             <n-select v-model:value="form.subject" :options="subjectOptions" filterable tag />
           </n-form-item>
           <n-form-item v-else-if="!selectedGroupHasSubjects" label="科目">
-=======
-          <n-form-item label="学生">
-            <n-select v-model:value="form.studentId" :options="studentOptions" />
-          </n-form-item>
-          <n-form-item label="科目">
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
             <n-select v-model:value="form.subject" :options="subjectOptions" filterable tag />
           </n-form-item>
           <n-form-item label="开始时间">
@@ -472,10 +450,7 @@ watch(calendarMode, () => {
           <n-form-item label="备注">
             <n-input v-model:value="form.note" type="textarea" placeholder="资料、作业或课前提醒" :autosize="{ minRows: 1, maxRows: 2 }" />
           </n-form-item>
-<<<<<<< HEAD
           <p v-if="assignMode === 'group'" class="muted-text">选择科目分组后，科目自动使用分组关联科目，课程将自动为该分组内的所有学生创建。</p>
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
         </n-form>
         <n-space>
           <n-button type="primary" @click="saveLesson">{{ editingLessonId ? "保存课程" : "创建课程" }}</n-button>

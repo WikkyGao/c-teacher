@@ -704,7 +704,6 @@ svg {
 .student-management-page {
   display: grid;
   gap: 14px;
-<<<<<<< HEAD
   min-height: 0;
 }
 
@@ -933,8 +932,6 @@ svg {
 
 .color-swatch:hover {
   border-color: var(--muted);
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 }
 
 .student-detail-page {
@@ -2409,7 +2406,6 @@ svg {
   color: var(--muted-strong);
 }
 
-<<<<<<< HEAD
 .schedule-lesson-class-dot {
   position: absolute;
   top: 3px;
@@ -2457,14 +2453,6 @@ svg {
 }
 
 .settings-grid {
-=======
-.settings-heading {
-  justify-content: space-between;
-  color: var(--text);
-}
-
-.settings-heading div {
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
@@ -3597,12 +3585,7 @@ svg {
   }
 
   .dashboard-grid,
-<<<<<<< HEAD
   .settings-grid,
-=======
-  .schedule-layout,
-  .settings-layout,
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   .student-grid,
   .inline-form,
   .structured-course-row,
@@ -3610,7 +3593,6 @@ svg {
     grid-template-columns: 1fr;
   }
 
-<<<<<<< HEAD
   .student-management-page {
     grid-template-columns: 1fr;
   }
@@ -3619,8 +3601,6 @@ svg {
     grid-template-columns: 1fr;
   }
 
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   .student-management-layout {
     grid-template-columns: 1fr;
   }

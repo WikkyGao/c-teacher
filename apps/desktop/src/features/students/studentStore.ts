@@ -1305,7 +1305,6 @@ function applyPersistedState(state: PersistedState) {
     updateTeacherProfile,
     reloadWorkspace,
     updateMistakeAnalysis,
-<<<<<<< HEAD
     applyPersistedState,
     groups,
     classes,
@@ -1318,8 +1317,5 @@ function applyPersistedState(state: PersistedState) {
     addStudentToGroup,
     removeStudentFromGroup,
     moveStudentToGroup
-=======
-    applyPersistedState
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   };
 });

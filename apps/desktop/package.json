@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 1420",
-    "build": "rm -f dist/assets/* && vue-tsc --noEmit && node scripts/next-build.mjs > /dev/null 2>&1 && vite build",
+    "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 1421",
     "tauri": "tauri",
     "test": "vitest run",

@@ -2,11 +2,13 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DMG_DIR="$ROOT_DIR/apps/desktop/src-tauri/target/release/bundle/dmg"
+DESKTOP_DIR="$ROOT_DIR/apps/desktop"
+DMG_DIR="$DESKTOP_DIR/src-tauri/target/release/bundle/dmg"
 OUTPUT_DIR="$ROOT_DIR/outputs"
 
 cd "$ROOT_DIR"
 
+# --- prerequisites ---
 if ! command -v npm >/dev/null 2>&1; then
   echo "Error: npm is required to build the DMG." >&2
   exit 1
@@ -26,20 +28,24 @@ if [ ! -d "$ROOT_DIR/node_modules" ]; then
   npm install
 fi
 
+# --- build ---
 echo "Building C-teacher DMG..."
-rm -f "$DMG_DIR"/C-teacher_*.dmg "$DMG_DIR"/rw.*.C-teacher_*.dmg
-npm run build:dmg
+cd "$DESKTOP_DIR"
+npx tauri build --bundles dmg
+cd "$ROOT_DIR"
 
-DMG_PATH="$(find "$DMG_DIR" -maxdepth 1 -type f -name 'C-teacher_*.dmg' -print0 | xargs -0 ls -t | head -n 1)"
+# --- locate DMG ---
+DMG_PATH="$(find "$DMG_DIR" -maxdepth 1 -type f -name 'C-teacher_*.dmg' 2>/dev/null | sort -r | head -n 1)"
 if [ -z "$DMG_PATH" ] || [ ! -f "$DMG_PATH" ]; then
-  echo "Error: DMG was not created in expected directory: $DMG_DIR" >&2
+  echo "Error: DMG was not created in: $DMG_DIR" >&2
   exit 1
 fi
 
+# --- copy to outputs ---
 mkdir -p "$OUTPUT_DIR"
-ROOT_DMG_PATH="$OUTPUT_DIR/$(basename "$DMG_PATH")"
-cp "$DMG_PATH" "$ROOT_DMG_PATH"
+cp "$DMG_PATH" "$OUTPUT_DIR/"
 
+echo ""
 echo "DMG ready:"
-echo "$DMG_PATH"
-echo "$ROOT_DMG_PATH"
+echo "  $DMG_PATH"
+echo "  $OUTPUT_DIR/$(basename "$DMG_PATH")"

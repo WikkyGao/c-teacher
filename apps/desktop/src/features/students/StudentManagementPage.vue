@@ -8,14 +8,9 @@ import { computed, reactive, ref, watch } from "vue";
 import { analyzeMistakeStream, generateSimilarQuestionsStream } from "../mistake-book/mistakeApi";
 import { studentAvatarSourceFor } from "../../shared/assets/studentAvatars";
 import { buildMistakeBookSubjectOptions, mistakeBookSubjectCountText } from "./mistakeBookPanel";
-<<<<<<< HEAD
 import type { Course, Student, StudentGroup } from "./studentStore";
 import { GROUP_COLORS, K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
-=======
-import type { Course, Student } from "./studentStore";
-import { K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 
 const students = useStudentStore();
 const props = defineProps<{
@@ -27,7 +22,6 @@ const { confirmDelete } = useConfirmDelete();
 const showStudentModal = ref(false);
 const editingStudentId = ref<string | null>(null);
 const selectedMistakeImagePath = ref("");
-<<<<<<< HEAD
 const mistakeQuestionText = ref("");
 const mistakeInputMode = ref<"text" | "image">("text");
 const streamingAnalysisText = ref("");
@@ -47,10 +41,6 @@ const groupForm = reactive({
   subjects: [] as string[],
   memberIds: [] as string[]
 });
-=======
-const pageMode = ref<"list" | "detail" | "mistakeBook">("list");
-const activeMistakeSubject = ref("");
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 const form = reactive({
   name: "",
   gender: "female" as Student["gender"],
@@ -79,7 +69,6 @@ const genderOptions = [
   { label: "女生", value: "female" },
   { label: "男生", value: "male" }
 ];
-<<<<<<< HEAD
 const filteredStudents = computed(() => {
   if (!selectedGroupId.value) return students.items;
   const group = students.groups.find((g) => g.id === selectedGroupId.value);
@@ -113,8 +102,6 @@ const treeItems = computed(() => {
   }
   return items;
 });
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 
 watch(
   () => props.initialMode,
@@ -354,7 +341,6 @@ async function chooseMistakeImageAndAnalyze() {
   selectedMistakeImagePath.value = selected;
   await runAiAnalysis();
 }
-<<<<<<< HEAD
 
 function switchMistakeInputMode(mode: "text" | "image") {
   mistakeInputMode.value = mode;
@@ -485,8 +471,6 @@ function saveGroupMembers(groupId: string) {
   group.memberIds = [...draft];
   message.success("成员已更新");
 }
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 </script>
 
 <template>
@@ -505,7 +489,6 @@ function saveGroupMembers(groupId: string) {
     </div>
 
     <section v-if="pageMode === 'list'" class="student-management-page">
-<<<<<<< HEAD
       <aside class="group-sidebar">
         <div class="group-sidebar-header">
           <UsersRound :size="16" />
@@ -537,8 +520,6 @@ function saveGroupMembers(groupId: string) {
         </nav>
       </aside>
 
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
       <section class="student-grid">
         <article v-for="student in students.items" :key="student.id" class="student-card">
           <header>
@@ -602,7 +583,6 @@ function saveGroupMembers(groupId: string) {
       </section>
     </section>
 
-<<<<<<< HEAD
     <section v-else-if="pageMode === 'groupManage'" class="group-manage-page">
       <div class="student-page-toolbar">
         <n-button secondary @click="pageMode = 'list'; selectedGroupId = null">
@@ -639,8 +619,6 @@ function saveGroupMembers(groupId: string) {
       </div>
     </section>
 
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
     <section v-else class="student-detail-page">
       <div class="student-page-toolbar">
         <n-button secondary @click="pageMode = 'list'">
@@ -888,7 +866,6 @@ function saveGroupMembers(groupId: string) {
         </n-space>
       </template>
     </n-modal>
-<<<<<<< HEAD
 
     <n-modal v-model:show="showGroupModal" preset="card" :title="groupModalTitle" class="form-modal">
       <n-form label-placement="top">
@@ -943,7 +920,6 @@ function saveGroupMembers(groupId: string) {
       </template>
     </n-modal>
 
-=======
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
+
   </div>
 </template>
