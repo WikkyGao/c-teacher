@@ -646,15 +646,15 @@ svg {
   margin: 0 auto;
 }
 
+.workspace > div:has(.schedule-layout) {
+  height: 100%;
+  width: min(100%, 1480px);
+}
+
 .schedule-page {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
-}
-
-.schedule-page:has(.schedule-calendar) {
-  height: 100%;
-  width: min(100%, 1480px);
 }
 
 .page-top {
@@ -703,8 +703,8 @@ svg {
 
 .student-management-page {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
   gap: 14px;
+<<<<<<< HEAD
   min-height: 0;
 }
 
@@ -933,6 +933,8 @@ svg {
 
 .color-swatch:hover {
   border-color: var(--muted);
+=======
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 }
 
 .student-detail-page {
@@ -2070,6 +2072,20 @@ svg {
   box-shadow: 0 1px 2px color-mix(in srgb, var(--primary) 14%, transparent);
 }
 
+.schedule-layout,
+.settings-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: start;
+}
+
+.schedule-layout {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .schedule-calendar {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -2147,13 +2163,11 @@ svg {
   gap: 4px;
   min-height: 58px;
   padding: 9px;
-  border: 1px solid color-mix(in srgb, var(--lesson-accent, var(--primary)) 24%, var(--border));
-  border-left: 3px solid var(--lesson-accent, var(--primary));
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
   border-radius: var(--radius-sm);
   color: var(--text);
   background: var(--panel-solid);
   text-align: left;
-  position: relative;
 }
 
 .schedule-week-lesson strong {
@@ -2250,7 +2264,7 @@ svg {
   min-height: var(--lesson-height);
   padding: 7px 8px;
   border: 0;
-  border-left: 4px solid var(--lesson-accent, var(--primary));
+  border-left: 4px solid var(--primary);
   border-radius: 7px;
   color: var(--text);
   background: var(--primary-soft);
@@ -2271,16 +2285,31 @@ svg {
   line-height: 1.3;
 }
 
-.schedule-form-page {
-  max-width: 520px;
+.schedule-today {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
-.schedule-form-page .n-form-item {
+.schedule-form-panel {
+  max-height: 100%;
+  overflow: auto;
+}
+
+.schedule-form-panel .n-form-item {
   margin-bottom: 10px;
 }
 
-.schedule-form-page .n-input--textarea {
+.schedule-form-panel .n-input--textarea {
   --n-height: 56px;
+}
+
+.schedule-today button {
+  width: 100%;
+  color: inherit;
+  text-align: left;
 }
 
 .schedule-month-head,
@@ -2360,10 +2389,9 @@ svg {
   display: grid;
   gap: 2px;
   padding: 6px 7px;
-  border-left: 3px solid var(--lesson-accent, var(--primary));
+  border-left: 3px solid var(--primary);
   border-radius: var(--radius-sm);
   background: var(--primary-soft);
-  position: relative;
 }
 
 .schedule-month-lesson strong,
@@ -2381,6 +2409,7 @@ svg {
   color: var(--muted-strong);
 }
 
+<<<<<<< HEAD
 .schedule-lesson-class-dot {
   position: absolute;
   top: 3px;
@@ -2428,6 +2457,14 @@ svg {
 }
 
 .settings-grid {
+=======
+.settings-heading {
+  justify-content: space-between;
+  color: var(--text);
+}
+
+.settings-heading div {
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
@@ -3560,7 +3597,12 @@ svg {
   }
 
   .dashboard-grid,
+<<<<<<< HEAD
   .settings-grid,
+=======
+  .schedule-layout,
+  .settings-layout,
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   .student-grid,
   .inline-form,
   .structured-course-row,
@@ -3568,6 +3610,7 @@ svg {
     grid-template-columns: 1fr;
   }
 
+<<<<<<< HEAD
   .student-management-page {
     grid-template-columns: 1fr;
   }
@@ -3576,6 +3619,8 @@ svg {
     grid-template-columns: 1fr;
   }
 
+=======
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   .student-management-layout {
     grid-template-columns: 1fr;
   }

@@ -60,8 +60,7 @@ function sampleState(): CompletePersistedState {
         title: "数学老师",
         bio: "本机工作台"
       }
-    },
-    groups: []
+    }
   };
 }
 
@@ -92,8 +91,7 @@ describe("workspaceBackup", () => {
       classRecords: state.classRecords,
       reminders: state.reminders,
       scheduledLessons: state.scheduledLessons,
-      appSettings: state.appSettings,
-      groups: state.groups
+      appSettings: state.appSettings
     };
 
     expect(workspaceStateFromStore(storeLike)).toEqual(state);

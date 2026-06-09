@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Settings2, Sparkles, UserRound, UsersRound } from "lucide-vue-next";
+import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Sparkles, UserRound } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { analyzeMistakeStream, generateSimilarQuestionsStream } from "../mistake-book/mistakeApi";
 import { studentAvatarSourceFor } from "../../shared/assets/studentAvatars";
 import { buildMistakeBookSubjectOptions, mistakeBookSubjectCountText } from "./mistakeBookPanel";
+<<<<<<< HEAD
 import type { Course, Student, StudentGroup } from "./studentStore";
 import { GROUP_COLORS, K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
+=======
+import type { Course, Student } from "./studentStore";
+import { K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 
 const students = useStudentStore();
 const props = defineProps<{
@@ -22,6 +27,7 @@ const { confirmDelete } = useConfirmDelete();
 const showStudentModal = ref(false);
 const editingStudentId = ref<string | null>(null);
 const selectedMistakeImagePath = ref("");
+<<<<<<< HEAD
 const mistakeQuestionText = ref("");
 const mistakeInputMode = ref<"text" | "image">("text");
 const streamingAnalysisText = ref("");
@@ -41,6 +47,10 @@ const groupForm = reactive({
   subjects: [] as string[],
   memberIds: [] as string[]
 });
+=======
+const pageMode = ref<"list" | "detail" | "mistakeBook">("list");
+const activeMistakeSubject = ref("");
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 const form = reactive({
   name: "",
   gender: "female" as Student["gender"],
@@ -51,7 +61,6 @@ const form = reactive({
   groupIds: [] as string[]
 });
 const modalTitle = computed(() => (editingStudentId.value ? "编辑学生" : "新增学生"));
-const groupModalTitle = computed(() => (editingGroupId.value ? "编辑分组" : "新建分组"));
 const mistakeSubjectOptions = computed(() => buildMistakeBookSubjectOptions(activeStudent.value.mistakeBook.subjects));
 const activeMistakeSubjectLabel = computed(() => activeMistakeSubject.value || activeStudent.value.mistakeBook.subjects[0]);
 const mistakeSubjectCount = computed(() => mistakeBookSubjectCountText(activeStudent.value.mistakeBook.subjects));
@@ -70,6 +79,7 @@ const genderOptions = [
   { label: "女生", value: "female" },
   { label: "男生", value: "male" }
 ];
+<<<<<<< HEAD
 const filteredStudents = computed(() => {
   if (!selectedGroupId.value) return students.items;
   const group = students.groups.find((g) => g.id === selectedGroupId.value);
@@ -103,6 +113,8 @@ const treeItems = computed(() => {
   }
   return items;
 });
+=======
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 
 watch(
   () => props.initialMode,
@@ -342,6 +354,7 @@ async function chooseMistakeImageAndAnalyze() {
   selectedMistakeImagePath.value = selected;
   await runAiAnalysis();
 }
+<<<<<<< HEAD
 
 function switchMistakeInputMode(mode: "text" | "image") {
   mistakeInputMode.value = mode;
@@ -472,6 +485,8 @@ function saveGroupMembers(groupId: string) {
   group.memberIds = [...draft];
   message.success("成员已更新");
 }
+=======
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
 </script>
 
 <template>
@@ -481,23 +496,16 @@ function saveGroupMembers(groupId: string) {
         <h1 class="page-title">学生管理</h1>
         <p class="page-subtitle">卡片化管理学生、多学科课程、错题本和 AI 分析入口</p>
       </div>
-      <n-space align="center">
-        <n-button secondary @click="openGroupManage">
-          <template #icon>
-            <Settings2 :size="16" />
-          </template>
-          管理分组
-        </n-button>
-        <n-button type="primary" @click="openCreateStudent">
-          <template #icon>
-            <Plus :size="16" />
-          </template>
-          新增学生
-        </n-button>
-      </n-space>
+      <n-button type="primary" @click="openCreateStudent">
+        <template #icon>
+          <Plus :size="16" />
+        </template>
+        新增学生
+      </n-button>
     </div>
 
     <section v-if="pageMode === 'list'" class="student-management-page">
+<<<<<<< HEAD
       <aside class="group-sidebar">
         <div class="group-sidebar-header">
           <UsersRound :size="16" />
@@ -529,9 +537,10 @@ function saveGroupMembers(groupId: string) {
         </nav>
       </aside>
 
+=======
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
       <section class="student-grid">
-        <div v-if="filteredStudents.length === 0" class="list-empty-state">该分组暂无学生</div>
-        <article v-for="student in filteredStudents" :key="student.id" class="student-card">
+        <article v-for="student in students.items" :key="student.id" class="student-card">
           <header>
             <img class="student-card-avatar" :src="studentAvatar(student)" :alt="`${student.name}头像`" />
             <div>
@@ -539,15 +548,6 @@ function saveGroupMembers(groupId: string) {
               <p>{{ student.gender === "male" ? "男生" : "女生" }} · 目标：{{ student.goal }} · 风格：{{ student.style }}</p>
             </div>
           </header>
-
-          <div v-if="studentGroupsFor(student.id).length > 0" class="group-tags">
-            <span
-              v-for="sg in studentGroupsFor(student.id)"
-              :key="sg.id"
-              class="group-tag"
-              :style="{ '--tag-color': sg.color }"
-            >{{ sg.name }}</span>
-          </div>
 
           <div class="course-list">
             <div v-for="course in student.courses" :key="course.subject" class="course-row">
@@ -602,6 +602,7 @@ function saveGroupMembers(groupId: string) {
       </section>
     </section>
 
+<<<<<<< HEAD
     <section v-else-if="pageMode === 'groupManage'" class="group-manage-page">
       <div class="student-page-toolbar">
         <n-button secondary @click="pageMode = 'list'; selectedGroupId = null">
@@ -638,9 +639,11 @@ function saveGroupMembers(groupId: string) {
       </div>
     </section>
 
+=======
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
     <section v-else class="student-detail-page">
       <div class="student-page-toolbar">
-        <n-button secondary @click="pageMode = 'list'; selectedGroupId = null">
+        <n-button secondary @click="pageMode = 'list'">
           <template #icon>
             <ArrowLeft :size="16" />
           </template>
@@ -653,14 +656,6 @@ function saveGroupMembers(groupId: string) {
           <div class="panel-heading">
             <UserRound :size="18" />
             <h2>{{ activeStudent.name }} · 学生详情</h2>
-          </div>
-          <div v-if="studentGroupsFor(activeStudent.id).length > 0" class="group-tags">
-            <span
-              v-for="sg in studentGroupsFor(activeStudent.id)"
-              :key="sg.id"
-              class="group-tag"
-              :style="{ '--tag-color': sg.color }"
-            >{{ sg.name }}</span>
           </div>
           <div class="detail-list">
             <div>
@@ -893,6 +888,7 @@ function saveGroupMembers(groupId: string) {
         </n-space>
       </template>
     </n-modal>
+<<<<<<< HEAD
 
     <n-modal v-model:show="showGroupModal" preset="card" :title="groupModalTitle" class="form-modal">
       <n-form label-placement="top">
@@ -947,5 +943,7 @@ function saveGroupMembers(groupId: string) {
       </template>
     </n-modal>
 
+=======
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
   </div>
 </template>

@@ -4,10 +4,12 @@
       "Bash(pencil version *)",
       "Bash(pencil status *)",
       "Bash(npm list *)",
+<<<<<<< HEAD
       "Bash(python3 -c ' *)",
       "Bash(npx vue-tsc *)",
       "Bash(python3 *)",
       "Bash(npx vitest *)",
+<<<<<<< HEAD
       "Bash(grep -oP '>[^<]{2,30}<')",
       "Bash(grep *)",
       "Bash(npx vite *)",
@@ -18,6 +20,17 @@
       "WebFetch(domain:openrouter.ai)",
       "WebSearch",
       "WebFetch(domain:openrouter.hconeai.com)"
+=======
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(cargo --version)",
+      "Bash(rustc --version)",
+      "Bash(curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs)",
+      "Bash(sh -s -- -y)"
+=======
+      "Bash(python3 -c ' *)"
+>>>>>>> parent of 7f2133e0 (新增分组功能)
+>>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
     ]
   }
 }
