@@ -612,7 +612,8 @@ describe("studentStore", () => {
           id: "model-test",
           name: "model-a",
           purpose: "错题分析",
-          isDefault: true
+          isDefault: true,
+          supportsVision: false
         }
       ]
     });
@@ -631,7 +632,8 @@ describe("studentStore", () => {
             id: "model-edited",
             name: "model-b",
             purpose: "报告生成",
-            isDefault: true
+            isDefault: true,
+            supportsVision: false
           }
         ]
       })

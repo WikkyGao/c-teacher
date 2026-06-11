@@ -1,10 +1,26 @@
 import type { AiApiFormat, AiProviderConfig } from "../students/studentStore";
 import { useStudentStore } from "../students/studentStore";
 
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+
+async function httpFetch(url: string, init: RequestInit): Promise<Response> {
+  try {
+    return await tauriFetch(url, init);
+  } catch {
+    return globalThis.fetch(url, init);
+  }
+}
+
 export type ChatMessage = {
   role: "system" | "user" | "assistant";
-  content: string;
+  content: ChatMessageContent;
 };
+
+export type ChatMessageContent = string | ChatMessageContentPart[];
+
+export type ChatMessageContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; imageUrl: string };
 
 export type ChatCompletionOptions = {
   model?: string;
@@ -28,6 +44,7 @@ export async function chatCompletion(
 ): Promise<ChatCompletionResponse> {
   switch (provider.apiFormat) {
     case "openai-chat":
+    case "nvidia":
       return chatOpenAiChat(provider, messages, options);
     case "openai-responses":
       return chatOpenAiResponses(provider, messages, options);
@@ -50,12 +67,15 @@ async function chatOpenAiChat(
   const baseUrl = normalizeBaseUrl(provider.baseUrl);
   const model = resolveModel(provider, options.model);
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
+  const response = await httpFetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: authHeaders(provider),
     body: JSON.stringify({
       model,
-      messages,
+      messages: messages.map((message) => ({
+        ...message,
+        content: toOpenAiChatContent(message.content)
+      })),
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 2048
     })
@@ -84,14 +104,14 @@ async function chatOpenAiResponses(
   const baseUrl = normalizeBaseUrl(provider.baseUrl);
   const model = resolveModel(provider, options.model);
 
-  const response = await fetch(`${baseUrl}/responses`, {
+  const response = await httpFetch(`${baseUrl}/responses`, {
     method: "POST",
     headers: authHeaders(provider),
     body: JSON.stringify({
       model,
       input: messages.map((m) => ({
         role: m.role,
-        content: m.content
+        content: toOpenAiResponsesContent(m.content)
       })),
       temperature: options.temperature ?? 0.7,
       max_output_tokens: options.maxTokens ?? 2048
@@ -122,10 +142,10 @@ async function chatAnthropic(
   const model = resolveModel(provider, options.model);
 
   // Anthropic 用 "user" / "assistant"，没有 "system" role，转换为 user 消息前缀
-  const systemMsg = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n");
+  const systemMsg = messages.filter((m) => m.role === "system").map((m) => contentText(m.content)).join("\n");
   const chatMessages = messages
     .filter((m) => m.role !== "system")
-    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    .map((m) => ({ role: m.role as "user" | "assistant", content: toAnthropicContent(m.content) }));
 
   const body: Record<string, unknown> = {
     model,
@@ -138,7 +158,7 @@ async function chatAnthropic(
     body.system = systemMsg;
   }
 
-  const response = await fetch(`${baseUrl}/messages`, {
+  const response = await httpFetch(`${baseUrl}/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -169,6 +189,7 @@ export async function* chatCompletionStream(
 ): AsyncGenerator<string> {
   switch (provider.apiFormat) {
     case "openai-chat":
+    case "nvidia":
       yield* streamOpenAiChat(provider, messages, options);
       return;
     case "openai-responses":
@@ -190,12 +211,15 @@ async function* streamOpenAiChat(
   const baseUrl = normalizeBaseUrl(provider.baseUrl);
   const model = resolveModel(provider, options.model);
 
-  const response = await fetch(`${baseUrl}/chat/completions`, {
+  const response = await httpFetch(`${baseUrl}/chat/completions`, {
     method: "POST",
     headers: authHeaders(provider),
     body: JSON.stringify({
       model,
-      messages,
+      messages: messages.map((message) => ({
+        ...message,
+        content: toOpenAiChatContent(message.content)
+      })),
       temperature: options.temperature ?? 0.7,
       max_tokens: options.maxTokens ?? 2048,
       stream: true
@@ -214,12 +238,12 @@ async function* streamOpenAiResponses(
   const baseUrl = normalizeBaseUrl(provider.baseUrl);
   const model = resolveModel(provider, options.model);
 
-  const response = await fetch(`${baseUrl}/responses`, {
+  const response = await httpFetch(`${baseUrl}/responses`, {
     method: "POST",
     headers: authHeaders(provider),
     body: JSON.stringify({
       model,
-      input: messages.map((m) => ({ role: m.role, content: m.content })),
+      input: messages.map((m) => ({ role: m.role, content: toOpenAiResponsesContent(m.content) })),
       temperature: options.temperature ?? 0.7,
       max_output_tokens: options.maxTokens ?? 2048,
       stream: true
@@ -244,10 +268,10 @@ async function* streamAnthropic(
   const baseUrl = normalizeBaseUrl(provider.baseUrl);
   const model = resolveModel(provider, options.model);
 
-  const systemMsg = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n");
+  const systemMsg = messages.filter((m) => m.role === "system").map((m) => contentText(m.content)).join("\n");
   const chatMessages = messages
     .filter((m) => m.role !== "system")
-    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+    .map((m) => ({ role: m.role as "user" | "assistant", content: toAnthropicContent(m.content) }));
 
   const body: Record<string, unknown> = {
     model,
@@ -259,7 +283,7 @@ async function* streamAnthropic(
 
   if (systemMsg) body.system = systemMsg;
 
-  const response = await fetch(`${baseUrl}/messages`, {
+  const response = await httpFetch(`${baseUrl}/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -315,6 +339,7 @@ async function* streamAnthropic(
 export async function testProviderConnection(provider: AiProviderConfig): Promise<boolean> {
   const rootUrl = normalizeBaseUrl(provider.baseUrl);
   const model = provider.models.find((m) => m.isDefault)?.name ?? provider.models[0]?.name;
+  if (!model) return false;
   const messages = [{ role: "user" as const, content: "hi" }];
   const timeout = AbortSignal.timeout(10000);
 
@@ -322,7 +347,7 @@ export async function testProviderConnection(provider: AiProviderConfig): Promis
     const { apiFormat, apiKey } = provider;
 
     if (apiFormat === "anthropic-messages") {
-      const resp = await fetch(`${rootUrl}/messages`, {
+      const resp = await httpFetch(`${rootUrl}/messages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -330,7 +355,7 @@ export async function testProviderConnection(provider: AiProviderConfig): Promis
           "anthropic-version": "2023-06-01"
         },
         body: JSON.stringify({
-          model: model || "claude-sonnet-4-20250514",
+          model,
           max_tokens: 10,
           messages
         }),
@@ -340,14 +365,14 @@ export async function testProviderConnection(provider: AiProviderConfig): Promis
     }
 
     if (apiFormat === "openai-responses") {
-      const resp = await fetch(`${rootUrl}/responses`, {
+      const resp = await httpFetch(`${rootUrl}/responses`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: model || "gpt-4o-mini",
+          model,
           input: messages,
           max_output_tokens: 10
         }),
@@ -356,15 +381,15 @@ export async function testProviderConnection(provider: AiProviderConfig): Promis
       return resp.ok;
     }
 
-    // 默认: openai-chat
-    const resp = await fetch(`${rootUrl}/chat/completions`, {
+    // openai-chat / nvidia / default
+    const resp = await httpFetch(`${rootUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: model || "gpt-4o-mini",
+        model,
         messages,
         max_tokens: 10
       }),
@@ -412,6 +437,53 @@ function authHeaders(provider: AiProviderConfig): Record<string, string> {
     headers.Authorization = `Bearer ${provider.apiKey}`;
   }
   return headers;
+}
+
+function contentText(content: ChatMessageContent): string {
+  if (typeof content === "string") return content;
+  return content
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("\n");
+}
+
+function toOpenAiChatContent(content: ChatMessageContent) {
+  if (typeof content === "string") return content;
+  return content.map((part) => {
+    if (part.type === "image_url") {
+      return { type: "image_url", image_url: { url: part.imageUrl } };
+    }
+    return part;
+  });
+}
+
+function toOpenAiResponsesContent(content: ChatMessageContent) {
+  if (typeof content === "string") return content;
+  return content.map((part) => {
+    if (part.type === "image_url") {
+      return { type: "input_image", image_url: part.imageUrl };
+    }
+    return { type: "input_text", text: part.text };
+  });
+}
+
+function toAnthropicContent(content: ChatMessageContent) {
+  if (typeof content === "string") return content;
+  return content.map((part) => {
+    if (part.type === "image_url") {
+      const match = part.imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) return { type: "text", text: "[图片数据格式无效]" };
+      return {
+        type: "image",
+        source: {
+          type: "base64",
+          media_type: match[1],
+          data: match[2]
+        }
+      };
+    }
+    return part;
+  });
 }
 
 async function apiError(response: Response): Promise<Error> {

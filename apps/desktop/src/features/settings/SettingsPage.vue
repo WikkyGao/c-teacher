@@ -7,8 +7,8 @@ import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "../backup/workspaceBackup";
 import DiagnosticsPage from "../diagnostics/DiagnosticsPage.vue";
-import type { AiModelConfig, AiProviderConfig, AiProviderDraft, AppThemeKey } from "../students/studentStore";
-import { appThemes, useStudentStore } from "../students/studentStore";
+import type { AiApiFormat, AiModelConfig, AiProviderConfig, AiProviderDraft, AppThemeKey } from "../students/studentStore";
+import { appThemes, DEFAULT_MISTAKE_ANALYSIS_PROMPT, DEFAULT_SIMILAR_QUESTIONS_PROMPT, useStudentStore } from "../students/studentStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 import { testProviderConnection } from "../ai/aiClient";
 import { fetchProviderModels, mergeFetchedModels } from "./aiModelCatalog";
@@ -28,6 +28,38 @@ const { confirmDelete } = useConfirmDelete();
 const settingsPanel = ref<"main" | "diagnostics">("main");
 const isBackingUp = ref(false);
 const isRestoring = ref(false);
+const isSavingPrompt = ref(false);
+const isSavingSimilarPrompt = ref(false);
+
+// Prompt editors
+const mistakePrompt = ref(workspace.appSettings.mistakeAnalysisPrompt);
+const similarQuestionsPromptRef = ref(workspace.appSettings.similarQuestionsPrompt);
+
+function saveMistakePrompt() {
+  workspace.updateAppSettings({ mistakeAnalysisPrompt: mistakePrompt.value });
+  isSavingPrompt.value = true;
+  setTimeout(() => { isSavingPrompt.value = false; }, 1500);
+}
+
+function restoreDefaultPrompt() {
+  mistakePrompt.value = DEFAULT_MISTAKE_ANALYSIS_PROMPT;
+  workspace.updateAppSettings({ mistakeAnalysisPrompt: DEFAULT_MISTAKE_ANALYSIS_PROMPT });
+  isSavingPrompt.value = true;
+  setTimeout(() => { isSavingPrompt.value = false; }, 1500);
+}
+
+function saveSimilarQuestionsPrompt() {
+  workspace.updateAppSettings({ similarQuestionsPrompt: similarQuestionsPromptRef.value });
+  isSavingSimilarPrompt.value = true;
+  setTimeout(() => { isSavingSimilarPrompt.value = false; }, 1500);
+}
+
+function restoreDefaultSimilarQuestionsPrompt() {
+  similarQuestionsPromptRef.value = DEFAULT_SIMILAR_QUESTIONS_PROMPT;
+  workspace.updateAppSettings({ similarQuestionsPrompt: DEFAULT_SIMILAR_QUESTIONS_PROMPT });
+  isSavingSimilarPrompt.value = true;
+  setTimeout(() => { isSavingSimilarPrompt.value = false; }, 1500);
+}
 
 // Provider modal
 const showProviderModal = ref(false);
@@ -36,14 +68,14 @@ const providerForm = reactive({
   name: "",
   baseUrl: "",
   apiKey: "",
-  apiFormat: "openai-chat" as "openai-chat" | "openai-responses" | "anthropic-messages"
+  apiFormat: "openai-chat" as AiApiFormat
 });
 const providerFormModels = ref<AiModelConfig[]>([]);
 
 type ProviderPreset = {
   name: string;
   baseUrl: string;
-  apiFormat: "openai-chat" | "openai-responses" | "anthropic-messages";
+  apiFormat: AiApiFormat;
   docUrl: string;
 };
 
@@ -65,6 +97,12 @@ const providerPresets: ProviderPreset[] = [
     baseUrl: "https://api.anthropic.com",
     apiFormat: "anthropic-messages",
     docUrl: "https://docs.anthropic.com/en/api"
+  },
+  {
+    name: "NVIDIA",
+    baseUrl: "https://integrate.api.nvidia.com/v1",
+    apiFormat: "nvidia",
+    docUrl: "https://build.nvidia.com/models"
   }
 ];
 
@@ -80,7 +118,8 @@ const editingProviderForModel = ref<AiProviderConfig | null>(null);
 const editingModelId = ref<string | null>(null);
 const modelForm = reactive({
   name: "",
-  purpose: ""
+  purpose: "",
+  supportsVision: false
 });
 
 const isTestingModel = ref(false);
@@ -181,7 +220,7 @@ function saveProvider() {
     baseUrl: providerForm.baseUrl.trim(),
     apiKey: providerForm.apiKey,
     apiFormat: providerForm.apiFormat,
-    models: models.length > 0 ? models : fallbackModels.length > 0 ? fallbackModels : [{ id: "", name: "默认模型", purpose: "通用", isDefault: true }]
+    models: models.length > 0 ? models : fallbackModels.length > 0 ? fallbackModels : [{ id: "", name: "默认模型", purpose: "通用", isDefault: true, supportsVision: false }]
   };
   if (editingProviderId.value) {
     workspace.updateAiProvider(editingProviderId.value, draft);
@@ -209,14 +248,16 @@ function openCreateModel(provider: AiProviderConfig) {
   editingModelId.value = null;
   modelForm.name = "";
   modelForm.purpose = "通用";
+  modelForm.supportsVision = false;
   showModelModal.value = true;
 }
 
-function openEditModel(provider: AiProviderConfig, model: { id: string; name: string; purpose: string }) {
+function openEditModel(provider: AiProviderConfig, model: { id: string; name: string; purpose: string; supportsVision?: boolean }) {
   editingProviderForModel.value = provider;
   editingModelId.value = model.id;
   modelForm.name = model.name;
   modelForm.purpose = model.purpose;
+  modelForm.supportsVision = model.supportsVision ?? false;
   showModelModal.value = true;
 }
 
@@ -227,10 +268,10 @@ function saveModel() {
   if (editingModelId.value) {
     const idx = models.findIndex((m) => m.id === editingModelId.value);
     if (idx >= 0) {
-      models[idx] = { ...models[idx], name: modelForm.name.trim(), purpose: modelForm.purpose.trim() || "通用" };
+      models[idx] = { ...models[idx], name: modelForm.name.trim(), purpose: modelForm.purpose.trim() || "通用", supportsVision: modelForm.supportsVision };
     }
   } else {
-    models.push({ id: "", name: modelForm.name.trim(), purpose: modelForm.purpose.trim() || "通用", isDefault: models.length === 0 });
+    models.push({ id: "", name: modelForm.name.trim(), purpose: modelForm.purpose.trim() || "通用", isDefault: models.length === 0, supportsVision: modelForm.supportsVision });
   }
   workspace.updateAiProvider(provider.id, {
     name: provider.name,
@@ -257,7 +298,7 @@ async function testConnectionFromModel() {
   isTestingModel.value = true;
   const testProvider: AiProviderConfig = {
     ...provider,
-    models: [{ id: editingModelId.value ?? "__test_model__", name: modelName, purpose: modelForm.purpose.trim() || "通用", isDefault: true }]
+    models: [{ id: editingModelId.value ?? "__test_model__", name: modelName, purpose: modelForm.purpose.trim() || "通用", isDefault: true, supportsVision: modelForm.supportsVision }]
   };
   try {
     const ok = await testProviderConnection(testProvider);
@@ -450,6 +491,7 @@ function confirmRestore() {
               <div v-for="model in provider.models" :key="model.id" class="model-chip">
                 <span>{{ model.name }}</span>
                 <span class="model-chip-purpose">{{ model.purpose }}</span>
+                <n-tag v-if="model.supportsVision" size="tiny" type="info" round>🖼 识图</n-tag>
                 <n-tag v-if="model.isDefault && provider.id === workspace.appSettings.defaultAiProviderId" size="tiny" type="success" round>默认</n-tag>
                 <button class="model-chip-edit" @click="openEditModel(provider, model)">✎</button>
                 <button class="model-chip-del" @click="deleteModel(provider, model.id)">✕</button>
@@ -461,6 +503,48 @@ function confirmRestore() {
               <n-button size="tiny" secondary type="error" @click="removeProvider(provider.id)">删除</n-button>
             </div>
           </div>
+        </div>
+
+        <!-- AI 提示词 -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <h2>AI 分析提示词</h2>
+              <p>自定义错题分析时发送给 AI 的系统提示词，定义 AI 的角色和输出格式</p>
+            </div>
+            <n-space>
+              <n-button size="tiny" secondary @click="restoreDefaultPrompt">恢复默认</n-button>
+              <n-tag v-if="isSavingPrompt" size="tiny" type="success" round>已保存</n-tag>
+            </n-space>
+          </div>
+          <n-input
+            v-model:value="mistakePrompt"
+            type="textarea"
+            placeholder="输入 AI 系统提示词..."
+            :autosize="{ minRows: 6, maxRows: 20 }"
+            @blur="saveMistakePrompt"
+          />
+        </div>
+
+        <!-- 出类似题提示词 -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <h2>出类似题提示词</h2>
+              <p>自定义"出类似题"功能发送给 AI 的提示词。支持模板变量：<code v-pre>{{original_question}}</code>、<code v-pre>{{knowledge_points}}</code></p>
+            </div>
+            <n-space>
+              <n-button size="tiny" secondary @click="restoreDefaultSimilarQuestionsPrompt">恢复默认</n-button>
+              <n-tag v-if="isSavingSimilarPrompt" size="tiny" type="success" round>已保存</n-tag>
+            </n-space>
+          </div>
+          <n-input
+            v-model:value="similarQuestionsPromptRef"
+            type="textarea"
+            placeholder="输入出类似题的 AI 提示词..."
+            :autosize="{ minRows: 8, maxRows: 24 }"
+            @blur="saveSimilarQuestionsPrompt"
+          />
         </div>
 
         <!-- 皮肤 -->
@@ -575,6 +659,7 @@ function confirmRestore() {
               <n-radio value="openai-chat">OpenAI Chat</n-radio>
               <n-radio value="openai-responses">OpenAI Responses</n-radio>
               <n-radio value="anthropic-messages">Anthropic Messages</n-radio>
+              <n-radio value="nvidia">NVIDIA NIM</n-radio>
             </n-radio-group>
           </n-form-item>
           <div v-if="providerPresets.some(p => p.name === providerForm.name)" class="muted-text" style="margin-top:-8px;">
@@ -610,6 +695,10 @@ function confirmRestore() {
           </n-form-item>
           <n-form-item label="模型用途">
             <n-input v-model:value="modelForm.purpose" placeholder="通用、报告生成、错题分析" />
+          </n-form-item>
+          <n-form-item label="图片识别">
+            <n-switch v-model:value="modelForm.supportsVision" />
+            <span class="muted-text" style="margin-left:8px">开启后，错题本支持上传图片让 AI 识别分析</span>
           </n-form-item>
         </n-form>
         <template #footer>

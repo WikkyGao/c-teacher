@@ -49,7 +49,7 @@ function sampleState(): CompletePersistedState {
           baseUrl: "https://api.example.com/v1",
           apiKey: "secret",
           apiFormat: "openai-chat",
-          models: [{ id: "model-a", name: "model-a", purpose: "通用", isDefault: true }]
+          models: [{ id: "model-a", name: "model-a", purpose: "通用", isDefault: true, supportsVision: false }]
         }
       ],
       defaultAiProviderId: "provider-a",
@@ -59,7 +59,9 @@ function sampleState(): CompletePersistedState {
         name: "李老师",
         title: "数学老师",
         bio: "本机工作台"
-      }
+      },
+      mistakeAnalysisPrompt: "你是一位严谨的教学辅导老师。",
+      similarQuestionsPrompt: "你是一位出题专家。"
     },
     groups: []
   };

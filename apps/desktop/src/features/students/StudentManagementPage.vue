@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isTauri } from "@tauri-apps/api/core";
+import { isTauri, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Settings2, Sparkles, UserRound, UsersRound } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
@@ -16,12 +16,15 @@ const students = useStudentStore();
 const props = defineProps<{
   initialMode?: "list" | "detail" | "mistakeBook";
 }>();
-const { activeStudent } = storeToRefs(students);
+const { activeStudent, defaultAiModel } = storeToRefs(students);
+const modelSupportsVision = computed(() => defaultAiModel.value?.supportsVision ?? false);
 const message = useMessage();
 const { confirmDelete } = useConfirmDelete();
 const showStudentModal = ref(false);
 const editingStudentId = ref<string | null>(null);
 const selectedMistakeImagePath = ref("");
+const selectedMistakeImageDataUrl = ref("");
+const showImagePreview = ref(false);
 const mistakeQuestionText = ref("");
 const mistakeInputMode = ref<"text" | "image">("text");
 const streamingAnalysisText = ref("");
@@ -111,6 +114,9 @@ watch(
     pageMode.value = mode;
     if (mode === "mistakeBook") {
       activeMistakeSubject.value = students.activeStudent.mistakeBook.subjects[0] ?? "";
+      if (!modelSupportsVision.value) {
+        mistakeInputMode.value = "text";
+      }
     }
   },
   { immediate: true }
@@ -301,8 +307,13 @@ async function runAiAnalysis() {
 
 async function runGenerateSimilarQuestions() {
   const questionText = mistakeQuestionText.value.trim();
-  if (!questionText) {
+  const imagePath = mistakeInputMode.value === "image" ? selectedMistakeImagePath.value : "";
+  if (mistakeInputMode.value === "text" && !questionText) {
     message.warning("请先输入题目内容");
+    return;
+  }
+  if (mistakeInputMode.value === "image" && !imagePath) {
+    message.warning("请先上传错题图片");
     return;
   }
   isGeneratingSimilarQuestions.value = true;
@@ -312,7 +323,8 @@ async function runGenerateSimilarQuestions() {
       studentId: activeStudent.value.id,
       subject: activeMistakeSubject.value || activeStudent.value.mistakeBook.subjects[0],
       questionText,
-      studentAnswer: "学生答案待补充"
+      studentAnswer: "学生答案待补充",
+      imagePath: imagePath || undefined
     }, (_delta, fullContent) => {
       streamingSimilarQuestionsText.value = fullContent;
     });
@@ -340,13 +352,24 @@ async function chooseMistakeImageAndAnalyze() {
   });
   if (typeof selected !== "string") return;
   selectedMistakeImagePath.value = selected;
+  try {
+    selectedMistakeImageDataUrl.value = await invoke<string>("read_mistake_image_data_url", { path: selected });
+  } catch (err) {
+    message.warning("图片预览加载失败，但仍可进行分析");
+    selectedMistakeImageDataUrl.value = "";
+  }
   await runAiAnalysis();
 }
 
 function switchMistakeInputMode(mode: "text" | "image") {
+  if (mode === "image" && !modelSupportsVision.value) {
+    message.warning("当前默认模型不支持图片识别，请在设置中切换支持识图的模型");
+    return;
+  }
   mistakeInputMode.value = mode;
   if (mode === "text") {
     selectedMistakeImagePath.value = "";
+    selectedMistakeImageDataUrl.value = "";
   } else {
     mistakeQuestionText.value = "";
   }
@@ -766,6 +789,7 @@ function saveGroupMembers(groupId: string) {
                 手动输入
               </button>
               <button
+                v-if="modelSupportsVision"
                 type="button"
                 :class="{ active: mistakeInputMode === 'image' }"
                 @click="switchMistakeInputMode('image')"
@@ -788,7 +812,11 @@ function saveGroupMembers(groupId: string) {
                 </template>
                 {{ selectedMistakeImagePath ? "重新选择错题图片" : "选择错题图片并分析" }}
               </n-button>
-              <p class="muted-text">{{ selectedMistakeImagePath ? `已选择图片：${selectedMistakeImagePath}` : "支持 png、jpg、jpeg、webp" }}</p>
+              <p class="muted-text" style="margin-bottom:4px">支持 png、jpg、jpeg、webp</p>
+              <div v-if="selectedMistakeImageDataUrl" class="mistake-image-preview" @click="showImagePreview = true">
+                <img :src="selectedMistakeImageDataUrl" alt="错题图片预览" />
+                <span class="mistake-image-zoom-hint">点击查看原图</span>
+              </div>
             </div>
           </div>
 
@@ -945,6 +973,10 @@ function saveGroupMembers(groupId: string) {
           <n-button type="primary" @click="saveGroup">保存</n-button>
         </n-space>
       </template>
+    </n-modal>
+
+    <n-modal v-model:show="showImagePreview" preset="card" title="错题图片" class="image-preview-modal" :style="{ maxWidth: '90vw' }">
+      <img :src="selectedMistakeImageDataUrl" alt="错题原图" style="width: 100%; height: auto; border-radius: var(--radius-md);" />
     </n-modal>
 
   </div>

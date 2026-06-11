@@ -1,3 +1,4 @@
+use base64::Engine;
 use rusqlite::{params, Connection, Transaction};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -14,6 +15,7 @@ const WORKSPACE_KEY: &str = "workspace";
 const BACKUP_VERSION: u32 = 1;
 const MAX_SCAN_DEPTH: usize = 3;
 const MAX_SCAN_ITEMS: usize = 500;
+const MAX_MISTAKE_IMAGE_BYTES: u64 = 8 * 1024 * 1024;
 const FTP_TIMEOUT_SECONDS: u64 = 10;
 const SUPPORTED_EXTENSIONS: &[&str] = &[
     "pdf", "png", "jpg", "jpeg", "webp", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "mp4",
@@ -71,6 +73,36 @@ struct SystemReminderRequest {
 #[tauri::command]
 fn health_check() -> &'static str {
     "ok"
+}
+
+#[tauri::command]
+fn read_mistake_image_data_url(path: String) -> Result<String, String> {
+    let image_path = PathBuf::from(path.trim());
+    if image_path.as_os_str().is_empty() {
+        return Err("请先选择错题图片".to_string());
+    }
+    if !image_path.is_absolute() || !image_path.is_file() {
+        return Err("错题图片路径无效".to_string());
+    }
+    let extension = image_path
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    let media_type = match extension.as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        _ => return Err("错题图片仅支持 png、jpg、jpeg、webp".to_string()),
+    };
+    let metadata =
+        fs::metadata(&image_path).map_err(|error| format!("无法读取错题图片信息: {error}"))?;
+    if metadata.len() > MAX_MISTAKE_IMAGE_BYTES {
+        return Err("错题图片不能超过 8MB".to_string());
+    }
+    let bytes = fs::read(&image_path).map_err(|error| format!("无法读取错题图片: {error}"))?;
+    let encoded = base64::engine::general_purpose::STANDARD.encode(bytes);
+    Ok(format!("data:{media_type};base64,{encoded}"))
 }
 
 fn database_path(app: &AppHandle) -> Result<PathBuf, String> {
@@ -1011,6 +1043,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_http::init())
         .invoke_handler(tauri::generate_handler![
             health_check,
             load_workspace_state,
@@ -1021,6 +1054,7 @@ pub fn run() {
             import_workspace_backup,
             create_system_reminder,
             open_material_target,
+            read_mistake_image_data_url,
             write_text_file
         ])
         .run(tauri::generate_context!())

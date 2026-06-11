@@ -155,9 +155,10 @@ export type AiModelConfig = {
   name: string;
   purpose: string;
   isDefault: boolean;
+  supportsVision: boolean;
 };
 
-export type AiApiFormat = "openai-chat" | "openai-responses" | "anthropic-messages";
+export type AiApiFormat = "openai-chat" | "openai-responses" | "anthropic-messages" | "nvidia";
 
 export type AiProviderConfig = {
   id: string;
@@ -192,6 +193,8 @@ export type AppSettings = {
   defaultAiModelId: string;
   themeKey: AppThemeKey;
   teacherProfile: TeacherProfile;
+  mistakeAnalysisPrompt: string;
+  similarQuestionsPrompt: string;
 };
 
 export type DefaultAiModel = AiModelConfig & {
@@ -246,6 +249,100 @@ const seedTeacherProfile: TeacherProfile = {
   title: "课程规划老师",
   bio: "C-teacher · 本机教学工作台"
 };
+
+export const DEFAULT_MISTAKE_ANALYSIS_PROMPT = `【角色与核心任务 (ROLE AND CORE TASK)】
+你是一位世界顶尖的、经验丰富的、专业的跨学科考试分析专家（Interdisciplinary Exam Analysis Expert）。你的核心任务是极致准确地分析用户提供的考试题目图片，全面理解所有文本、图表和隐含约束，并提供一个完整、高度结构化且专业的解决方案。
+
+**重要：忽略书写规范。** 只关注题目内容的知识正确性和解题逻辑。不要评价或提及字迹、排版、格式、语法细节、标点使用等书写规范问题。即使学生的作答书写潦草或有涂改，也仅以可识别的内容为准进行分析。
+
+【核心输出要求 (OUTPUT REQUIREMENTS)】
+你的响应输出**必须严格遵循以下自定义标签格式**。**严禁**使用 JSON 或 Markdown 代码块。**严禁**对 LaTeX 公式中的反斜杠进行二次转义（如 "\\frac" 是错误的，必须是 "\\frac"）。
+
+请严格按照以下结构输出内容：
+
+<subject>
+在此处填写学科，必须是以下之一："数学", "物理", "化学", "生物", "英语", "语文", "历史", "地理", "政治", "其他"。
+</subject>
+
+<knowledge_points>
+在此处填写知识点，使用逗号分隔，例如：知识点1, 知识点2, 知识点3
+</knowledge_points>
+
+<requires_image>
+判断这道题是否需要依赖图片才能正确解答。如果题目包含几何图形、函数图像、实验装置图、电路图等必须看图才能理解的内容，填写 true；如果只需要文字描述即可理解（如英语题、纯文字数学题），填写 false。
+</requires_image>
+
+<question_text>
+在此处填写题目的完整文本。使用 Markdown 格式。所有数学公式使用 LaTeX 符号（行内 $...$，块级 $$...$$）。
+</question_text>
+
+<answer_text>
+在此处填写正确答案。使用 Markdown 和 LaTeX 符号。
+</answer_text>
+
+<analysis>
+在此处填写详细的步骤解析。
+* 必须使用简体中文。
+* **直接使用标准的 LaTeX 符号**（如 $\\frac{1}{2}$），**不要**进行 JSON 转义（不要写成 \\\\frac）。
+</analysis>
+
+【!!! 关键格式与内容约束 (CRITICAL RULES) !!!】
+1. **格式严格**：必须严格包含上述 6 个 XML 标签，除此之外不要输出任何其他"开场白"或"结束语"。
+2. **忽略书写规范**：不评价字迹、排版、语法细节、标点等书写问题，只分析知识正确性和解题逻辑。
+3. **纯文本**：内容作为纯文本处理，**不要转义反斜杠**。
+4. **内容完整**：如果包含子问题，请在 question_text 中完整列出。
+5. **禁止图片**：严禁包含任何图片链接或 markdown 图片语法。`;
+
+export const DEFAULT_SIMILAR_QUESTIONS_PROMPT = `你是一位资深的K12教育题目生成专家，具备跨学科的题目创作能力。你的核心任务是**根据以下原题和知识点，举一反三生成高质量教学题目**，帮助学生巩固知识并拓展解题思路。
+### 角色定义
+1. **学科全能专家**
+   - 精通K12阶段所有学科（数学/语文/英语/物理/化学/生物/历史/地理/政治）
+   - 熟悉各年级课程标准与知识点分布
+   - 能准确识别题目考察的核心能力点（计算/推理/分析/应用/创新）
+2. **题目变异大师**
+   - 掌握12种变式技法：条件替换/情境迁移/问题转化/数据重构/图形变形/角色反转/跨学科融合/难度阶梯/开放拓展/陷阱设计/逆向思维/生活应用
+   - 确保变式题目保持原题核心考点，改变题目表现形式
+3. **学情分析师**
+   - 预判学生易错点（认知盲区/概念混淆/计算失误/审题偏差）
+   - 在变式题目中针对性强化易错点训练
+### 执行流程
+1. **接收任务**
+    原题: "{{original_question}}"
+    知识点: {{knowledge_points}}
+2. **解构分析**
+   - 提取核心考点与能力要求
+   - 分析题目陷阱与解题路径
+3.  **质量管控**
+   - 确保每道题：
+     ✓ 覆盖相同核心知识点
+     ✓ 保持解题逻辑一致性
+     ✓ 答案唯一且可验证
+     ✓ 无知识性错误
+     ✓ 题目难度必须与原题保持一致，不要超纲，不要引入超出当前学习范围的知识点
+### 输出规范
+**严禁**使用 JSON 或 Markdown 代码块。**严禁**返回 json 代码块。
+
+请严格按照以下纯文本格式输出，不要包含任何其他开场白或结束语：
+
+【题目】
+在此处填写新生成的题目文本。包含选项（如果是选择题）。
+
+【答案】
+在此处填写新题目的正确答案。
+
+【解析】
+在此处填写新题目的详细解析。
+* 必须使用简体中文。
+* **直接使用标准的 LaTeX 符号**（如 $\\frac{1}{2}$），**不要**进行 JSON 转义。
+* 明确指出题目考察的知识点和易错点。
+
+### 关键格式与内容约束 (CRITICAL RULES) !!!
+1. **纯文本**：内容作为纯文本处理，格式为【标题】+ 正文，不要输出 XML / HTML 标签
+2. **不要转义反斜杠**：LaTeX 公式直接写 $\\frac{1}{2}$，不要写成 \\\\frac
+3. **质量优先**：题目必须准确、答案可验证、解析有教学价值`;
+
+const seedMistakeAnalysisPrompt = DEFAULT_MISTAKE_ANALYSIS_PROMPT;
+const seedSimilarQuestionsPrompt = DEFAULT_SIMILAR_QUESTIONS_PROMPT;
 
 export const K12_MISTAKE_BOOK_SUBJECTS = [
   "语文",
@@ -471,13 +568,15 @@ const seedAppSettings: AppSettings = {
           id: "model-gpt-54",
           name: "gpt-5.4",
           purpose: "通用问答、备课、错题分析",
-          isDefault: true
+          isDefault: true,
+          supportsVision: true
         },
         {
           id: "model-gpt-54-mini",
           name: "gpt-5.4-mini",
           purpose: "低成本任务、草稿生成",
-          isDefault: false
+          isDefault: false,
+          supportsVision: true
         }
       ]
     },
@@ -493,7 +592,8 @@ const seedAppSettings: AppSettings = {
           id: "model-compatible-report",
           name: "report-model",
           purpose: "报告生成",
-          isDefault: false
+          isDefault: false,
+          supportsVision: false
         }
       ]
     }
@@ -501,7 +601,9 @@ const seedAppSettings: AppSettings = {
   defaultAiProviderId: "provider-openai",
   defaultAiModelId: "model-gpt-54",
   themeKey: "blue",
-  teacherProfile: seedTeacherProfile
+  teacherProfile: seedTeacherProfile,
+  mistakeAnalysisPrompt: seedMistakeAnalysisPrompt,
+  similarQuestionsPrompt: seedSimilarQuestionsPrompt
 };
 
 function clone<T>(value: T): T {
@@ -637,7 +739,9 @@ function normalizeAppSettings(settings?: AppSettings): AppSettings {
     defaultAiProviderId: preferredProvider?.id ?? "",
     defaultAiModelId: preferredModel?.id ?? "",
     themeKey,
-    teacherProfile: normalizeTeacherProfile(source.teacherProfile)
+    teacherProfile: normalizeTeacherProfile(source.teacherProfile),
+    mistakeAnalysisPrompt: source.mistakeAnalysisPrompt || seedMistakeAnalysisPrompt,
+    similarQuestionsPrompt: source.similarQuestionsPrompt || seedSimilarQuestionsPrompt
   };
 }
 
@@ -1290,6 +1394,27 @@ function applyPersistedState(state: PersistedState) {
     return true;
   }
 
+  function updateAppSettings(patch: Partial<AppSettings>) {
+    if (patch.mistakeAnalysisPrompt !== undefined) {
+      appSettings.value.mistakeAnalysisPrompt = patch.mistakeAnalysisPrompt;
+    }
+    if (patch.similarQuestionsPrompt !== undefined) {
+      appSettings.value.similarQuestionsPrompt = patch.similarQuestionsPrompt;
+    }
+    if (patch.defaultAiProviderId !== undefined) {
+      appSettings.value.defaultAiProviderId = patch.defaultAiProviderId;
+    }
+    if (patch.defaultAiModelId !== undefined) {
+      appSettings.value.defaultAiModelId = patch.defaultAiModelId;
+    }
+    if (patch.themeKey !== undefined) {
+      appSettings.value.themeKey = patch.themeKey;
+    }
+    if (patch.teacherProfile !== undefined) {
+      appSettings.value.teacherProfile = normalizeTeacherProfile(patch.teacherProfile);
+    }
+  }
+
   watch(
     [items, materials, materialSources, classRecords, reminders, scheduledLessons, groups, appSettings],
     () => {
@@ -1359,6 +1484,7 @@ function applyPersistedState(state: PersistedState) {
     setDefaultAiModel,
     setAppTheme,
     updateTeacherProfile,
+    updateAppSettings,
     reloadWorkspace,
     updateMistakeAnalysis,
     applyPersistedState,

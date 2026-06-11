@@ -1,4 +1,7 @@
+import { isTauri, invoke } from "@tauri-apps/api/core";
 import { chatCompletion, chatCompletionStream, getDefaultAiConfig } from "../ai/aiClient";
+import type { ChatMessage } from "../ai/aiClient";
+import { DEFAULT_SIMILAR_QUESTIONS_PROMPT, useStudentStore } from "../students/studentStore";
 
 export type AnalyzeMistakeInput = {
   studentId: string;
@@ -29,6 +32,54 @@ function createLocalAnalysis(input: AnalyzeMistakeInput): AnalyzeMistakeOutput {
   };
 }
 
+async function readMistakeImageDataUrl(imagePath?: string): Promise<string | undefined> {
+  if (!imagePath) return undefined;
+  if (!isTauri()) return undefined;
+  return invoke<string>("read_mistake_image_data_url", { path: imagePath });
+}
+
+function userMessage(prompt: string, imageDataUrl?: string): ChatMessage {
+  if (!imageDataUrl) return { role: "user", content: prompt };
+  return {
+    role: "user",
+    content: [
+      { type: "text", text: prompt },
+      { type: "image_url", imageUrl: imageDataUrl }
+    ]
+  };
+}
+
+function getMistakeSystemPrompt(): string {
+  try {
+    const s = useStudentStore();
+    return s.appSettings.mistakeAnalysisPrompt || "你是一位严谨的教学辅导老师，擅长分析学生错题并给出有针对性的建议。";
+  } catch {
+    return "你是一位严谨的教学辅导老师，擅长分析学生错题并给出有针对性的建议。";
+  }
+}
+
+function getSimilarQuestionsSystemPrompt(): string {
+  try {
+    const s = useStudentStore();
+    return s.appSettings.similarQuestionsPrompt || DEFAULT_SIMILAR_QUESTIONS_PROMPT;
+  } catch {
+    return DEFAULT_SIMILAR_QUESTIONS_PROMPT;
+  }
+}
+
+function buildSimilarQuestionsPrompt(input: AnalyzeMistakeInput): string {
+  const template = getSimilarQuestionsSystemPrompt();
+  const questionText = input.questionText || (input.imagePath ? `[图片错题：${input.imagePath}]` : "待分析错题");
+  const knowledgePoints = input.subject || "通用";
+  return template
+    .replace(/{{original_question}}/g, questionText)
+    .replace(/{{knowledge_points}}/g, knowledgePoints)
+    .replace(/{{difficulty_level}}/g, "与原题保持一致")
+    .replace(/{{language_instruction}}/g, "")
+    .replace(/{{difficulty_instruction}}/g, "")
+    .replace(/{{provider_hints}}/g, "");
+}
+
 function getRequiredAiConfig() {
   try {
     const config = getDefaultAiConfig();
@@ -52,8 +103,7 @@ ${imageInfo}
   "questionText": "纠正或补充后的完整题干",
   "correctAnswer": "正确的解题过程和答案",
   "mistakeReason": "错误原因分析，说明学生错在哪里",
-  "knowledgePoints": ["涉及知识点1", "涉及知识点2"],
-  "similarQuestions": ["类似题型建议1", "类似题型建议2"]
+  "knowledgePoints": ["涉及知识点1", "涉及知识点2"]
 }
 
 请确保返回的是纯 JSON，不要包含 markdown 代码块标记。`;
@@ -68,16 +118,16 @@ function buildReadablePrompt(input: AnalyzeMistakeInput): string {
 ${imageInfo}
 
 请直接输出给老师看的分析内容，不要输出 JSON、代码块、字段引号、花括号或 markdown 表格。
-必须按下面 5 个小标题输出，每个小标题独占一行：
+必须按下面 4 个小标题输出，每个小标题独占一行：
 题干修正：
 参考答案：
 错误原因：
 知识点：
-类似题：
 
 要求：
 - 内容简洁、具体，可直接放在错题本卡片里展示。
-- 知识点和类似题可以用顿号或分号分隔。
+- 知识点可以用顿号或分号分隔。
+- 不要输出类似题型建议，类似题由单独的"出类似题"功能生成。
 - 不要额外解释输出格式。`;
 }
 
@@ -119,14 +169,13 @@ function splitListText(text: string): string[] {
 
 function parseReadableAnalyzeMistakeContent(content: string, input: AnalyzeMistakeInput): AnalyzeMistakeOutput {
   const cleaned = content.replace(/```[\s\S]*?```/g, "").trim();
-  const headings = ["题干修正", "参考答案", "错误原因", "知识点", "类似题"];
+  const headings = ["题干修正", "参考答案", "错误原因", "知识点"];
   const questionText = readSection(cleaned, "题干修正", headings.filter((heading) => heading !== "题干修正"));
   const correctAnswer = readSection(cleaned, "参考答案", headings.filter((heading) => heading !== "参考答案"));
   const mistakeReason = readSection(cleaned, "错误原因", headings.filter((heading) => heading !== "错误原因"));
   const knowledgePoints = splitListText(readSection(cleaned, "知识点", headings.filter((heading) => heading !== "知识点")));
-  const similarQuestions = splitListText(readSection(cleaned, "类似题", headings.filter((heading) => heading !== "类似题")));
 
-  if (!mistakeReason && knowledgePoints.length === 0 && similarQuestions.length === 0) {
+  if (!mistakeReason && knowledgePoints.length === 0) {
     throw new Error("AI 返回内容不是有效的错题分析文本");
   }
 
@@ -135,7 +184,7 @@ function parseReadableAnalyzeMistakeContent(content: string, input: AnalyzeMista
     correctAnswer: correctAnswer || "待教师确认",
     mistakeReason: mistakeReason || cleaned,
     knowledgePoints,
-    similarQuestions,
+    similarQuestions: [],
     teacherReviewRequired: true
   };
 }
@@ -143,10 +192,11 @@ function parseReadableAnalyzeMistakeContent(content: string, input: AnalyzeMista
 export async function analyzeMistake(input: AnalyzeMistakeInput): Promise<AnalyzeMistakeOutput> {
   const config = getRequiredAiConfig();
   const prompt = buildPrompt(input);
+  const imageDataUrl = await readMistakeImageDataUrl(input.imagePath);
 
   const response = await chatCompletion(config.provider, [
-    { role: "system", content: "你是一位严谨的教学辅导老师，擅长分析学生错题并给出有针对性的建议。请严格按照要求的 JSON 格式返回。" },
-    { role: "user", content: prompt }
+    { role: "system", content: getMistakeSystemPrompt() },
+    userMessage(prompt, imageDataUrl)
   ], { model: config.modelName, temperature: 0.3, maxTokens: 1536 });
 
   return parseAnalyzeMistakeContent(response.content, input);
@@ -158,11 +208,12 @@ export async function analyzeMistakeStream(
 ): Promise<AnalyzeMistakeOutput> {
   const config = getRequiredAiConfig();
   const prompt = buildReadablePrompt(input);
+  const imageDataUrl = await readMistakeImageDataUrl(input.imagePath);
   let fullContent = "";
 
   for await (const delta of chatCompletionStream(config.provider, [
-    { role: "system", content: "你是一位严谨的教学辅导老师，擅长分析学生错题并给出有针对性的建议。请输出给老师直接阅读的自然语言分析，不要输出 JSON 或代码块。" },
-    { role: "user", content: prompt }
+    { role: "system", content: getMistakeSystemPrompt() },
+    userMessage(prompt, imageDataUrl)
   ], { model: config.modelName, temperature: 0.3, maxTokens: 1536 })) {
     fullContent += delta;
     onDelta(delta, fullContent);
@@ -173,18 +224,10 @@ export async function analyzeMistakeStream(
 
 export async function generateSimilarQuestions(input: AnalyzeMistakeInput): Promise<string[]> {
   const config = getRequiredAiConfig();
-  const prompt = `你是一位经验丰富的${input.subject}老师。基于以下错题，生成 3 道针对性的类似练习题，帮助学生巩固薄弱知识点。
-
-错题题干：${input.questionText}
-${input.studentAnswer ? `学生答案：${input.studentAnswer}` : ""}
-
-请按以下 JSON 格式返回，不要包含 markdown 代码块标记：
-{
-  "questions": ["练习题1", "练习题2", "练习题3"]
-}`;
+  const prompt = buildSimilarQuestionsPrompt(input);
 
   const response = await chatCompletion(config.provider, [
-    { role: "system", content: "你是一位严谨的教学辅导老师。" },
+    { role: "system", content: getSimilarQuestionsSystemPrompt() },
     { role: "user", content: prompt }
   ], { model: config.modelName, temperature: 0.7, maxTokens: 1024 });
 
@@ -199,27 +242,33 @@ ${input.studentAnswer ? `学生答案：${input.studentAnswer}` : ""}
 }
 
 function buildReadableSimilarQuestionsPrompt(input: AnalyzeMistakeInput): string {
-  return `你是一位经验丰富的${input.subject}老师。基于以下错题，生成 3 道针对性的类似练习题，帮助学生巩固薄弱知识点。
+  return buildSimilarQuestionsPrompt(input);
+}
 
-错题题干：${input.questionText}
-${input.studentAnswer ? `学生答案：${input.studentAnswer}` : ""}
-
-请直接输出给老师看的类似题，不要输出 JSON、代码块、字段引号、花括号或 markdown 表格。
-格式要求：
-1. 第一题
-2. 第二题
-3. 第三题
-
-每题应包含完整题干，必要时给出简短作答要求。不要额外解释输出格式。`;
+function cleanDisplayContent(content: string): string {
+  return content
+    // 去掉 XML/HTML 标签
+    .replace(/<\/?[a-zA-Z_][\w-]*>/g, "")
+    // 去掉代码块标记
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/```/g, "")
+    // 去掉 JSON 花括号残余
+    .replace(/^\s*[{[\]}]\s*$/gm, "")
+    // 去掉转义反斜杠残余
+    .replace(/\\\\/g, "\\")
+    .replace(/\\n/g, "\n")
+    // 合并连续空行
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function parseReadableSimilarQuestions(content: string): string[] {
-  const cleaned = content.replace(/```[\s\S]*?```/g, "").trim();
-  const questions = cleaned
+  const cleaned = cleanDisplayContent(content);
+  const lines = cleaned
     .split(/\n+/)
     .map((line) => line.replace(/^\s*(?:[-*]|\d+[.、）)])\s*/, "").trim())
-    .filter(Boolean);
-  if (questions.length > 0) return questions;
+    .filter((line) => line.length > 4); // 过滤过短的行
+  if (lines.length > 0) return lines;
   throw new Error("AI 返回内容不是有效的类似题文本");
 }
 
@@ -229,15 +278,16 @@ export async function generateSimilarQuestionsStream(
 ): Promise<string[]> {
   const config = getRequiredAiConfig();
   const prompt = buildReadableSimilarQuestionsPrompt(input);
-  let fullContent = "";
+  let rawContent = "";
 
   for await (const delta of chatCompletionStream(config.provider, [
-    { role: "system", content: "你是一位严谨的教学辅导老师。请输出给老师直接阅读的类似题列表，不要输出 JSON 或代码块。" },
+    { role: "system", content: getSimilarQuestionsSystemPrompt() },
     { role: "user", content: prompt }
-  ], { model: config.modelName, temperature: 0.7, maxTokens: 1024 })) {
-    fullContent += delta;
-    onDelta(delta, fullContent);
+  ], { model: config.modelName, temperature: 0.7, maxTokens: 1536 })) {
+    rawContent += delta;
+    // 实时显示清理后的内容，避免特殊符号闪烁
+    onDelta(delta, cleanDisplayContent(rawContent));
   }
 
-  return parseReadableSimilarQuestions(fullContent);
+  return parseReadableSimilarQuestions(rawContent);
 }

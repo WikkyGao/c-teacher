@@ -61,8 +61,8 @@ describe("aiModelCatalog", () => {
   it("merges fetched models and keeps the current default", () => {
     const merged = mergeFetchedModels(
       [
-        { id: "model-a", name: "deepseek-chat", purpose: "通用", isDefault: true },
-        { id: "model-b", name: "manual-model", purpose: "报告生成", isDefault: false }
+        { id: "model-a", name: "deepseek-chat", purpose: "通用", isDefault: true, supportsVision: false },
+        { id: "model-b", name: "manual-model", purpose: "报告生成", isDefault: false, supportsVision: false }
       ],
       [{ name: "deepseek-chat" }, { name: "deepseek-coder" }, { name: "new-model" }]
     );

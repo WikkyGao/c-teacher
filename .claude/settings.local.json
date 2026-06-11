@@ -4,12 +4,10 @@
       "Bash(pencil version *)",
       "Bash(pencil status *)",
       "Bash(npm list *)",
-<<<<<<< HEAD
       "Bash(python3 -c ' *)",
       "Bash(npx vue-tsc *)",
       "Bash(python3 *)",
       "Bash(npx vitest *)",
-<<<<<<< HEAD
       "Bash(grep -oP '>[^<]{2,30}<')",
       "Bash(grep *)",
       "Bash(npx vite *)",
@@ -19,18 +17,21 @@
       "Bash(curl *)",
       "WebFetch(domain:openrouter.ai)",
       "WebSearch",
-      "WebFetch(domain:openrouter.hconeai.com)"
-=======
-      "Bash(npm run *)",
+      "WebFetch(domain:openrouter.hconeai.com)",
       "Bash(npm install *)",
       "Bash(cargo --version)",
       "Bash(rustc --version)",
       "Bash(curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs)",
-      "Bash(sh -s -- -y)"
-=======
-      "Bash(python3 -c ' *)"
->>>>>>> parent of 7f2133e0 (新增分组功能)
->>>>>>> 76a3a13e8b4613b812dcfe22af5b4d4bc7847d3d
+      "Bash(sh -s -- -y)",
+      "Read(//private/tmp/c-teacher-copy/apps/desktop/src-tauri/**)",
+      "Read(//Users/wikky/.cc-switch/skills/autoglm-deepresearch/**)",
+      "Bash(python open-link.py \"https://github.com/wttwins/wrong-notebook\")",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:blog.ydxian.xyz)",
+      "WebFetch(domain:www.qnaptw.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(pip3 install *)"
     ]
   }
 }

@@ -8,9 +8,18 @@ vi.mock("../ai/aiClient", () => ({
   getDefaultAiConfig: vi.fn()
 }));
 
+vi.mock("@tauri-apps/api/core", () => ({
+  isTauri: vi.fn(() => false),
+  invoke: vi.fn()
+}));
+
+import { invoke, isTauri } from "@tauri-apps/api/core";
+
 const mockedChatCompletion = vi.mocked(chatCompletion);
 const mockedChatCompletionStream = vi.mocked(chatCompletionStream);
 const mockedGetDefaultAiConfig = vi.mocked(getDefaultAiConfig);
+const mockedInvoke = vi.mocked(invoke);
+const mockedIsTauri = vi.mocked(isTauri);
 
 const configuredProvider = {
   id: "provider-test",
@@ -18,13 +27,14 @@ const configuredProvider = {
   baseUrl: "https://api.example.com/v1",
   apiKey: "sk-test",
   apiFormat: "openai-chat" as const,
-  models: [{ id: "model-test", name: "model-test", purpose: "通用", isDefault: true }]
+  models: [{ id: "model-test", name: "model-test", purpose: "通用", isDefault: true, supportsVision: false }]
 };
 
 describe("analyzeMistake", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.clearAllMocks();
+    mockedIsTauri.mockReturnValue(false);
   });
 
   it("rejects analysis when no AI provider is configured", async () => {
@@ -125,6 +135,36 @@ describe("analyzeMistake", () => {
     expect(chunks.at(-1)).not.toContain("\"mistakeReason\"");
     expect(result.mistakeReason).toBe("平移方向记反");
     expect(result.knowledgePoints).toEqual(["函数平移", "图像变换"]);
+  });
+
+  it("reads selected image data and sends it to the AI request", async () => {
+    mockedIsTauri.mockReturnValue(true);
+    mockedInvoke.mockResolvedValue("data:image/png;base64,abc123");
+    mockedGetDefaultAiConfig.mockReturnValue({ provider: configuredProvider, modelName: "model-test" });
+    mockedChatCompletionStream.mockImplementation(async function* () {
+      yield "题干修正：图片题\n";
+      yield "参考答案：待确认\n";
+      yield "错误原因：计算步骤遗漏\n";
+      yield "知识点：图形识别\n";
+      yield "类似题：同类题 1";
+    });
+
+    const result = await analyzeMistakeStream({
+      studentId: "chen",
+      subject: "数学",
+      questionText: "",
+      studentAnswer: "学生答案待补充",
+      imagePath: "/tmp/mistake.png"
+    }, vi.fn());
+
+    expect(result.questionText).toBe("图片题");
+    expect(mockedInvoke).toHaveBeenCalledWith("read_mistake_image_data_url", { path: "/tmp/mistake.png" });
+    expect(mockedChatCompletionStream.mock.calls[0][1][1]).toEqual(expect.objectContaining({
+      role: "user",
+      content: expect.arrayContaining([
+        expect.objectContaining({ type: "image_url", imageUrl: "data:image/png;base64,abc123" })
+      ])
+    }));
   });
 
   it("streams readable similar questions before returning parsed questions", async () => {
