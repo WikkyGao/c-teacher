@@ -3,6 +3,7 @@ import AppKit
 let width = 1920
 let height = 1080
 let output = "/Users/wikky/Documents/c-teacher/videos/c-teacher-intro/generated/slide-mistake-book.png"
+let canvasHeight = CGFloat(height)
 
 func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
     NSColor(
@@ -18,15 +19,16 @@ func font(_ size: CGFloat, _ weight: NSFont.Weight = .regular) -> NSFont {
 }
 
 func text(_ value: String, _ x: CGFloat, _ y: CGFloat, _ size: CGFloat, _ hex: UInt32, _ weight: NSFont.Weight = .regular, width: CGFloat = 900) {
+    let textHeight = size * 1.45
     let attrs: [NSAttributedString.Key: Any] = [
         .font: font(size, weight),
         .foregroundColor: color(hex)
     ]
-    value.draw(in: CGRect(x: x, y: y, width: width, height: size * 1.45), withAttributes: attrs)
+    value.draw(in: CGRect(x: x, y: canvasHeight - y - textHeight, width: width, height: textHeight), withAttributes: attrs)
 }
 
 func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ fill: UInt32, radius: CGFloat = 0, stroke: UInt32? = nil, alpha: CGFloat = 1) {
-    let path = NSBezierPath(roundedRect: CGRect(x: x, y: y, width: w, height: h), xRadius: radius, yRadius: radius)
+    let path = NSBezierPath(roundedRect: CGRect(x: x, y: canvasHeight - y - h, width: w, height: h), xRadius: radius, yRadius: radius)
     color(fill, alpha).setFill()
     path.fill()
     if let stroke {
@@ -38,8 +40,8 @@ func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, _ fill: UInt32
 
 func line(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ hex: UInt32, _ alpha: CGFloat = 1) {
     let p = NSBezierPath()
-    p.move(to: CGPoint(x: x1, y: y1))
-    p.line(to: CGPoint(x: x2, y: y2))
+    p.move(to: CGPoint(x: x1, y: canvasHeight - y1))
+    p.line(to: CGPoint(x: x2, y: canvasHeight - y2))
     color(hex, alpha).setStroke()
     p.lineWidth = 2
     p.stroke()
