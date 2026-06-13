@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Settings2, Sparkles, UserRound, UsersRound } from "lucide-vue-next";
+import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Settings2, Smartphone, Sparkles, UserRound, UsersRound } from "lucide-vue-next";
+import MobileConnectModal from "../mobile/MobileConnectModal.vue";
 import { storeToRefs } from "pinia";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { analyzeMistakeStream, generateSimilarQuestionsStream } from "../mistake-book/mistakeApi";
 import { studentAvatarSourceFor } from "../../shared/assets/studentAvatars";
 import { buildMistakeBookSubjectOptions, mistakeBookSubjectCountText } from "./mistakeBookPanel";
-import type { Course, Student, StudentGroup } from "./studentStore";
+import MistakeBookPage from "../mistake-book/MistakeBookPage.vue";
+import type { Course, MistakeRecord, Student, StudentGroup } from "./studentStore";
 import { GROUP_COLORS, K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 
@@ -29,6 +31,7 @@ const mistakeQuestionText = ref("");
 const mistakeInputMode = ref<"text" | "image">("text");
 const streamingAnalysisText = ref("");
 const streamingSimilarQuestionsText = ref("");
+const showMobileConnectModal = ref(false);
 const isAnalyzingMistake = ref(false);
 const isGeneratingSimilarQuestions = ref(false);
 const pageMode = ref<"list" | "detail" | "mistakeBook" | "groupManage">("list");
@@ -44,6 +47,8 @@ const groupForm = reactive({
   subjects: [] as string[],
   memberIds: [] as string[]
 });
+const showMistakeDetailModal = ref(false);
+const selectedMistakeRecord = ref<MistakeRecord | null>(null);
 const form = reactive({
   name: "",
   gender: "female" as Student["gender"],
@@ -292,12 +297,27 @@ async function runAiAnalysis() {
     }, (_delta, fullContent) => {
       streamingAnalysisText.value = fullContent;
     });
+
+    // Save to structured database
+    await students.createMistakeRecord({
+      studentId: activeStudent.value.id,
+      subject: activeMistakeSubject.value || activeStudent.value.mistakeBook.subjects[0],
+      questionText: result.questionText || questionText,
+      imagePath: imagePath || undefined,
+      studentAnswer: "学生答案待补充",
+      correctAnswer: result.correctAnswer,
+      mistakeReason: result.mistakeReason,
+      knowledgePoints: result.knowledgePoints,
+      similarQuestions: result.similarQuestions
+    });
+
+    // Also update the legacy summary
     students.updateMistakeAnalysis(activeStudent.value.id, {
       analysis: result.mistakeReason,
       knowledgeInsight: result.knowledgePoints.join("、"),
       aiPending: Math.max(activeStudent.value.mistakeBook.aiPending - 1, 0)
     });
-    message.success("AI 已生成待教师确认的错题分析");
+    message.success("AI 已生成错题分析并保存到错题本");
   } catch (error) {
     message.error(`AI 分析失败：${error instanceof Error ? error.message : String(error)}`);
   } finally {
@@ -361,6 +381,21 @@ async function chooseMistakeImageAndAnalyze() {
   await runAiAnalysis();
 }
 
+async function handleMobileImage(path: string) {
+  // A new mistake image arrived from the mobile phone
+  selectedMistakeImagePath.value = path;
+  mistakeInputMode.value = "image";
+  mistakeQuestionText.value = "";
+  try {
+    selectedMistakeImageDataUrl.value = await invoke<string>("read_mistake_image_data_url", { path });
+  } catch {
+    message.warning("图片预览加载失败，但仍可进行分析");
+    selectedMistakeImageDataUrl.value = "";
+  }
+  // Auto-trigger AI analysis
+  await runAiAnalysis();
+}
+
 function switchMistakeInputMode(mode: "text" | "image") {
   if (mode === "image" && !modelSupportsVision.value) {
     message.warning("当前默认模型不支持图片识别，请在设置中切换支持识图的模型");
@@ -373,6 +408,24 @@ function switchMistakeInputMode(mode: "text" | "image") {
   } else {
     mistakeQuestionText.value = "";
   }
+  streamingAnalysisText.value = "";
+  streamingSimilarQuestionsText.value = "";
+}
+
+function openMistakeDetail(record: MistakeRecord) {
+  selectedMistakeRecord.value = record;
+  showMistakeDetailModal.value = true;
+}
+
+function closeMistakeDetail() {
+  showMistakeDetailModal.value = false;
+  selectedMistakeRecord.value = null;
+}
+
+function handleCreateNewMistake() {
+  // Switch to the input mode to create a new mistake
+  mistakeInputMode.value = "text";
+  mistakeQuestionText.value = "";
   streamingAnalysisText.value = "";
   streamingSimilarQuestionsText.value = "";
 }
@@ -661,6 +714,13 @@ function saveGroupMembers(groupId: string) {
       </div>
     </section>
 
+    <section v-else-if="pageMode === 'mistakeBook'" class="mistake-book-fullpage">
+      <MistakeBookPage
+        :student-id="activeStudent.id"
+        @back="pageMode = 'list'"
+      />
+    </section>
+
     <section v-else class="student-detail-page">
       <div class="student-page-toolbar">
         <n-button secondary @click="pageMode = 'list'; selectedGroupId = null">
@@ -763,97 +823,6 @@ function saveGroupMembers(groupId: string) {
             </template>
             查看错题本
           </n-button>
-        </template>
-
-        <template v-else>
-          <h2>{{ activeStudent.name }} · AI 错题本</h2>
-          <div class="mistake-subject-summary">
-            <div>
-              <span>{{ mistakeSubjectCount }}</span>
-              <strong>{{ activeStudent.mistakeBook.summary }}</strong>
-            </div>
-            <p>AI 待处理 {{ activeStudent.mistakeBook.aiPending }} 题</p>
-          </div>
-
-          <n-form-item label="当前科目">
-            <n-select v-model:value="activeMistakeSubject" :options="mistakeSubjectOptions" />
-          </n-form-item>
-
-          <div class="mistake-input-card">
-            <div class="mistake-input-tabs" aria-label="题目内容录入方式">
-              <button
-                type="button"
-                :class="{ active: mistakeInputMode === 'text' }"
-                @click="switchMistakeInputMode('text')"
-              >
-                手动输入
-              </button>
-              <button
-                v-if="modelSupportsVision"
-                type="button"
-                :class="{ active: mistakeInputMode === 'image' }"
-                @click="switchMistakeInputMode('image')"
-              >
-                上传图片改题
-              </button>
-            </div>
-            <n-form-item v-if="mistakeInputMode === 'text'" label="题目内容">
-              <n-input
-                v-model:value="mistakeQuestionText"
-                type="textarea"
-                placeholder="手动输入错题内容"
-                :autosize="{ minRows: 2, maxRows: 4 }"
-              />
-            </n-form-item>
-            <div v-else class="mistake-image-input">
-              <n-button type="primary" @click="chooseMistakeImageAndAnalyze" style="width:100%">
-                <template #icon>
-                  <FileImage :size="16" />
-                </template>
-                {{ selectedMistakeImagePath ? "重新选择错题图片" : "选择错题图片并分析" }}
-              </n-button>
-              <p class="muted-text" style="margin-bottom:4px">支持 png、jpg、jpeg、webp</p>
-              <div v-if="selectedMistakeImageDataUrl" class="mistake-image-preview" @click="showImagePreview = true">
-                <img :src="selectedMistakeImageDataUrl" alt="错题图片预览" />
-                <span class="mistake-image-zoom-hint">点击查看原图</span>
-              </div>
-            </div>
-          </div>
-
-          <n-space vertical>
-            <div class="mistake-action-section">
-              <n-button type="primary" :loading="isAnalyzingMistake" @click="runAiAnalysis" style="width:100%">
-                <Sparkles :size="15" />
-                AI 分析
-              </n-button>
-              <div class="ai-note mistake-analysis-output">
-                <template v-if="streamingAnalysisText || isAnalyzingMistake">
-                  <p>
-                    <Sparkles :size="15" />
-                    <span class="streaming-analysis-text">{{ readableStreamingAnalysis || "正在等待模型返回…" }}</span>
-                  </p>
-                </template>
-                <template v-else>
-                  <p><Sparkles :size="15" /> {{ activeMistakeSubjectLabel }}错误分析：{{ activeStudent.mistakeBook.analysis }}</p>
-                  <p>知识点分析：{{ activeStudent.mistakeBook.knowledgeInsight }}</p>
-                </template>
-              </div>
-            </div>
-            <div class="mistake-action-section">
-              <n-button type="primary" :loading="isGeneratingSimilarQuestions" @click="runGenerateSimilarQuestions" style="width:100%">
-                <FileText :size="15" />
-                出类似题
-              </n-button>
-              <div class="ai-note mistake-analysis-output similar-question-output">
-                <p>
-                  <FileText :size="15" />
-                  <span class="streaming-analysis-text">
-                    {{ readableStreamingSimilarQuestions || (isGeneratingSimilarQuestions ? "正在等待模型返回…" : `类似题型：${activeStudent.mistakeBook.similarQuestions}`) }}
-                  </span>
-                </p>
-              </div>
-            </div>
-          </n-space>
         </template>
       </section>
     </section>
@@ -978,6 +947,12 @@ function saveGroupMembers(groupId: string) {
     <n-modal v-model:show="showImagePreview" preset="card" title="错题图片" class="image-preview-modal" :style="{ maxWidth: '90vw' }">
       <img :src="selectedMistakeImageDataUrl" alt="错题原图" style="width: 100%; height: auto; border-radius: var(--radius-md);" />
     </n-modal>
+
+    <MobileConnectModal
+      :show="showMobileConnectModal"
+      @update:show="(v: boolean) => showMobileConnectModal = v"
+      @new-image="handleMobileImage"
+    />
 
   </div>
 </template>

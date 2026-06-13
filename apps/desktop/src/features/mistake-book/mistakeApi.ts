@@ -20,6 +20,13 @@ export type AnalyzeMistakeOutput = {
   teacherReviewRequired: boolean;
 };
 
+export type MistakeQuestionItem = {
+  questionText: string;
+  correctAnswer: string;
+  mistakeReason: string;
+  knowledgePoints: string[];
+};
+
 function createLocalAnalysis(input: AnalyzeMistakeInput): AnalyzeMistakeOutput {
   const imageName = input.imagePath?.split(/[\\/]/).filter(Boolean).at(-1);
   return {
@@ -67,17 +74,33 @@ function getSimilarQuestionsSystemPrompt(): string {
   }
 }
 
-function buildSimilarQuestionsPrompt(input: AnalyzeMistakeInput): string {
+const DIFFICULTY_INSTRUCTIONS: Record<string, string> = {
+  "简单": "请生成比原题更基础的题目，侧重基本概念和简单计算，适合刚接触该知识点的学生巩固基础。",
+  "中等": "请生成与原题难度相当的题目，保持相同的知识点和解题思路，帮助学生熟练掌握。",
+  "困难": "请生成比原题更复杂的题目，增加条件或步骤，需要综合运用多个知识点求解。",
+  "挑战": "请生成高难度竞赛级题目，需要创造性思维和多步骤推理，适合学有余力的学生挑战。"
+};
+
+export type SimilarQuestionsInput = AnalyzeMistakeInput & {
+  difficulty?: string;
+  count?: number;
+};
+
+function buildSimilarQuestionsPrompt(input: SimilarQuestionsInput): string {
   const template = getSimilarQuestionsSystemPrompt();
   const questionText = input.questionText || (input.imagePath ? `[图片错题：${input.imagePath}]` : "待分析错题");
   const knowledgePoints = input.subject || "通用";
+  const difficultyLevel = input.difficulty || "与原题保持一致";
+  const difficultyInstruction = input.difficulty ? (DIFFICULTY_INSTRUCTIONS[input.difficulty] || "") : "";
+  const count = input.count || 3;
   return template
     .replace(/{{original_question}}/g, questionText)
     .replace(/{{knowledge_points}}/g, knowledgePoints)
-    .replace(/{{difficulty_level}}/g, "与原题保持一致")
+    .replace(/{{difficulty_level}}/g, difficultyLevel)
     .replace(/{{language_instruction}}/g, "")
-    .replace(/{{difficulty_instruction}}/g, "")
-    .replace(/{{provider_hints}}/g, "");
+    .replace(/{{difficulty_instruction}}/g, difficultyInstruction ? `\n${difficultyInstruction}` : "")
+    .replace(/{{provider_hints}}/g, "")
+    + `\n请生成 ${count} 道类似题。`;
 }
 
 function getRequiredAiConfig() {
@@ -111,7 +134,7 @@ ${imageInfo}
 
 function buildReadablePrompt(input: AnalyzeMistakeInput): string {
   const imageInfo = input.imagePath ? `（已上传错题图片：${input.imagePath}）` : "";
-  return `你是一位经验丰富的${input.subject}老师。请分析以下学生的错题。
+  return `你是一位经验丰富的${input.subject}老师。请分析图片中的错题。
 
 题干：${input.questionText}
 学生答案：${input.studentAnswer}
@@ -129,6 +152,26 @@ ${imageInfo}
 - 知识点可以用顿号或分号分隔。
 - 不要输出类似题型建议，类似题由单独的"出类似题"功能生成。
 - 不要额外解释输出格式。`;
+}
+
+function buildMultiQuestionJsonPrompt(input: AnalyzeMistakeInput): string {
+  const imageInfo = input.imagePath ? `（已上传错题图片：${input.imagePath}）` : "";
+  return `你是一位经验丰富的${input.subject}老师。请仔细观察图片，识别其中的每一道题目。
+
+题干：${input.questionText}
+学生答案：${input.studentAnswer}
+${imageInfo}
+
+请严格返回一个 JSON 数组，数组中每个元素代表一道独立的题目。不要包含任何 markdown 标记、代码块、注释或额外文字，只返回纯 JSON。
+
+格式：
+[{"questionText":"完整题干","correctAnswer":"正确答案","mistakeReason":"错误原因","knowledgePoints":["知识点"]}]
+
+规则：
+- 仔细数清楚图片中有几道题，每道题都要出现
+- questionText 必须是完整的题干，不要省略
+- 如果只有一道题，返回包含一个元素的数组
+- knowledgePoints 至少包含一个知识点`;
 }
 
 function parseAnalyzeMistakeContent(content: string, input: AnalyzeMistakeInput): AnalyzeMistakeOutput {
@@ -189,6 +232,71 @@ function parseReadableAnalyzeMistakeContent(content: string, input: AnalyzeMista
   };
 }
 
+function parseMultipleQuestions(content: string, input: AnalyzeMistakeInput): MistakeQuestionItem[] {
+  // 清理 markdown 代码块
+  let cleaned = content.replace(/```(?:json)?\s*/g, "").replace(/```\s*$/g, "").trim();
+
+  // 尝试 1：直接解析 JSON 数组
+  const tryParseJson = (text: string): MistakeQuestionItem[] | null => {
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item: Record<string, unknown>) => ({
+          questionText: String(item.questionText || item.question || item.title || "") || input.questionText,
+          correctAnswer: String(item.correctAnswer || item.answer || "") || "待教师确认",
+          mistakeReason: String(item.mistakeReason || item.reason || item.analysis || "") || "暂无",
+          knowledgePoints: Array.isArray(item.knowledgePoints || item.tags || item.knowledge)
+            ? (item.knowledgePoints || item.tags || item.knowledge) as string[]
+            : []
+        }));
+      }
+    } catch { /* 忽略 */ }
+    return null;
+  };
+
+  // 直接解析
+  let result = tryParseJson(cleaned);
+  if (result) return result;
+
+  // 尝试 2：提取 [...] 部分
+  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+  if (arrayMatch) {
+    result = tryParseJson(arrayMatch[0]);
+    if (result) return result;
+  }
+
+  // 尝试 3：提取 {...} 部分（单个对象）
+  const objMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (objMatch) {
+    result = tryParseJson(`[${objMatch[0]}]`);
+    if (result) return result;
+  }
+
+  // 尝试 4：按标题格式解析
+  const headings = ["题干修正", "参考答案", "错误原因", "知识点"];
+  const questionText = readSection(cleaned, "题干修正", headings.filter((h) => h !== "题干修正"));
+  const correctAnswer = readSection(cleaned, "参考答案", headings.filter((h) => h !== "参考答案"));
+  const mistakeReason = readSection(cleaned, "错误原因", headings.filter((h) => h !== "错误原因"));
+  const knowledgePoints = splitListText(readSection(cleaned, "知识点", headings.filter((h) => h !== "知识点")));
+
+  if (mistakeReason || knowledgePoints.length > 0) {
+    return [{
+      questionText: questionText || input.questionText,
+      correctAnswer: correctAnswer || "待教师确认",
+      mistakeReason,
+      knowledgePoints
+    }];
+  }
+
+  // 兜底：把整个内容作为一道题的错误原因
+  return [{
+    questionText: input.questionText,
+    correctAnswer: "待教师确认",
+    mistakeReason: cleaned || "AI 分析完成，请查看详情",
+    knowledgePoints: []
+  }];
+}
+
 export async function analyzeMistake(input: AnalyzeMistakeInput): Promise<AnalyzeMistakeOutput> {
   const config = getRequiredAiConfig();
   const prompt = buildPrompt(input);
@@ -222,7 +330,80 @@ export async function analyzeMistakeStream(
   return parseReadableAnalyzeMistakeContent(fullContent, input);
 }
 
-export async function generateSimilarQuestions(input: AnalyzeMistakeInput): Promise<string[]> {
+export async function analyzeMistakeStreamMulti(
+  input: AnalyzeMistakeInput,
+  onDelta: (delta: string, fullContent: string) => void
+): Promise<MistakeQuestionItem[]> {
+  const config = getRequiredAiConfig();
+  const imageDataUrl = await readMistakeImageDataUrl(input.imagePath);
+
+  // 第一步：流式输出可读内容，展示分析过程
+  const readablePrompt = buildReadablePrompt(input);
+  let fullContent = "";
+  for await (const delta of chatCompletionStream(config.provider, [
+    { role: "system", content: getMistakeSystemPrompt() },
+    userMessage(readablePrompt, imageDataUrl)
+  ], { model: config.modelName, temperature: 0.3, maxTokens: 2000 })) {
+    fullContent += delta;
+    onDelta(delta, fullContent);
+  }
+
+  // 第二步：用流式输出内容作为上下文，调用 JSON 解析
+  try {
+    const jsonPrompt = `以下是对一道或多道错题的分析内容，请从中提取每道独立的题目，返回 JSON 数组。
+
+分析内容：
+${fullContent}
+
+请严格返回纯 JSON 数组，格式：
+[{"questionText":"完整题干","correctAnswer":"正确答案","mistakeReason":"错误原因","knowledgePoints":["知识点"]}]
+
+规则：
+- 如果分析内容中有多道独立的题目，每道题作为一个对象
+- 如果只有一道题，返回包含一个对象的数组
+- 不要包含任何 markdown、注释或额外文字`;
+
+    const response = await chatCompletion(config.provider, [
+      { role: "system", content: "只返回合法 JSON 数组，不输出任何其他内容。" },
+      { role: "user", content: jsonPrompt }
+    ], { model: config.modelName, temperature: 0.1, maxTokens: 4000 });
+
+    let cleaned = response.content.replace(/```(?:json)?\s*/g, "").replace(/```\s*$/g, "").trim();
+    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      const parsed = JSON.parse(arrayMatch[0]);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        console.log(`[多题解析] 成功解析 ${parsed.length} 道题`);
+        return parsed.map((item: Record<string, unknown>) => ({
+          questionText: String(item.questionText || item.question || "") || input.questionText,
+          correctAnswer: String(item.correctAnswer || item.answer || "") || "待教师确认",
+          mistakeReason: String(item.mistakeReason || item.reason || "") || "暂无",
+          knowledgePoints: Array.isArray(item.knowledgePoints || item.tags)
+            ? (item.knowledgePoints || item.tags) as string[]
+            : []
+        }));
+      }
+    }
+  } catch (err) {
+    console.warn("[多题解析] JSON 调用失败，使用兜底方案:", err);
+  }
+
+  // 兜底：从可读内容中提取单题
+  const headings = ["题干修正", "参考答案", "错误原因", "知识点"];
+  const questionText = readSection(fullContent, "题干修正", headings.filter((h) => h !== "题干修正"));
+  const correctAnswer = readSection(fullContent, "参考答案", headings.filter((h) => h !== "参考答案"));
+  const mistakeReason = readSection(fullContent, "错误原因", headings.filter((h) => h !== "错误原因"));
+  const knowledgePoints = splitListText(readSection(fullContent, "知识点", headings.filter((h) => h !== "知识点")));
+
+  return [{
+    questionText: questionText || input.questionText,
+    correctAnswer: correctAnswer || "待教师确认",
+    mistakeReason: mistakeReason || fullContent || "AI 分析完成",
+    knowledgePoints
+  }];
+}
+
+export async function generateSimilarQuestions(input: SimilarQuestionsInput): Promise<string[]> {
   const config = getRequiredAiConfig();
   const prompt = buildSimilarQuestionsPrompt(input);
 
@@ -241,7 +422,7 @@ export async function generateSimilarQuestions(input: AnalyzeMistakeInput): Prom
   throw new Error("AI 返回内容不是有效的类似题 JSON");
 }
 
-function buildReadableSimilarQuestionsPrompt(input: AnalyzeMistakeInput): string {
+function buildReadableSimilarQuestionsPrompt(input: SimilarQuestionsInput): string {
   return buildSimilarQuestionsPrompt(input);
 }
 
@@ -259,6 +440,20 @@ function cleanDisplayContent(content: string): string {
     .replace(/\\n/g, "\n")
     // 合并连续空行
     .replace(/\n{3,}/g, "\n\n")
+    // 处理 LaTeX 符号
+    .replace(/\\div/g, "÷")
+    .replace(/\\times/g, "×")
+    .replace(/\\pm/g, "±")
+    .replace(/\\mp/g, "∓")
+    .replace(/\\leq/g, "≤")
+    .replace(/\\geq/g, "≥")
+    .replace(/\\neq/g, "≠")
+    .replace(/\\approx/g, "≈")
+    .replace(/\\infty/g, "∞")
+    .replace(/\\sqrt\{([^}]*)\}/g, "√($1)")
+    .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, "($1)/($2)")
+    .replace(/\\[a-zA-Z]+/g, "")
+    .replace(/\$+/g, "")
     .trim();
 }
 
@@ -273,7 +468,7 @@ function parseReadableSimilarQuestions(content: string): string[] {
 }
 
 export async function generateSimilarQuestionsStream(
-  input: AnalyzeMistakeInput,
+  input: SimilarQuestionsInput,
   onDelta: (delta: string, fullContent: string) => void
 ): Promise<string[]> {
   const config = getRequiredAiConfig();

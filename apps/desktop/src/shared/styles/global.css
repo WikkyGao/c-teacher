@@ -639,6 +639,7 @@ svg {
   min-height: 0;
   padding: 32px 36px 38px;
   overflow: auto;
+  position: relative;
 }
 
 .workspace > div {
@@ -695,7 +696,27 @@ svg {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
+}
+
+.settings-grid .span-2 {
+  grid-column: span 2;
+}
+
+.settings-grid .span-right {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 0;
+}
+
+.settings-grid .span-right > div:first-child {
+  padding: 18px;
+  border-right: 1px solid var(--border);
+}
+
+.settings-grid .span-right > div:last-child {
+  padding: 18px;
 }
 
 .student-management-layout {
@@ -954,6 +975,14 @@ svg {
 .student-detail-page {
   display: grid;
   gap: 14px;
+}
+
+.mistake-book-fullpage {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: var(--bg);
+  overflow: hidden;
 }
 
 .student-page-toolbar {
@@ -2474,226 +2503,43 @@ svg {
   font-size: 14px;
 }
 
-.settings-heading {
-  justify-content: space-between;
-  color: var(--text);
-}
-
-.settings-heading div {
-  display: grid;
-  gap: 4px;
-}
-
-.settings-heading p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.provider-list-item {
-  display: grid;
+.prompt-cards {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
+}
+
+.prompt-card-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
 }
 
-.provider-list-item + .provider-list-item {
-  margin-top: 12px;
-}
-
-.provider-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.provider-name-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.prompt-card-info {
+  flex: 1;
   min-width: 0;
 }
 
-.provider-name-row strong {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.provider-url {
-  color: var(--muted);
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.provider-models {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-}
-
-.provider-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.model-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--panel-solid);
-  font-size: 13px;
-}
-
-.model-chip-purpose {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.model-chip-edit,
-.model-chip-del {
-  padding: 0 4px;
-  border: none;
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-}
-
-.model-chip-edit:hover,
-.model-chip-del:hover {
+.prompt-card-info strong {
+  display: block;
+  font-size: 14px;
   color: var(--text);
+  margin-bottom: 4px;
 }
 
-.model-chip-del:hover {
-  color: #d32f2f;
-}
-
-.restore-btn {
-  justify-content: flex-start;
-}
-
-.fetched-model-list {
-  display: grid;
-  gap: 6px;
-  max-height: 220px;
-  overflow-y: auto;
-}
-
-.provider-card {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg-elevated);
-}
-
-.provider-card + .provider-card {
+.settings-more-link {
   margin-top: 12px;
+  text-align: right;
 }
 
-.provider-main {
-  display: grid;
-  gap: 7px;
-}
-
-.provider-main h3 {
-  margin: 0;
-  color: var(--text);
-  font-size: 16px;
-}
-
-.provider-main p {
-  margin: 0;
-  color: var(--muted);
+.settings-more-link button {
+  color: var(--primary);
   font-size: 13px;
-}
-
-.model-list {
-  grid-column: 1 / -1;
-  display: grid;
-  gap: 8px;
-}
-
-.model-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--panel-solid);
-}
-
-.model-row div {
-  display: grid;
-  gap: 2px;
-}
-
-.model-row strong {
-  color: var(--text);
-  font-size: 13px;
-}
-
-.model-row span {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.theme-panel {
-  margin-top: 16px;
-}
-
-.theme-option {
-  display: grid;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg-elevated);
-}
-
-.theme-option + .theme-option {
-  margin-top: 10px;
-}
-
-.theme-option.active {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 16%, transparent);
-}
-
-.theme-option-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: flex-start;
-}
-
-.theme-option-top div {
-  display: grid;
-  gap: 3px;
-}
-
-.theme-option strong {
-  color: var(--text);
-}
-
-.theme-option span {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .theme-swatches {
@@ -2769,6 +2615,10 @@ svg {
 .settings-action-list {
   display: grid;
   gap: 8px;
+}
+
+.settings-action-list-row {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
 .settings-action-list button {
@@ -3676,4 +3526,18 @@ svg {
   .report-student-select {
     width: 100%;
   }
+}
+
+/* LaTeX math rendering */
+.math-display {
+  display: block;
+  text-align: center;
+  padding: 8px 0;
+  font-style: italic;
+  font-size: 1.05em;
+}
+
+.math-inline {
+  font-style: italic;
+  padding: 0 2px;
 }

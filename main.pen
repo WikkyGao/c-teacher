@@ -5,7 +5,7 @@
       "type": "frame",
       "id": "f31",
       "x": 0,
-      "y": 0,
+      "y": -224,
       "name": "01-macos-dashboard",
       "clip": true,
       "width": 1440,
@@ -1192,8 +1192,8 @@
     {
       "type": "frame",
       "id": "bDYs9",
-      "x": 1500,
-      "y": 0,
+      "x": 1590,
+      "y": -224,
       "name": "02-student-management",
       "clip": true,
       "width": 1440,
@@ -2021,7 +2021,7 @@
     {
       "type": "frame",
       "id": "R3gpK9",
-      "x": 1500,
+      "x": 1590,
       "y": 960,
       "name": "04-material-library-assign",
       "clip": true,
@@ -2377,7 +2377,7 @@
       "type": "frame",
       "id": "O8fJr",
       "x": 0,
-      "y": 1920,
+      "y": 2024,
       "name": "05-reminder-settings",
       "clip": true,
       "width": 1440,
@@ -2552,8 +2552,8 @@
     {
       "type": "frame",
       "id": "f4w",
-      "x": 1500,
-      "y": 1920,
+      "x": 0,
+      "y": 3467,
       "name": "06-mobile-core",
       "clip": true,
       "width": 390,
@@ -3316,8 +3316,8 @@
     {
       "type": "frame",
       "id": "f60",
-      "x": 1920,
-      "y": 1920,
+      "x": 639,
+      "y": 3467,
       "name": "07-mobile-student-material",
       "clip": true,
       "width": 390,
@@ -3789,6 +3789,1427 @@
           ]
         }
       ]
+    },
+    {
+      "type": "frame",
+      "id": "Q8yrx",
+      "x": 1590,
+      "y": 2024,
+      "name": "错题本页面",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$background",
+      "children": [
+        {
+          "type": "frame",
+          "id": "jIEke",
+          "name": "主内容区",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            32,
+            40
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "cAQkr",
+          "name": "AI分析面板",
+          "width": 400,
+          "height": "fill_container",
+          "fill": "$card-bg",
+          "layout": "vertical",
+          "gap": 20,
+          "padding": 24
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "c2Xgsy",
+      "x": 1590,
+      "y": 3258,
+      "name": "错题本页面",
+      "clip": true,
+      "width": 1440,
+      "height": 1024,
+      "fill": "$background",
+      "children": [
+        {
+          "type": "frame",
+          "id": "L2S8tN",
+          "name": "主内容区",
+          "width": "fill_container",
+          "height": "fill_container",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            32,
+            40
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "o06W2f",
+              "name": "页面头部",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "r45IhY",
+                  "name": "标题区域",
+                  "layout": "vertical",
+                  "gap": 4,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "fgFe9",
+                      "name": "页面标题",
+                      "fill": "$text-primary",
+                      "content": "错题本",
+                      "fontFamily": "Inter",
+                      "fontSize": 26,
+                      "fontWeight": "600"
+                    },
+                    {
+                      "type": "text",
+                      "id": "wV3WE",
+                      "name": "页面副标题",
+                      "fill": "$text-secondary",
+                      "content": "管理和复习你的错题，巩固薄弱知识点",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "FMP6b",
+                  "name": "统计数据行",
+                  "gap": 20,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "t5n67",
+                      "name": "总题数",
+                      "fill": "$primary-light",
+                      "cornerRadius": 10,
+                      "gap": 8,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "E6FfgA",
+                          "fill": "$text-secondary",
+                          "content": "总题数",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "WEZ6Z",
+                          "fill": "$primary",
+                          "content": "128 题",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "o34Tg",
+                      "name": "已掌握",
+                      "fill": "$primary-light",
+                      "cornerRadius": 10,
+                      "gap": 8,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "J8J1e",
+                          "fill": "$text-secondary",
+                          "content": "已掌握",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Qh0WT",
+                          "fill": "$primary",
+                          "content": "86 题",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "O1gsXg",
+                      "name": "正确率",
+                      "fill": "$primary-light",
+                      "cornerRadius": 10,
+                      "gap": 8,
+                      "padding": [
+                        14,
+                        16
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Q2wtgN",
+                          "fill": "$text-secondary",
+                          "content": "正确率",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Metqn",
+                          "fill": "$primary",
+                          "content": "67%",
+                          "fontFamily": "Inter",
+                          "fontSize": 16,
+                          "fontWeight": "600"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "n8XeKI",
+              "name": "筛选栏",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "y7Ksd2",
+                  "name": "筛选左",
+                  "gap": 10,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "wtV1U",
+                      "name": "筛选标签",
+                      "fill": "$text-secondary",
+                      "content": "筛选：",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "J8gplU",
+                      "name": "全部筛选",
+                      "fill": "$primary",
+                      "cornerRadius": 8,
+                      "padding": [
+                        8,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "BVZCI",
+                          "fill": "#ffffff",
+                          "content": "全部",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "E2UVk",
+                      "name": "简单筛选",
+                      "fill": "$card-bg",
+                      "cornerRadius": 8,
+                      "stroke": "$border",
+                      "strokeWidth": 1,
+                      "padding": [
+                        8,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "KAZwX",
+                          "fill": "$text-secondary",
+                          "content": "简单",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nKolU",
+                      "name": "中等筛选",
+                      "fill": "$card-bg",
+                      "cornerRadius": 8,
+                      "stroke": "$border",
+                      "strokeWidth": 1,
+                      "padding": [
+                        8,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Caj9a",
+                          "fill": "$text-secondary",
+                          "content": "中等",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "xwMao",
+                      "name": "困难筛选",
+                      "fill": "$card-bg",
+                      "cornerRadius": 8,
+                      "stroke": "$border",
+                      "strokeWidth": 1,
+                      "padding": [
+                        8,
+                        14
+                      ],
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "t6qaz",
+                          "fill": "$text-secondary",
+                          "content": "困难",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "zze7A",
+                  "name": "排序按钮",
+                  "fill": "$card-bg",
+                  "cornerRadius": 8,
+                  "stroke": "$border",
+                  "strokeWidth": 1,
+                  "gap": 6,
+                  "padding": [
+                    8,
+                    14
+                  ],
+                  "children": [
+                    {
+                      "type": "icon",
+                      "id": "Z0FRHE",
+                      "width": 14,
+                      "height": 14,
+                      "icon": "arrow-up-down",
+                      "library": "lucide",
+                      "fill": "$text-secondary"
+                    },
+                    {
+                      "type": "text",
+                      "id": "QES82",
+                      "fill": "$text-secondary",
+                      "content": "按时间排序",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "ZMVOm",
+              "name": "卡片列表",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qMZl4",
+                  "name": "错题卡片",
+                  "width": "fill_container",
+                  "fill": "$card-bg",
+                  "cornerRadius": 12,
+                  "stroke": "$border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 14,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "CtcW7",
+                      "name": "卡片第一行",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "pYlcK",
+                          "name": "标签行",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "InLSZ",
+                              "name": "难度标签",
+                              "fill": "#fffbeb",
+                              "cornerRadius": 6,
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "iGFby",
+                                  "fill": "$difficulty-medium",
+                                  "content": "中等",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "o7VI9R",
+                              "name": "掌握状态标签",
+                              "fill": "$status-bg-practicing",
+                              "cornerRadius": 6,
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "i6k3h",
+                                  "width": 12,
+                                  "height": 12,
+                                  "icon": "schedule",
+                                  "library": "Material Symbols Rounded",
+                                  "fill": "$mastery-practicing"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "D4SAH",
+                                  "fill": "$mastery-practicing",
+                                  "content": "练习中",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "wqAXR",
+                      "name": "题目预览",
+                      "fill": "$text-primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "计算 ∫(x²+1)³dx 的不定积分",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "pEjhb",
+                      "name": "知识点标签行",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "WLsRx",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Q8SwuG",
+                              "fill": "$primary",
+                              "content": "高等数学",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "A1VUUw",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "ryhkp",
+                              "fill": "$primary",
+                              "content": "不定积分",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "h6M32",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "W60Ik",
+                              "fill": "$primary",
+                              "content": "多项式",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "ijcnV",
+                      "name": "卡片操作",
+                      "width": "fill_container",
+                      "gap": 10,
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "J98Olj",
+                          "name": "查看详情按钮",
+                          "fill": "$primary",
+                          "cornerRadius": 8,
+                          "padding": [
+                            8,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "cAnZH",
+                              "fill": "#ffffff",
+                              "content": "查看详情",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "s6rF9",
+                          "name": "练习按钮",
+                          "fill": "$card-bg",
+                          "cornerRadius": 8,
+                          "stroke": "$primary",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "zlzEv",
+                              "fill": "$primary",
+                              "content": "重新练习",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "GkZH8",
+                  "name": "错题卡片",
+                  "width": "fill_container",
+                  "fill": "$card-bg",
+                  "cornerRadius": 12,
+                  "stroke": "$border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 14,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "VRipy",
+                      "name": "卡片第一行",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "vDeCm",
+                          "name": "标签行",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "a20wh",
+                              "name": "难度标签",
+                              "fill": "#fef2f2",
+                              "cornerRadius": 6,
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "IlCKM",
+                                  "fill": "$difficulty-hard",
+                                  "content": "困难",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "nwAq2",
+                              "name": "掌握状态标签",
+                              "fill": "$status-bg-practicing",
+                              "cornerRadius": 6,
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "Iigvu",
+                                  "width": 12,
+                                  "height": 12,
+                                  "icon": "schedule",
+                                  "library": "Material Symbols Rounded",
+                                  "fill": "$mastery-practicing"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "SytNl",
+                                  "fill": "$mastery-practicing",
+                                  "content": "练习中",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "hU4Ir",
+                      "name": "题目预览",
+                      "fill": "$text-primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "已知函数 f(x)=e^x·sin(x)，求 f'(x) 在 x=π/2 处的值",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "xqUXG",
+                      "name": "知识点标签行",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "vhgUn",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "wpv1T",
+                              "fill": "$primary",
+                              "content": "高等数学",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "dSjKV",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "Q5HbFk",
+                              "fill": "$primary",
+                              "content": "导数",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "z3GeAG",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "AnJ3O",
+                              "fill": "$primary",
+                              "content": "复合函数",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "N9Ot6n",
+                      "name": "卡片操作",
+                      "width": "fill_container",
+                      "gap": 10,
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "F7A2Uq",
+                          "name": "查看详情按钮",
+                          "fill": "$primary",
+                          "cornerRadius": 8,
+                          "padding": [
+                            8,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "M3HHZi",
+                              "fill": "#ffffff",
+                              "content": "查看详情",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "d8m0J",
+                          "name": "练习按钮",
+                          "fill": "$card-bg",
+                          "cornerRadius": 8,
+                          "stroke": "$primary",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "OjK0l",
+                              "fill": "$primary",
+                              "content": "重新练习",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "swqpb",
+                  "name": "错题卡片",
+                  "width": "fill_container",
+                  "fill": "$card-bg",
+                  "cornerRadius": 12,
+                  "stroke": "$border",
+                  "strokeWidth": 1,
+                  "layout": "vertical",
+                  "gap": 14,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "ijh9I",
+                      "name": "卡片第一行",
+                      "width": "fill_container",
+                      "justifyContent": "space_between",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "uVwFP",
+                          "name": "标签行",
+                          "gap": 8,
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "O03gZa",
+                              "name": "难度标签",
+                              "fill": "#ecfdf5",
+                              "cornerRadius": 6,
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "VEhaJ",
+                                  "fill": "$difficulty-easy",
+                                  "content": "简单",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "kVctq",
+                              "name": "掌握状态标签",
+                              "fill": "$status-bg-mastered",
+                              "cornerRadius": 6,
+                              "padding": [
+                                6,
+                                12
+                              ],
+                              "children": [
+                                {
+                                  "type": "icon",
+                                  "id": "CtVq3",
+                                  "width": 12,
+                                  "height": 12,
+                                  "icon": "check_circle",
+                                  "library": "Material Symbols Rounded",
+                                  "fill": "$mastery-mastered"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "N1swWX",
+                                  "fill": "$mastery-mastered",
+                                  "content": "已掌握",
+                                  "fontFamily": "Inter",
+                                  "fontSize": 12,
+                                  "fontWeight": "500"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "DpgHu",
+                      "name": "题目预览",
+                      "fill": "$text-primary",
+                      "textGrowth": "fixed-width",
+                      "width": "fill_container",
+                      "content": "设 A 为3×3矩阵，det(A)=2，求 det(2A⁻¹) 的值",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "500"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "hZMzi",
+                      "name": "知识点标签行",
+                      "width": "fill_container",
+                      "gap": 8,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "T3ARIQ",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "h7kGK",
+                              "fill": "$primary",
+                              "content": "线性代数",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "G6ZdAM",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "aUDOX",
+                              "fill": "$primary",
+                              "content": "行列式",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Iz8wX",
+                          "name": "知识点标签",
+                          "fill": "$primary-light",
+                          "cornerRadius": 6,
+                          "padding": [
+                            8,
+                            6
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "H1xpP",
+                              "fill": "$primary",
+                              "content": "逆矩阵",
+                              "fontFamily": "Inter",
+                              "fontSize": 12,
+                              "fontWeight": "normal"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "AHBrC",
+                      "name": "卡片操作",
+                      "width": "fill_container",
+                      "gap": 10,
+                      "justifyContent": "end",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "ciXHv",
+                          "name": "查看详情按钮",
+                          "fill": "$primary",
+                          "cornerRadius": 8,
+                          "padding": [
+                            8,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "HvSW7",
+                              "fill": "#ffffff",
+                              "content": "查看详情",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "derlC",
+                          "name": "练习按钮",
+                          "fill": "$card-bg",
+                          "cornerRadius": 8,
+                          "stroke": "$primary",
+                          "strokeWidth": 1,
+                          "padding": [
+                            8,
+                            14
+                          ],
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "FyVWR",
+                              "fill": "$primary",
+                              "content": "重新练习",
+                              "fontFamily": "Inter",
+                              "fontSize": 13,
+                              "fontWeight": "500"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "z5GEbA",
+          "name": "AI分析面板",
+          "width": 400,
+          "height": "fill_container",
+          "fill": "$card-bg",
+          "layout": "vertical",
+          "gap": 20,
+          "padding": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "Udaso",
+              "name": "AI分析标题",
+              "fill": "$text-primary",
+              "content": "AI 分析",
+              "fontFamily": "Inter",
+              "fontSize": 18,
+              "fontWeight": "600"
+            },
+            {
+              "type": "text",
+              "id": "M27T9",
+              "name": "AI分析描述",
+              "fill": "$text-secondary",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "粘贴题目文本，AI将自动分析错题原因、知识点关联和学习建议",
+              "fontFamily": "Inter",
+              "fontSize": 13,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "a06Jd",
+              "name": "输入区域",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "PEaFk",
+                  "name": "输入标签",
+                  "fill": "$text-primary",
+                  "content": "题目内容",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "frame",
+                  "id": "Zjl62",
+                  "name": "输入框",
+                  "width": "fill_container",
+                  "height": 200,
+                  "fill": "$background",
+                  "cornerRadius": 10,
+                  "stroke": "$border",
+                  "strokeWidth": 1,
+                  "layout": "none",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "OtEAB",
+                      "x": 0,
+                      "y": 0,
+                      "name": "输入占位",
+                      "fill": "$text-secondary",
+                      "content": "请粘贴题目内容...",
+                      "fontFamily": "Inter",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "L99hK",
+              "name": "AI分析按钮",
+              "width": "fill_container",
+              "height": 44,
+              "fill": "$primary",
+              "cornerRadius": 10,
+              "gap": 8,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "icon",
+                  "id": "jEbHT",
+                  "width": 18,
+                  "height": 18,
+                  "icon": "sparkles",
+                  "library": "lucide",
+                  "fill": "#ffffff"
+                },
+                {
+                  "type": "text",
+                  "id": "pIO1D",
+                  "fill": "#ffffff",
+                  "content": "AI 智能分析",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "600"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "jE5cr",
+              "name": "分割线",
+              "width": "fill_container",
+              "height": 1,
+              "fill": "$border"
+            },
+            {
+              "type": "text",
+              "id": "Jatrn",
+              "name": "最近分析标题",
+              "fill": "$text-primary",
+              "content": "最近分析",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "600"
+            },
+            {
+              "type": "frame",
+              "id": "VbiO0",
+              "name": "最近分析列表",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 10,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "lXq5g",
+                  "name": "最近项",
+                  "width": "fill_container",
+                  "fill": "$primary-light",
+                  "cornerRadius": 8,
+                  "padding": 12,
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "yf3Pc",
+                      "name": "最近项文本",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "HqXVr",
+                          "fill": "$text-primary",
+                          "content": "不定积分问题分析",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "bHZhO",
+                          "fill": "$text-secondary",
+                          "content": "2 小时前",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "F0tVhz",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "chevron-right",
+                      "library": "lucide",
+                      "fill": "$text-secondary"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Xewx2",
+                  "name": "最近项",
+                  "width": "fill_container",
+                  "fill": "$primary-light",
+                  "cornerRadius": 8,
+                  "padding": 12,
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "USacl",
+                      "name": "最近项文本",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "VIQC7",
+                          "fill": "$text-primary",
+                          "content": "导数计算错误",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "VvepW",
+                          "fill": "$text-secondary",
+                          "content": "昨天",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "CMtgT",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "chevron-right",
+                      "library": "lucide",
+                      "fill": "$text-secondary"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "EN60t",
+                  "name": "最近项",
+                  "width": "fill_container",
+                  "fill": "$primary-light",
+                  "cornerRadius": 8,
+                  "padding": 12,
+                  "justifyContent": "space_between",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "yA1xL",
+                      "name": "最近项文本",
+                      "layout": "vertical",
+                      "gap": 3,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "AXDNC",
+                          "fill": "$text-primary",
+                          "content": "矩阵运算技巧",
+                          "fontFamily": "Inter",
+                          "fontSize": 13,
+                          "fontWeight": "500"
+                        },
+                        {
+                          "type": "text",
+                          "id": "PlAgt",
+                          "fill": "$text-secondary",
+                          "content": "3 天前",
+                          "fontFamily": "Inter",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "icon",
+                      "id": "dC7IJ",
+                      "width": 16,
+                      "height": 16,
+                      "icon": "chevron-right",
+                      "library": "lucide",
+                      "fill": "$text-secondary"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
-  ]
+  ],
+  "variables": {
+    "background": {
+      "type": "color",
+      "value": "#f5f7fa"
+    },
+    "card-bg": {
+      "type": "color",
+      "value": "#ffffff"
+    },
+    "text-primary": {
+      "type": "color",
+      "value": "#1a1a2e"
+    },
+    "text-secondary": {
+      "type": "color",
+      "value": "#6b7280"
+    },
+    "primary-light": {
+      "type": "color",
+      "value": "#e8f5f3"
+    },
+    "primary": {
+      "type": "color",
+      "value": "#0d6f65"
+    },
+    "border": {
+      "type": "color",
+      "value": "#e5e7eb"
+    },
+    "difficulty-medium": {
+      "type": "color",
+      "value": "#f59e0b"
+    },
+    "status-bg-practicing": {
+      "type": "color",
+      "value": "#fef3c7"
+    },
+    "mastery-practicing": {
+      "type": "color",
+      "value": "#f59e0b"
+    },
+    "difficulty-hard": {
+      "type": "color",
+      "value": "#ef4444"
+    },
+    "difficulty-easy": {
+      "type": "color",
+      "value": "#10b981"
+    },
+    "status-bg-mastered": {
+      "type": "color",
+      "value": "#e8f5f3"
+    },
+    "mastery-mastered": {
+      "type": "color",
+      "value": "#0d6f65"
+    }
+  }
 }

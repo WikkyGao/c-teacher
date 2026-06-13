@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C-teacher 功能架构图</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'JetBrains Mono',monospace;background:#020617;color:#fff;min-height:100vh;padding:32px}
+    .container{max-width:1280px;margin:0 auto}
+    .header{margin-bottom:24px}
+    .header-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+    .pulse-dot{width:12px;height:12px;border-radius:50%;background:#22d3ee;animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+    h1{font-size:28px;font-weight:700}
+    .subtitle{color:#94a3b8;font-size:13px;margin-left:24px}
+    .diagram-container{background:rgba(15,23,42,.58);border:1px solid #1e293b;border-radius:16px;padding:18px;overflow:auto}
+    svg{width:100%;min-width:1180px;display:block}
+    .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px}
+    .card{background:rgba(15,23,42,.58);border:1px solid #1e293b;border-radius:12px;padding:18px}
+    .card-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .card-dot{width:8px;height:8px;border-radius:50%}
+    .cyan{background:#22d3ee}.emerald{background:#34d399}.violet{background:#a78bfa}.amber{background:#fbbf24}.rose{background:#fb7185}
+    .card h3{font-size:14px;font-weight:600}
+    .card ul{list-style:none;color:#94a3b8;font-size:12px;line-height:1.7}
+    .footer{text-align:center;margin-top:16px;color:#475569;font-size:12px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-row"><div class="pulse-dot"></div><h1>C-teacher 功能架构</h1></div>
+      <p class="subtitle">本机教师工作台 - 学生管理、课程记录、资料库、提醒和 AI 错题分析的端到端流程</p>
+    </div>
+    <div class="diagram-container">
+      <svg viewBox="0 0 1180 720" role="img" aria-label="C-teacher 功能架构图">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="#020617"/>
+        <rect width="100%" height="100%" fill="url(#grid)" opacity="0.65"/>
+
+        <line x1="184" y1="150" x2="274" y2="150" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="434" y1="150" x2="524" y2="150" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="684" y1="150" x2="774" y2="150" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="934" y1="150" x2="1024" y2="150" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="1094" y1="236" x2="1094" y2="304" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="844" y1="236" x2="844" y2="304" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="594" y1="236" x2="594" y2="304" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <line x1="344" y1="236" x2="344" y2="304" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <path d="M 344 364 L 344 438 Q 344 458 364 458 L 506 458" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <path d="M 594 364 L 594 438 Q 594 458 614 458 L 756 458" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <path d="M 844 364 L 844 438 Q 844 458 864 458 L 1006 458" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+
+        <rect x="30" y="116" width="120" height="68" rx="6" fill="rgba(30,41,59,.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="90" y="142" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">教师 / 学生</text>
+        <text x="90" y="160" fill="#94a3b8" font-size="9" text-anchor="middle">Mac 桌面端</text>
+
+        <rect x="180" y="100" width="100" height="100" rx="6" fill="rgba(8,51,68,.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="230" y="126" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">登录 / 壳层</text>
+        <text x="230" y="146" fill="#94a3b8" font-size="9" text-anchor="middle">Auth Session</text>
+        <text x="230" y="164" fill="#94a3b8" font-size="9" text-anchor="middle">App Shell</text>
+
+        <rect x="300" y="100" width="120" height="100" rx="6" fill="rgba(8,51,68,.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="360" y="126" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">工作台</text>
+        <text x="360" y="146" fill="#94a3b8" font-size="9" text-anchor="middle">今日课程</text>
+        <text x="360" y="164" fill="#94a3b8" font-size="9" text-anchor="middle">进度 / 待办</text>
+
+        <rect x="550" y="100" width="120" height="100" rx="6" fill="rgba(8,51,68,.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="610" y="126" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">学生管理</text>
+        <text x="610" y="146" fill="#94a3b8" font-size="9" text-anchor="middle">档案 / 分组</text>
+        <text x="610" y="164" fill="#94a3b8" font-size="9" text-anchor="middle">错题本 / AI</text>
+
+        <rect x="800" y="100" width="120" height="100" rx="6" fill="rgba(8,51,68,.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="860" y="126" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">课程 / 记录</text>
+        <text x="860" y="146" fill="#94a3b8" font-size="9" text-anchor="middle">课程表</text>
+        <text x="860" y="164" fill="#94a3b8" font-size="9" text-anchor="middle">课堂记录</text>
+
+        <rect x="1050" y="100" width="100" height="100" rx="6" fill="rgba(8,51,68,.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="1100" y="126" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">资料 / 提醒</text>
+        <text x="1100" y="146" fill="#94a3b8" font-size="9" text-anchor="middle">资料库</text>
+        <text x="1100" y="164" fill="#94a3b8" font-size="9" text-anchor="middle">提醒事项</text>
+
+        <rect x="290" y="320" width="108" height="72" rx="6" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="344" y="346" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">SQLite</text>
+        <text x="344" y="364" fill="#94a3b8" font-size="9" text-anchor="middle">本地工作台数据</text>
+
+        <rect x="540" y="320" width="108" height="72" rx="6" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="594" y="346" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">AI Gateway</text>
+        <text x="594" y="364" fill="#94a3b8" font-size="9" text-anchor="middle">OpenAI / Mock</text>
+
+        <rect x="790" y="320" width="108" height="72" rx="6" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="844" y="346" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Tauri</text>
+        <text x="844" y="364" fill="#94a3b8" font-size="9" text-anchor="middle">系统打开 / 通知</text>
+
+        <rect x="1040" y="320" width="108" height="72" rx="6" fill="rgba(6,78,59,.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1094" y="346" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">同步</text>
+        <text x="1094" y="364" fill="#94a3b8" font-size="9" text-anchor="middle">JSON 备份 / 导入</text>
+
+        <rect x="500" y="430" width="190" height="84" rx="6" fill="rgba(76,29,149,.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="595" y="458" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">Student Store</text>
+        <text x="595" y="478" fill="#94a3b8" font-size="9" text-anchor="middle">学生 / 课程 / 资料 / 提醒</text>
+        <text x="595" y="496" fill="#94a3b8" font-size="9" text-anchor="middle">学习报告 / 错题本 / 排课</text>
+
+        <rect x="760" y="430" width="190" height="84" rx="6" fill="rgba(76,29,149,.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="855" y="458" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">LocalStorage</text>
+        <text x="855" y="478" fill="#94a3b8" font-size="9" text-anchor="middle">Web 预览兜底</text>
+        <text x="855" y="496" fill="#94a3b8" font-size="9" text-anchor="middle">登录态与工作台快照</text>
+
+        <rect x="1010" y="430" width="140" height="84" rx="6" fill="rgba(251,146,60,.3)" stroke="#fb923c" stroke-width="1.5"/>
+        <text x="1080" y="458" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">资料源</text>
+        <text x="1080" y="478" fill="#94a3b8" font-size="9" text-anchor="middle">本地 / SMB</text>
+        <text x="1080" y="496" fill="#94a3b8" font-size="9" text-anchor="middle">FTP 扫描</text>
+
+        <rect x="470" y="566" width="240" height="46" rx="6" fill="rgba(136,19,55,.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="590" y="594" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">AI 错题分析 / 相似题生成</text>
+
+        <rect x="706" y="566" width="222" height="46" rx="6" fill="rgba(136,19,55,.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="817" y="594" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">课堂记录 / 作业批改</text>
+
+        <rect x="948" y="566" width="212" height="46" rx="6" fill="rgba(136,19,55,.4)" stroke="#fb7185" stroke-width="1.5"/>
+        <text x="1054" y="594" fill="#fff" font-size="12" font-weight="600" text-anchor="middle">资料库 / 文件打开</text>
+
+        <rect x="30" y="30" width="320" height="48" rx="12" fill="rgba(251,191,36,.05)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="46" y="60" fill="#fbbf24" font-size="10" font-weight="600">本机桌面边界 / 无云端必需依赖</text>
+
+        <text x="30" y="682" fill="#94a3b8" font-size="10">Legend: cyan=前端界面, emerald=本地能力, violet=状态层, amber=系统/外部, rose=敏感流程</text>
+      </svg>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="card-header"><div class="card-dot cyan"></div><h3>页面层</h3></div><ul><li>工作台、学生管理、课程表、课堂记录</li><li>资料库、提醒、移动端预览</li><li>都围绕教师日常操作展开</li></ul></div>
+      <div class="card"><div class="card-header"><div class="card-dot emerald"></div><h3>本地层</h3></div><ul><li>SQLite 保存工作台与实体镜像表</li><li>本机文件、SMB、FTP 资料扫描导入</li><li>Tauri 负责系统级打开和提醒</li></ul></div>
+      <div class="card"><div class="card-header"><div class="card-dot rose"></div><h3>AI 层</h3></div><ul><li>错题分析和相似题生成由 Gateway 承接</li><li>无网时可退回本地演示分析</li><li>保证安装包离线可用</li></ul></div>
+    </div>
+    <p class="footer">C-teacher • 功能架构与页面联动示意</p>
+  </div>
+</body>
+</html>

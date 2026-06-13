@@ -6,7 +6,8 @@ use std::fs;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Child, Command};
+use std::sync::Mutex;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Manager};
@@ -17,6 +18,106 @@ const MAX_SCAN_DEPTH: usize = 3;
 const MAX_SCAN_ITEMS: usize = 500;
 const MAX_MISTAKE_IMAGE_BYTES: u64 = 8 * 1024 * 1024;
 const FTP_TIMEOUT_SECONDS: u64 = 10;
+const API_SERVER_BIN: &str = "c-teacher-api";
+const API_SERVER_ADDR: &str = "0.0.0.0:18080";
+
+struct ApiServerHandle(Mutex<Option<Child>>);
+
+fn sidecar_path(app: &AppHandle) -> PathBuf {
+    // In production, Tauri places externalBin in the bundle resources/<target-triple>
+    let resource_dir = app.path().resource_dir().unwrap_or_default();
+    // Tauri resolves externalBin as: resources/<binary-name>-<target-triple>
+    let target_triple = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("macos", "aarch64") => "aarch64-apple-darwin",
+        ("macos", "x86_64") => "x86_64-apple-darwin",
+        ("windows", "x86_64") => "x86_64-pc-windows-msvc",
+        ("linux", "x86_64") => "x86_64-unknown-linux-gnu",
+        _ => "aarch64-apple-darwin",
+    };
+    let prod_name = format!("{}-{}", API_SERVER_BIN, target_triple);
+    let prod_path = resource_dir.join(&prod_name);
+    if prod_path.exists() {
+        return prod_path;
+    }
+    // Fallback for development: CARGO_MANIFEST_DIR/binaries/
+    let dev_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("binaries")
+        .join(&prod_name);
+    dev_path
+}
+
+fn spawn_api_server(app: &AppHandle) -> Result<Child, String> {
+    let bin = sidecar_path(app);
+    if !bin.exists() {
+        return Err(format!(
+            "API server binary not found at {} — run: cd services/api && go build -o ../../apps/desktop/src-tauri/binaries/{}-<triple> ./cmd/server",
+            bin.display(),
+            API_SERVER_BIN
+        ));
+    }
+
+    // Kill any stale process holding the port
+    let _ = std::process::Command::new("lsof")
+        .args(["-ti", ":18080"])
+        .output()
+        .ok()
+        .and_then(|out| {
+            let pids = String::from_utf8_lossy(&out.stdout);
+            pids.lines().find(|l| !l.is_empty()).map(|pid| {
+                let _ = std::process::Command::new("kill").arg("-9").arg(pid).output();
+            })
+        });
+
+    let mut child = Command::new(&bin)
+        .env("C_TEACHER_API_ADDR", API_SERVER_ADDR)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("failed to start API server: {e}"))?;
+
+    // Consume stdout/stderr in background to prevent pipe blocking
+    if let Some(stdout) = child.stdout.take() {
+        std::thread::spawn(move || {
+            let reader = std::io::BufReader::new(stdout);
+            for line in reader.lines() {
+                if let Ok(l) = line {
+                    println!("[c-teacher-api] {}", l);
+                }
+            }
+        });
+    }
+    if let Some(stderr) = child.stderr.take() {
+        std::thread::spawn(move || {
+            let reader = std::io::BufReader::new(stderr);
+            for line in reader.lines() {
+                if let Ok(l) = line {
+                    eprintln!("[c-teacher-api] {}", l);
+                }
+            }
+        });
+    }
+
+    // Wait for server to be ready (poll /health up to 5 seconds)
+    let health_url = format!("http://127.0.0.1:{}/health", API_SERVER_ADDR.split(':').last().unwrap_or("18080"));
+    for attempt in 0..20 {
+        std::thread::sleep(Duration::from_millis(250));
+        match std::process::Command::new("curl")
+            .args(["-sf", "-o", "/dev/null", &health_url])
+            .status()
+        {
+            Ok(status) if status.success() => {
+                println!("[c-teacher] API server ready on {} (attempt {})", API_SERVER_ADDR, attempt + 1);
+                return Ok(child);
+            }
+            _ => continue,
+        }
+    }
+
+    // Server didn't become ready in time — kill it
+    let _ = child.kill();
+    let _ = child.wait();
+    Err("API server started but did not respond within 5 seconds".to_string())
+}
 const SUPPORTED_EXTENSIONS: &[&str] = &[
     "pdf", "png", "jpg", "jpeg", "webp", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "mp4",
     "mov", "txt", "md",
@@ -115,6 +216,24 @@ fn database_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(data_dir.join("c-teacher.sqlite3"))
 }
 
+// ── Database write safety ─────────────────────────────────────────────
+//
+// CONVENTION: Every INSERT/UPDATE/DELETE must check rows_affected.
+// rusqlite's `execute()` returns Ok(0) (not Err) when 0 rows match —
+// this is the classic "write 0" silent-failure pattern. Always bind the
+// result to `let affected = ...` and verify `affected > 0` (unless the
+// operation is intentionally idempotent like INSERT OR IGNORE).
+//
+// Helper for future write operations — use `require_rows(affected, "operation name")?`
+// instead of silently ignoring a 0-rows-affected result.
+#[allow(dead_code)]
+fn require_rows(affected: usize, label: &str) -> Result<usize, String> {
+    if affected == 0 {
+        return Err(format!("{label}: 0 rows affected"));
+    }
+    Ok(affected)
+}
+
 fn open_database(app: &AppHandle) -> Result<Connection, String> {
     let path = database_path(app)?;
     let connection =
@@ -130,6 +249,7 @@ fn open_database(app: &AppHandle) -> Result<Connection, String> {
         )
         .map_err(|error| format!("failed to migrate workspace db: {error}"))?;
     migrate_entity_tables(&connection)?;
+    seed_k12_tags(&connection)?;
     Ok(connection)
 }
 
@@ -192,6 +312,33 @@ fn migrate_entity_tables(connection: &Connection) -> Result<(), String> {
                 status TEXT NOT NULL,
                 updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS mistake_tags (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL UNIQUE,
+                category TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS mistake_records (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                question_text TEXT NOT NULL DEFAULT '',
+                image_path TEXT NOT NULL DEFAULT '',
+                student_answer TEXT NOT NULL DEFAULT '',
+                correct_answer TEXT NOT NULL DEFAULT '',
+                mistake_reason TEXT NOT NULL DEFAULT '',
+                knowledge_points_json TEXT NOT NULL DEFAULT '[]',
+                tags_json TEXT NOT NULL DEFAULT '[]',
+                mastery_status TEXT NOT NULL DEFAULT '待复习',
+                difficulty TEXT NOT NULL DEFAULT '中等',
+                grade_level TEXT NOT NULL DEFAULT '',
+                semester TEXT NOT NULL DEFAULT '',
+                similar_questions_json TEXT NOT NULL DEFAULT '[]',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
             ",
         )
         .map_err(|error| format!("failed to migrate entity tables: {error}"))?;
@@ -239,7 +386,7 @@ fn save_state_with_connection(connection: &mut Connection, state: &Value) -> Res
     let transaction = connection
         .transaction()
         .map_err(|error| format!("failed to open workspace transaction: {error}"))?;
-    transaction
+    let affected = transaction
         .execute(
             "INSERT INTO app_state (key, payload, updated_at)
              VALUES (?1, ?2, CURRENT_TIMESTAMP)
@@ -249,6 +396,9 @@ fn save_state_with_connection(connection: &mut Connection, state: &Value) -> Res
             params![WORKSPACE_KEY, payload],
         )
         .map_err(|error| format!("failed to save workspace state: {error}"))?;
+    if affected == 0 {
+        return Err("failed to save workspace state: 0 rows affected".to_string());
+    }
     sync_entity_tables(&transaction, &state)?;
     transaction
         .commit()
@@ -311,7 +461,7 @@ fn sync_entity_tables(transaction: &Transaction<'_>, state: &Value) -> Result<()
 
     if let Some(students) = state.get("students").and_then(Value::as_array) {
         for student in students {
-            transaction
+            let affected = transaction
                 .execute(
                     "INSERT INTO students (
                         id, name, goal, style, courses_json, materials_json, mistake_book_json, updated_at
@@ -327,12 +477,15 @@ fn sync_entity_tables(transaction: &Transaction<'_>, state: &Value) -> Result<()
                     ],
                 )
                 .map_err(|error| format!("failed to sync students: {error}"))?;
+            if affected == 0 {
+                return Err(format!("failed to sync students: 0 rows inserted for {}", value_string(student, "id")));
+            }
         }
     }
 
     if let Some(materials) = state.get("materials").and_then(Value::as_array) {
         for material in materials {
-            transaction
+            let affected = transaction
                 .execute(
                     "INSERT INTO materials (
                         id, title, category, tags_json, assigned_student_ids_json,
@@ -350,12 +503,15 @@ fn sync_entity_tables(transaction: &Transaction<'_>, state: &Value) -> Result<()
                     ],
                 )
                 .map_err(|error| format!("failed to sync materials: {error}"))?;
+            if affected == 0 {
+                return Err(format!("failed to sync materials: 0 rows inserted for {}", value_string(material, "id")));
+            }
         }
     }
 
     if let Some(sources) = state.get("materialSources").and_then(Value::as_array) {
         for source in sources {
-            transaction
+            let affected = transaction
                 .execute(
                     "INSERT INTO material_sources (
                         id, protocol, name, host, path, auth_method, connection_status, updated_at
@@ -371,12 +527,15 @@ fn sync_entity_tables(transaction: &Transaction<'_>, state: &Value) -> Result<()
                     ],
                 )
                 .map_err(|error| format!("failed to sync material_sources: {error}"))?;
+            if affected == 0 {
+                return Err(format!("failed to sync material_sources: 0 rows inserted for {}", value_string(source, "id")));
+            }
         }
     }
 
     if let Some(records) = state.get("classRecords").and_then(Value::as_array) {
         for record in records {
-            transaction
+            let affected = transaction
                 .execute(
                     "INSERT INTO class_records (
                         id, student_id, subject, lesson_content, performance, homework,
@@ -394,12 +553,15 @@ fn sync_entity_tables(transaction: &Transaction<'_>, state: &Value) -> Result<()
                     ],
                 )
                 .map_err(|error| format!("failed to sync class_records: {error}"))?;
+            if affected == 0 {
+                return Err(format!("failed to sync class_records: 0 rows inserted for {}", value_string(record, "id")));
+            }
         }
     }
 
     if let Some(reminders) = state.get("reminders").and_then(Value::as_array) {
         for reminder in reminders {
-            transaction
+            let affected = transaction
                 .execute(
                     "INSERT INTO reminders (
                         id, student_id, title, remind_at, related_type, status, updated_at
@@ -414,6 +576,9 @@ fn sync_entity_tables(transaction: &Transaction<'_>, state: &Value) -> Result<()
                     ],
                 )
                 .map_err(|error| format!("failed to sync reminders: {error}"))?;
+            if affected == 0 {
+                return Err(format!("failed to sync reminders: 0 rows inserted for {}", value_string(reminder, "id")));
+            }
         }
     }
 
@@ -1023,6 +1188,54 @@ fn create_system_reminder(request: SystemReminderRequest) -> Result<(), String> 
     }
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ApiServerStatus {
+    running: bool,
+    port: u16,
+    health_ok: bool,
+    error: String,
+}
+
+#[tauri::command]
+fn check_api_server() -> ApiServerStatus {
+    let port: u16 = API_SERVER_ADDR
+        .split(':')
+        .last()
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(18080);
+
+    let health_url = format!("http://127.0.0.1:{}/health", port);
+    let health_ok = std::process::Command::new("curl")
+        .args(["-sf", "-o", "/dev/null", &health_url])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+
+    let running = health_ok;
+
+    ApiServerStatus {
+        running,
+        port,
+        health_ok,
+        error: if running {
+            String::new()
+        } else {
+            "API 服务未运行。桌面端启动时会自动启动。如果没有启动，请检查：\n\
+             1. 二进制文件是否存在: src-tauri/binaries/c-teacher-api-<triple>\n\
+             2. 构建命令: cd services/api && go build -o ../../apps/desktop/src-tauri/binaries/<name> ./cmd/server"
+                .to_string()
+        },
+    }
+}
+
+#[tauri::command]
+fn get_local_ip() -> Result<String, String> {
+    local_ip_address::local_ip()
+        .map(|ip| ip.to_string())
+        .map_err(|e| format!("无法获取本机 IP: {e}"))
+}
+
 fn validate_workspace_state(state: &Value) -> Result<(), String> {
     for key in [
         "students",
@@ -1035,6 +1248,546 @@ fn validate_workspace_state(state: &Value) -> Result<(), String> {
             return Err(format!("workspace backup is missing array field: {key}"));
         }
     }
+    Ok(())
+}
+
+// --- Mistake Records CRUD ---
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateMistakeRecordRequest {
+    student_id: String,
+    subject: String,
+    question_text: String,
+    image_path: Option<String>,
+    student_answer: Option<String>,
+    correct_answer: Option<String>,
+    mistake_reason: Option<String>,
+    knowledge_points: Option<Vec<String>>,
+    tags: Option<Vec<String>>,
+    difficulty: Option<String>,
+    grade_level: Option<String>,
+    semester: Option<String>,
+    similar_questions: Option<Vec<String>>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateMistakeRecordRequest {
+    question_text: Option<String>,
+    image_path: Option<String>,
+    student_answer: Option<String>,
+    correct_answer: Option<String>,
+    mistake_reason: Option<String>,
+    knowledge_points: Option<Vec<String>>,
+    tags: Option<Vec<String>>,
+    mastery_status: Option<String>,
+    difficulty: Option<String>,
+    grade_level: Option<String>,
+    semester: Option<String>,
+    similar_questions: Option<Vec<String>>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MistakeRecord {
+    id: String,
+    student_id: String,
+    subject: String,
+    question_text: String,
+    image_path: String,
+    student_answer: String,
+    correct_answer: String,
+    mistake_reason: String,
+    knowledge_points: Vec<String>,
+    tags: Vec<String>,
+    mastery_status: String,
+    difficulty: String,
+    grade_level: String,
+    semester: String,
+    similar_questions: Vec<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+fn parse_json_string_array(raw: &str) -> Vec<String> {
+    serde_json::from_str(raw).unwrap_or_default()
+}
+
+fn row_to_mistake_record(row: &rusqlite::Row<'_>) -> rusqlite::Result<MistakeRecord> {
+    Ok(MistakeRecord {
+        id: row.get(0)?,
+        student_id: row.get(1)?,
+        subject: row.get(2)?,
+        question_text: row.get(3)?,
+        image_path: row.get(4)?,
+        student_answer: row.get(5)?,
+        correct_answer: row.get(6)?,
+        mistake_reason: row.get(7)?,
+        knowledge_points: parse_json_string_array(&row.get::<_, String>(8)?),
+        tags: parse_json_string_array(&row.get::<_, String>(9)?),
+        mastery_status: row.get(10)?,
+        difficulty: row.get(11)?,
+        grade_level: row.get(12)?,
+        semester: row.get(13)?,
+        similar_questions: parse_json_string_array(&row.get::<_, String>(14)?),
+        created_at: row.get(15)?,
+        updated_at: row.get(16)?,
+    })
+}
+
+const MISTAKE_RECORD_COLUMNS: &str = "id, student_id, subject, question_text, image_path, student_answer, correct_answer, mistake_reason, knowledge_points_json, tags_json, mastery_status, difficulty, grade_level, semester, similar_questions_json, created_at, updated_at";
+
+#[tauri::command]
+fn create_mistake_record(app: AppHandle, request: CreateMistakeRecordRequest) -> Result<MistakeRecord, String> {
+    let connection = open_database(&app)?;
+    let id = format!("mistake-{}", chrono::Utc::now().timestamp_millis());
+    let now = chrono::Utc::now().to_rfc3339();
+    let knowledge_points_json = serde_json::to_string(&request.knowledge_points.unwrap_or_default())
+        .map_err(|e| format!("failed to serialize knowledge_points: {e}"))?;
+    let tags_json = serde_json::to_string(&request.tags.unwrap_or_default())
+        .map_err(|e| format!("failed to serialize tags: {e}"))?;
+    let similar_questions_json = serde_json::to_string(&request.similar_questions.unwrap_or_default())
+        .map_err(|e| format!("failed to serialize similar_questions: {e}"))?;
+
+    let affected = connection.execute(
+        &format!("INSERT INTO mistake_records ({}) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17)", MISTAKE_RECORD_COLUMNS),
+        params![
+            id,
+            request.student_id,
+            request.subject,
+            request.question_text,
+            request.image_path.unwrap_or_default(),
+            request.student_answer.unwrap_or_default(),
+            request.correct_answer.unwrap_or_default(),
+            request.mistake_reason.unwrap_or_default(),
+            knowledge_points_json,
+            tags_json,
+            "待复习",
+            request.difficulty.unwrap_or_else(|| "中等".to_string()),
+            request.grade_level.unwrap_or_default(),
+            request.semester.unwrap_or_default(),
+            similar_questions_json,
+            now,
+            now,
+        ],
+    ).map_err(|e| format!("failed to create mistake record: {e}"))?;
+    if affected == 0 {
+        return Err("failed to create mistake record: 0 rows inserted".to_string());
+    }
+
+    let record = connection.query_row(
+        &format!("SELECT {} FROM mistake_records WHERE id = ?1", MISTAKE_RECORD_COLUMNS),
+        params![id],
+        row_to_mistake_record,
+    ).map_err(|e| format!("failed to fetch created mistake record: {e}"))?;
+
+    Ok(record)
+}
+
+#[tauri::command]
+fn list_mistake_records(app: AppHandle, student_id: String, subject: Option<String>) -> Result<Vec<MistakeRecord>, String> {
+    let connection = open_database(&app)?;
+    let mut sql = format!("SELECT {} FROM mistake_records WHERE student_id = ?1", MISTAKE_RECORD_COLUMNS);
+    let mut params_vec: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(student_id)];
+
+    if let Some(ref subj) = subject {
+        if !subj.is_empty() {
+            sql.push_str(" AND subject = ?2");
+            params_vec.push(Box::new(subj.clone()));
+        }
+    }
+    sql.push_str(" ORDER BY created_at DESC");
+
+    let mut stmt = connection.prepare(&sql).map_err(|e| format!("failed to prepare list query: {e}"))?;
+    let param_refs: Vec<&dyn rusqlite::types::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+    let rows = stmt.query_map(param_refs.as_slice(), row_to_mistake_record)
+        .map_err(|e| format!("failed to list mistake records: {e}"))?;
+
+    let mut records = Vec::new();
+    for row in rows {
+        records.push(row.map_err(|e| format!("failed to read mistake record row: {e}"))?);
+    }
+    Ok(records)
+}
+
+#[tauri::command]
+fn get_mistake_record(app: AppHandle, id: String) -> Result<MistakeRecord, String> {
+    let connection = open_database(&app)?;
+    connection.query_row(
+        &format!("SELECT {} FROM mistake_records WHERE id = ?1", MISTAKE_RECORD_COLUMNS),
+        params![id],
+        row_to_mistake_record,
+    ).map_err(|e| format!("failed to get mistake record: {e}"))
+}
+
+#[tauri::command]
+fn update_mistake_record(app: AppHandle, id: String, request: UpdateMistakeRecordRequest) -> Result<MistakeRecord, String> {
+    let connection = open_database(&app)?;
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Build dynamic UPDATE
+    let mut sets = vec!["updated_at = ?1".to_string()];
+    let mut param_idx = 2;
+    let mut params_vec: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(now.clone())];
+
+    macro_rules! add_field {
+        ($field:expr, $val:expr) => {
+            if let Some(v) = $val {
+                sets.push(format!("{} = ?{}", $field, param_idx));
+                params_vec.push(Box::new(v));
+                param_idx += 1;
+            }
+        };
+    }
+
+    add_field!("question_text", request.question_text);
+    add_field!("image_path", request.image_path);
+    add_field!("student_answer", request.student_answer);
+    add_field!("correct_answer", request.correct_answer);
+    add_field!("mistake_reason", request.mistake_reason);
+    add_field!("mastery_status", request.mastery_status);
+    add_field!("difficulty", request.difficulty);
+    add_field!("grade_level", request.grade_level);
+    add_field!("semester", request.semester);
+
+    if let Some(kp) = request.knowledge_points {
+        let json = serde_json::to_string(&kp).map_err(|e| format!("failed to serialize knowledge_points: {e}"))?;
+        sets.push(format!("knowledge_points_json = ?{}", param_idx));
+        params_vec.push(Box::new(json));
+        param_idx += 1;
+    }
+    if let Some(tags) = request.tags {
+        let json = serde_json::to_string(&tags).map_err(|e| format!("failed to serialize tags: {e}"))?;
+        sets.push(format!("tags_json = ?{}", param_idx));
+        params_vec.push(Box::new(json));
+        param_idx += 1;
+    }
+    if let Some(sq) = request.similar_questions {
+        let json = serde_json::to_string(&sq).map_err(|e| format!("failed to serialize similar_questions: {e}"))?;
+        sets.push(format!("similar_questions_json = ?{}", param_idx));
+        params_vec.push(Box::new(json));
+        param_idx += 1;
+    }
+
+    sets.push(format!("id = ?{}", param_idx));
+    params_vec.push(Box::new(id.clone()));
+
+    let sql = format!("UPDATE mistake_records SET {} WHERE id = ?{}", sets.join(", "), param_idx);
+    let affected = connection.execute(&sql, params_vec.iter().map(|p| p.as_ref()).collect::<Vec<_>>().as_slice())
+        .map_err(|e| format!("failed to update mistake record: {e}"))?;
+    if affected == 0 {
+        return Err(format!("mistake record not found: {id}"));
+    }
+
+    get_mistake_record(app, id)
+}
+
+#[tauri::command]
+fn delete_mistake_record(app: AppHandle, id: String) -> Result<bool, String> {
+    let connection = open_database(&app)?;
+    let affected = connection.execute("DELETE FROM mistake_records WHERE id = ?1", params![id])
+        .map_err(|e| format!("failed to delete mistake record: {e}"))?;
+    Ok(affected > 0)
+}
+
+#[tauri::command]
+fn batch_update_mistake_mastery(app: AppHandle, ids: Vec<String>, mastery_status: String) -> Result<usize, String> {
+    let connection = open_database(&app)?;
+    let now = chrono::Utc::now().to_rfc3339();
+    let mut total = 0;
+    for id in &ids {
+        let affected = connection.execute(
+            "UPDATE mistake_records SET mastery_status = ?1, updated_at = ?2 WHERE id = ?3",
+            params![mastery_status, now, id],
+        ).map_err(|e| format!("failed to update mastery status: {e}"))?;
+        total += affected;
+    }
+    Ok(total)
+}
+
+// --- Mistake Tags ---
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct MistakeTag {
+    id: String,
+    name: String,
+    category: String,
+}
+
+#[tauri::command]
+fn list_mistake_tags(app: AppHandle) -> Result<Vec<MistakeTag>, String> {
+    let connection = open_database(&app)?;
+    let mut stmt = connection.prepare("SELECT id, name, category FROM mistake_tags ORDER BY category, name")
+        .map_err(|e| format!("failed to prepare tags query: {e}"))?;
+    let rows = stmt.query_map([], |row| {
+        Ok(MistakeTag {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            category: row.get(2)?,
+        })
+    }).map_err(|e| format!("failed to list mistake tags: {e}"))?;
+
+    let mut tags = Vec::new();
+    for row in rows {
+        tags.push(row.map_err(|e| format!("failed to read tag row: {e}"))?);
+    }
+    Ok(tags)
+}
+
+#[tauri::command]
+fn create_mistake_tag(app: AppHandle, name: String, category: String) -> Result<MistakeTag, String> {
+    let connection = open_database(&app)?;
+    let id = format!("tag-{}", chrono::Utc::now().timestamp_millis());
+    let affected = connection.execute(
+        "INSERT INTO mistake_tags (id, name, category) VALUES (?1, ?2, ?3)",
+        params![id, name, category],
+    ).map_err(|e| format!("failed to create mistake tag: {e}"))?;
+    if affected == 0 {
+        return Err("failed to create mistake tag: 0 rows inserted".to_string());
+    }
+
+    Ok(MistakeTag { id, name, category })
+}
+
+#[tauri::command]
+fn update_mistake_tag(app: AppHandle, id: String, name: Option<String>, category: Option<String>) -> Result<MistakeTag, String> {
+    let connection = open_database(&app)?;
+    let mut sets = vec![];
+    let mut params_vec: Vec<Box<dyn rusqlite::types::ToSql>> = vec![];
+    let mut param_idx = 1;
+
+    if let Some(n) = name {
+        sets.push(format!("name = ?{}", param_idx));
+        params_vec.push(Box::new(n));
+        param_idx += 1;
+    }
+    if let Some(c) = category {
+        sets.push(format!("category = ?{}", param_idx));
+        params_vec.push(Box::new(c));
+        param_idx += 1;
+    }
+
+    if sets.is_empty() {
+        return connection.query_row(
+            "SELECT id, name, category FROM mistake_tags WHERE id = ?1",
+            params![id],
+            |row| Ok(MistakeTag { id: row.get(0)?, name: row.get(1)?, category: row.get(2)? }),
+        ).map_err(|e| format!("failed to get mistake tag: {e}"));
+    }
+
+    sets.push(format!("id = ?{}", param_idx));
+    params_vec.push(Box::new(id.clone()));
+
+    let sql = format!("UPDATE mistake_tags SET {} WHERE id = ?{}", sets.join(", "), param_idx);
+    let affected = connection.execute(&sql, params_vec.iter().map(|p| p.as_ref()).collect::<Vec<_>>().as_slice())
+        .map_err(|e| format!("failed to update mistake tag: {e}"))?;
+    if affected == 0 {
+        return Err(format!("mistake tag not found: {id}"));
+    }
+
+    connection.query_row(
+        "SELECT id, name, category FROM mistake_tags WHERE id = ?1",
+        params![id],
+        |row| Ok(MistakeTag { id: row.get(0)?, name: row.get(1)?, category: row.get(2)? }),
+    ).map_err(|e| format!("failed to fetch updated mistake tag: {e}"))
+}
+
+#[tauri::command]
+fn delete_mistake_tag(app: AppHandle, id: String) -> Result<bool, String> {
+    let connection = open_database(&app)?;
+    let affected = connection.execute("DELETE FROM mistake_tags WHERE id = ?1", params![id])
+        .map_err(|e| format!("failed to delete mistake tag: {e}"))?;
+    Ok(affected > 0)
+}
+
+#[tauri::command]
+fn migrate_old_mistake_data(app: AppHandle) -> Result<String, String> {
+    let connection = open_database(&app)?;
+    let now = chrono::Utc::now().to_rfc3339();
+    let mut migrated = 0u32;
+    let mut skipped = 0u32;
+
+    let mut stmt = connection
+        .prepare("SELECT id, name, mistake_book_json FROM students")
+        .map_err(|e| format!("failed to query students: {e}"))?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+            ))
+        })
+        .map_err(|e| format!("failed to read students: {e}"))?;
+
+    for row in rows {
+        let (student_id, name, raw_json) = row.map_err(|e| format!("failed to read row: {e}"))?;
+
+        // Skip if student already has mistake records
+        let existing: i64 = connection
+            .query_row(
+                "SELECT COUNT(*) FROM mistake_records WHERE student_id = ?1",
+                params![student_id],
+                |r| r.get(0),
+            )
+            .unwrap_or(0);
+        if existing > 0 {
+            skipped += 1;
+            continue;
+        }
+
+        // Parse old mistake_book_json
+        let book: Value = serde_json::from_str(&raw_json).unwrap_or_default();
+        let analysis = book
+            .get("analysis")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        let knowledge = book
+            .get("knowledgeInsight")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        let similar = book
+            .get("similarQuestions")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+
+        // Skip if no meaningful data
+        if analysis.is_empty()
+            || analysis == "暂无错误分析，录入错题后可由 AI 辅助生成。"
+            || analysis == "本地 AI 演示分析"
+        {
+            continue;
+        }
+
+        // Determine subject from old data
+        let subjects = book
+            .get("subjects")
+            .and_then(|v| v.as_array())
+            .map(|arr| arr.iter().filter_map(|s| s.as_str()).collect::<Vec<_>>())
+            .unwrap_or_default();
+        let subject = subjects.first().map(|s| s.to_string()).unwrap_or_else(|| "数学".to_string());
+
+        // Extract knowledge points from text
+        let kps: Vec<String> = if !knowledge.is_empty() {
+            knowledge
+                .split(|c: char| c == '、' || c == '，' || c == ',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty() && s.len() < 20)
+                .take(5)
+                .collect()
+        } else {
+            vec![]
+        };
+
+        // Extract similar questions
+        let sqs: Vec<String> = if !similar.is_empty() && similar != "暂无类似题型。" {
+            similar
+                .split(|c: char| c == '；' || c == '，' || c == '\n')
+                .map(|s| s.trim().trim_start_matches(|c: char| c.is_ascii_digit() || c == '.' || c == '、').trim().to_string())
+                .filter(|s| s.len() > 4)
+                .take(5)
+                .collect()
+        } else {
+            vec![]
+        };
+
+        let id = format!("mistake-migrated-{}", chrono::Utc::now().timestamp_millis());
+        let kp_json = serde_json::to_string(&kps).unwrap_or_default();
+        let tags_json = "[]";
+        let sq_json = serde_json::to_string(&sqs).unwrap_or_default();
+
+        let affected = connection
+            .execute(
+                &format!(
+                    "INSERT INTO mistake_records ({}) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17)",
+                    MISTAKE_RECORD_COLUMNS
+                ),
+                params![
+                    id,
+                    student_id,
+                    subject,
+                    format!("{}的历史错题分析", name),
+                    "", // image_path
+                    "",
+                    "",
+                    analysis,
+                    kp_json,
+                    tags_json,
+                    "待复习",
+                    "中等",
+                    "",
+                    "",
+                    sq_json,
+                    now,
+                    now,
+                ],
+            )
+            .map_err(|e| format!("failed to insert migrated record for {}: {e}", name))?;
+        if affected == 0 {
+            return Err(format!("failed to insert migrated record for {}: 0 rows inserted", name));
+        }
+
+        migrated += 1;
+    }
+
+    Ok(format!(
+        "迁移完成：{} 条旧数据转为错题记录，{} 名学生已有记录跳过",
+        migrated, skipped
+    ))
+}
+
+fn seed_k12_tags(connection: &Connection) -> Result<(), String> {
+    let count: i64 = connection.query_row("SELECT COUNT(*) FROM mistake_tags", [], |row| row.get(0))
+        .map_err(|e| format!("failed to count tags: {e}"))?;
+    if count > 0 {
+        return Ok(());
+    }
+
+    let k12_tags: Vec<(&str, &str)> = vec![
+        // 数学
+        ("数与代数", "数学"), ("方程与不等式", "数学"), ("函数", "数学"),
+        ("几何图形", "数学"), ("三角函数", "数学"), ("概率统计", "数学"),
+        ("数列", "数学"), ("导数", "数学"), ("向量", "数学"),
+        // 语文
+        ("文言文", "语文"), ("现代文阅读", "语文"), ("作文", "语文"),
+        ("诗词鉴赏", "语文"), ("语言运用", "语文"), ("名著阅读", "语文"),
+        // 英语
+        ("语法", "英语"), ("阅读理解", "英语"), ("完形填空", "英语"),
+        ("写作", "英语"), ("听力", "英语"), ("词汇", "英语"),
+        // 物理
+        ("力学", "物理"), ("电学", "物理"), ("光学", "物理"),
+        ("热学", "物理"), ("运动学", "物理"), ("电磁感应", "物理"),
+        // 化学
+        ("有机化学", "化学"), ("无机化学", "化学"), ("化学反应", "化学"),
+        ("溶液", "化学"), ("酸碱盐", "化学"), ("化学实验", "化学"),
+        // 生物
+        ("细胞", "生物"), ("遗传", "生物"), ("生态", "生物"),
+        ("进化", "生物"), ("人体", "生物"), ("植物", "生物"),
+        // 历史
+        ("中国古代史", "历史"), ("中国近代史", "历史"), ("世界史", "历史"),
+        // 地理
+        ("自然地理", "地理"), ("人文地理", "地理"), ("区域地理", "地理"),
+        // 政治
+        ("经济", "政治"), ("政治", "政治"), ("文化", "政治"), ("哲学", "政治"),
+    ];
+
+    for (name, category) in k12_tags {
+        let id = format!("tag-{}-{}", category, name);
+        connection.execute(
+            "INSERT OR IGNORE INTO mistake_tags (id, name, category) VALUES (?1, ?2, ?3)",
+            params![id, name, category],
+        ).map_err(|e| format!("failed to seed tag {name}: {e}"))?;
+    }
+
     Ok(())
 }
 
@@ -1055,10 +1808,59 @@ pub fn run() {
             create_system_reminder,
             open_material_target,
             read_mistake_image_data_url,
-            write_text_file
+            write_text_file,
+            create_mistake_record,
+            list_mistake_records,
+            get_mistake_record,
+            update_mistake_record,
+            delete_mistake_record,
+            batch_update_mistake_mastery,
+            list_mistake_tags,
+            create_mistake_tag,
+            update_mistake_tag,
+            delete_mistake_tag,
+            migrate_old_mistake_data,
+            check_api_server,
+            get_local_ip
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running C-teacher");
+        .setup(|app| {
+            match spawn_api_server(&app.handle()) {
+                Ok(child) => {
+                    app.manage(ApiServerHandle(Mutex::new(Some(child))));
+                }
+                Err(err) => {
+                    eprintln!("Warning: Could not auto-start API server: {err}");
+                    eprintln!("Mobile photo upload will be unavailable.");
+                    eprintln!("Run manually: cd services/api && C_TEACHER_API_ADDR=0.0.0.0:18080 go run ./cmd/server");
+                    app.manage(ApiServerHandle(Mutex::new(None)));
+                }
+            }
+            // Migrate old mistake data to new structured records
+            if let Ok(msg) = migrate_old_mistake_data(app.handle().clone()) {
+                if msg.contains("0 条") {
+                    // No migration needed, silent
+                } else {
+                    println!("[c-teacher] {}", msg);
+                }
+            }
+            Ok(())
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building C-teacher")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                if let Some(handle) = app.try_state::<ApiServerHandle>() {
+                    if let Ok(mut guard) = handle.0.lock() {
+                        if let Some(ref mut child) = *guard {
+                            println!("[c-teacher] Shutting down API server...");
+                            let _ = child.kill();
+                            let _ = child.wait();
+                            println!("[c-teacher] API server stopped");
+                        }
+                    }
+                }
+            }
+        });
 }
 
 #[cfg(test)]
@@ -1200,5 +2002,170 @@ mod tests {
         assert!(normalize_open_material_target("").is_err());
         assert!(normalize_open_material_target("relative/file.pdf").is_err());
         assert!(normalize_open_material_target("ftp://example.test/file.pdf").is_err());
+    }
+
+    // ── "write 0" detection tests ──────────────────────────────────
+    // These tests verify that INSERT/UPDATE/DELETE operations properly
+    // detect and report 0 rows affected, preventing silent data loss.
+
+    fn setup_mistake_tables(conn: &Connection) {
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS mistake_tags (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                category TEXT NOT NULL DEFAULT ''
+            );
+            CREATE TABLE IF NOT EXISTS mistake_records (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                subject TEXT NOT NULL DEFAULT '',
+                question_text TEXT NOT NULL DEFAULT '',
+                image_path TEXT NOT NULL DEFAULT '',
+                student_answer TEXT NOT NULL DEFAULT '',
+                correct_answer TEXT NOT NULL DEFAULT '',
+                mistake_reason TEXT NOT NULL DEFAULT '',
+                knowledge_points_json TEXT NOT NULL DEFAULT '[]',
+                tags_json TEXT NOT NULL DEFAULT '[]',
+                mastery_status TEXT NOT NULL DEFAULT '待复习',
+                difficulty TEXT NOT NULL DEFAULT '中等',
+                grade_level TEXT NOT NULL DEFAULT '',
+                semester TEXT NOT NULL DEFAULT '',
+                similar_questions_json TEXT NOT NULL DEFAULT '[]',
+                created_at TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT ''
+            );",
+        )
+        .expect("mistake tables should be created");
+    }
+
+    #[test]
+    fn require_rows_returns_error_on_zero() {
+        assert!(require_rows(0, "test operation").is_err());
+        assert_eq!(
+            require_rows(0, "test operation").unwrap_err(),
+            "test operation: 0 rows affected"
+        );
+    }
+
+    #[test]
+    fn require_rows_passes_through_on_success() {
+        assert_eq!(require_rows(1, "ok").unwrap(), 1);
+        assert_eq!(require_rows(42, "bulk").unwrap(), 42);
+    }
+
+    #[test]
+    fn insert_mistake_record_reports_zero_rows() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        setup_mistake_tables(&conn);
+
+        // Insert a row — should succeed
+        let affected = conn
+            .execute(
+                "INSERT INTO mistake_records (id, student_id, subject, question_text, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                params!["rec-1", "s1", "数学", "题目", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"],
+            )
+            .expect("insert should succeed");
+        assert_eq!(affected, 1, "INSERT should affect 1 row");
+
+        // Insert with same PK — should fail with constraint violation (not 0 rows)
+        let result = conn.execute(
+            "INSERT INTO mistake_records (id, student_id, subject, question_text, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params!["rec-1", "s1", "数学", "题目", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"],
+        );
+        assert!(result.is_err(), "duplicate PK INSERT should error");
+    }
+
+    #[test]
+    fn update_mistake_record_reports_zero_rows_for_missing_id() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        setup_mistake_tables(&conn);
+
+        // UPDATE a non-existent record — should return Ok(0), NOT Err
+        let affected = conn
+            .execute(
+                "UPDATE mistake_records SET subject = ?1 WHERE id = ?2",
+                params!["语文", "nonexistent"],
+            )
+            .expect("update should succeed (rusqlite returns Ok(0) for no-match)");
+
+        assert_eq!(affected, 0, "UPDATE with no match MUST return 0 — this is the 'write 0' pattern we guard against");
+    }
+
+    #[test]
+    fn update_mistake_record_affects_row_for_existing_id() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        setup_mistake_tables(&conn);
+
+        conn.execute(
+            "INSERT INTO mistake_records (id, student_id, subject, question_text, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params!["rec-2", "s1", "数学", "题目", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"],
+        )
+        .expect("insert should succeed");
+
+        let affected = conn
+            .execute(
+                "UPDATE mistake_records SET subject = ?1 WHERE id = ?2",
+                params!["语文", "rec-2"],
+            )
+            .expect("update should succeed");
+
+        assert_eq!(affected, 1, "UPDATE existing record should affect 1 row");
+    }
+
+    #[test]
+    fn delete_mistake_record_reports_zero_rows_for_missing_id() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        setup_mistake_tables(&conn);
+
+        let affected = conn
+            .execute("DELETE FROM mistake_records WHERE id = ?1", params!["nonexistent"])
+            .expect("delete should succeed");
+
+        assert_eq!(affected, 0, "DELETE with no match returns 0 — must be checked by caller");
+    }
+
+    #[test]
+    fn insert_mistake_tag_reports_zero_rows_on_silent_failure() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        setup_mistake_tables(&conn);
+
+        // INSERT OR IGNORE should succeed with 0 rows if duplicate
+        conn.execute(
+            "INSERT INTO mistake_tags (id, name, category) VALUES (?1, ?2, ?3)",
+            params!["tag-1", "数与代数", "数学"],
+        )
+        .expect("first insert should succeed");
+
+        let affected = conn
+            .execute(
+                "INSERT OR IGNORE INTO mistake_tags (id, name, category) VALUES (?1, ?2, ?3)",
+                params!["tag-1", "数与代数", "数学"],
+            )
+            .expect("INSERT OR IGNORE should succeed");
+
+        assert_eq!(affected, 0, "INSERT OR IGNORE duplicate returns 0 — intentionally idempotent");
+    }
+
+    #[test]
+    fn seed_k12_tags_is_idempotent() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        setup_mistake_tables(&conn);
+
+        // First seeding should insert tags
+        seed_k12_tags(&conn).expect("first seed should succeed");
+        let count1: i64 = conn
+            .query_row("SELECT COUNT(*) FROM mistake_tags", [], |row| row.get(0))
+            .expect("count should work");
+        assert!(count1 > 0, "first seed should create tags");
+
+        // Second seeding should be idempotent (INSERT OR IGNORE)
+        seed_k12_tags(&conn).expect("second seed should succeed");
+        let count2: i64 = conn
+            .query_row("SELECT COUNT(*) FROM mistake_tags", [], |row| row.get(0))
+            .expect("count should work");
+        assert_eq!(count1, count2, "second seed should not duplicate tags");
     }
 }

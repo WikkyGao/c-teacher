@@ -10,15 +10,19 @@
     "build:desktop": "npm run build --workspace @c-teacher/desktop",
     "tauri:dev": "npm run tauri --workspace @c-teacher/desktop -- dev",
     "build:dmg": "npm run tauri --workspace @c-teacher/desktop -- build --bundles dmg",
+    "build:dmg:signed": "npm run tauri --workspace @c-teacher/desktop -- build --bundles dmg && bash apps/desktop/scripts/sign-macos.sh",
     "build:windows": "npm run tauri --workspace @c-teacher/desktop -- build --bundles nsis",
+    "sign:macos": "bash apps/desktop/scripts/sign-macos.sh",
     "dev:server": "go run ./services/api/cmd/server",
     "test": "npm run test --workspace @c-teacher/desktop",
     "lint": "npm run lint --workspace @c-teacher/desktop"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.5.0"
+    "@tauri-apps/cli": "^2.5.0",
+    "@types/qrcode": "^1.5.6"
   },
   "dependencies": {
-    "@tauri-apps/plugin-http": "^2.5.9"
+    "@tauri-apps/plugin-http": "^2.5.9",
+    "qrcode": "^1.5.4"
   }
 }

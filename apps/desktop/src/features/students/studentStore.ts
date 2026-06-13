@@ -20,6 +20,48 @@ export type MistakeBookSummary = {
   knowledgeInsight: string;
 };
 
+export type MistakeRecord = {
+  id: string;
+  studentId: string;
+  subject: string;
+  questionText: string;
+  imagePath: string;
+  studentAnswer: string;
+  correctAnswer: string;
+  mistakeReason: string;
+  knowledgePoints: string[];
+  tags: string[];
+  masteryStatus: "待复习" | "已掌握";
+  difficulty: "简单" | "中等" | "困难" | "挑战";
+  gradeLevel: string;
+  semester: string;
+  similarQuestions: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MistakeTag = {
+  id: string;
+  name: string;
+  category: string;
+};
+
+export type CreateMistakeRecordDraft = {
+  studentId: string;
+  subject: string;
+  questionText: string;
+  imagePath?: string;
+  studentAnswer?: string;
+  correctAnswer?: string;
+  mistakeReason?: string;
+  knowledgePoints?: string[];
+  tags?: string[];
+  difficulty?: string;
+  gradeLevel?: string;
+  semester?: string;
+  similarQuestions?: string[];
+};
+
 export type Student = {
   id: string;
   name: string;
@@ -766,7 +808,11 @@ function readPersistedState(): PersistedState | null {
 
 function writePersistedState(state: PersistedState) {
   if (typeof localStorage === "undefined") return;
-  localStorage.setItem(storageKey, JSON.stringify(state));
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  } catch (e) {
+    console.error("Failed to write persisted state to localStorage:", e);
+  }
 }
 
 function createPersistedState(
@@ -925,6 +971,158 @@ export const useStudentStore = defineStore("students", () => {
       todayReminderCount: incompleteReminders.value.length
     };
   });
+
+  // --- Mistake Records State ---
+  const mistakeRecords = ref<MistakeRecord[]>([]);
+  const mistakeTags = ref<MistakeTag[]>([]);
+  const isLoadingMistakeRecords = ref(false);
+
+  const activeStudentMistakeRecords = computed(() => {
+    return mistakeRecords.value.filter((r) => r.studentId === activeStudent.value?.id);
+  });
+
+  const activeStudentMistakeStats = computed(() => {
+    const records = activeStudentMistakeRecords.value;
+    const total = records.length;
+    const mastered = records.filter((r) => r.masteryStatus === "已掌握").length;
+    const pending = total - mastered;
+    const subjectCounts: Record<string, number> = {};
+    for (const r of records) {
+      subjectCounts[r.subject] = (subjectCounts[r.subject] || 0) + 1;
+    }
+    return { total, mastered, pending, subjectCounts };
+  });
+
+  async function loadMistakeRecords(studentId: string, subject?: string) {
+    if (!isTauri()) return;
+    isLoadingMistakeRecords.value = true;
+    try {
+      const records = await invoke<MistakeRecord[]>("list_mistake_records", {
+        studentId,
+        subject: subject || undefined
+      });
+      mistakeRecords.value = records;
+    } catch (error) {
+      console.error("Failed to load mistake records:", error);
+    } finally {
+      isLoadingMistakeRecords.value = false;
+    }
+  }
+
+  async function loadMistakeTags() {
+    if (!isTauri()) return;
+    try {
+      const tags = await invoke<MistakeTag[]>("list_mistake_tags");
+      mistakeTags.value = tags;
+    } catch (error) {
+      console.error("Failed to load mistake tags:", error);
+    }
+  }
+
+  async function createMistakeTag(name: string, category: string): Promise<MistakeTag | null> {
+    if (!isTauri()) return null;
+    try {
+      const tag = await invoke<MistakeTag>("create_mistake_tag", { name, category });
+      mistakeTags.value.push(tag);
+      return tag;
+    } catch (error) {
+      console.error("Failed to create mistake tag:", error);
+      return null;
+    }
+  }
+
+  async function updateMistakeTag(id: string, patch: { name?: string; category?: string }): Promise<MistakeTag | null> {
+    if (!isTauri()) return null;
+    try {
+      const updated = await invoke<MistakeTag>("update_mistake_tag", { id, ...patch });
+      const index = mistakeTags.value.findIndex((t) => t.id === id);
+      if (index !== -1) {
+        mistakeTags.value[index] = updated;
+      }
+      return updated;
+    } catch (error) {
+      console.error("Failed to update mistake tag:", error);
+      return null;
+    }
+  }
+
+  async function deleteMistakeTag(id: string): Promise<boolean> {
+    if (!isTauri()) return false;
+    try {
+      await invoke<boolean>("delete_mistake_tag", { id });
+      mistakeTags.value = mistakeTags.value.filter((t) => t.id !== id);
+      return true;
+    } catch (error) {
+      console.error("Failed to delete mistake tag:", error);
+      return false;
+    }
+  }
+
+  async function createMistakeRecord(draft: CreateMistakeRecordDraft): Promise<MistakeRecord | null> {
+    if (!isTauri()) return null;
+    try {
+      const record = await invoke<MistakeRecord>("create_mistake_record", { request: draft });
+      mistakeRecords.value.unshift(record);
+      return record;
+    } catch (error) {
+      console.error("Failed to create mistake record:", error);
+      return null;
+    }
+  }
+
+  async function updateMistakeRecord(id: string, patch: Partial<MistakeRecord>): Promise<boolean> {
+    if (!isTauri()) return false;
+    try {
+      const updated = await invoke<MistakeRecord>("update_mistake_record", {
+        id,
+        request: patch
+      });
+      const index = mistakeRecords.value.findIndex((r) => r.id === id);
+      if (index !== -1) {
+        mistakeRecords.value[index] = updated;
+      }
+      return true;
+    } catch (error) {
+      console.error("Failed to update mistake record:", error);
+      return false;
+    }
+  }
+
+  async function deleteMistakeRecord(id: string): Promise<boolean> {
+    if (!isTauri()) return false;
+    try {
+      await invoke<boolean>("delete_mistake_record", { id });
+      mistakeRecords.value = mistakeRecords.value.filter((r) => r.id !== id);
+      return true;
+    } catch (error) {
+      console.error("Failed to delete mistake record:", error);
+      return false;
+    }
+  }
+
+  async function batchUpdateMistakeMastery(ids: string[], masteryStatus: string): Promise<number> {
+    if (!isTauri()) return 0;
+    try {
+      const count = await invoke<number>("batch_update_mistake_mastery", { ids, masteryStatus });
+      for (const id of ids) {
+        const record = mistakeRecords.value.find((r) => r.id === id);
+        if (record) {
+          record.masteryStatus = masteryStatus as MistakeRecord["masteryStatus"];
+        }
+      }
+      return count;
+    } catch (error) {
+      console.error("Failed to batch update mastery:", error);
+      return 0;
+    }
+  }
+
+  async function toggleMistakeMastery(id: string): Promise<boolean> {
+    const record = mistakeRecords.value.find((r) => r.id === id);
+    if (!record) return false;
+    const newStatus = record.masteryStatus === "已掌握" ? "待复习" : "已掌握";
+    return updateMistakeRecord(id, { masteryStatus: newStatus });
+  }
 
   function selectStudent(studentId: string) {
     activeStudentId.value = studentId;
@@ -1420,7 +1618,9 @@ function applyPersistedState(state: PersistedState) {
     () => {
       const state = currentPersistedState();
       writePersistedState(state);
-      void saveNativeState(state);
+      saveNativeState(state).catch((e) => {
+        console.error("Failed to save native state:", e);
+      });
     },
     { deep: true }
   );
@@ -1498,6 +1698,21 @@ function applyPersistedState(state: PersistedState) {
     deleteGroup,
     addStudentToGroup,
     removeStudentFromGroup,
-    moveStudentToGroup
+    moveStudentToGroup,
+    mistakeRecords,
+    mistakeTags,
+    isLoadingMistakeRecords,
+    activeStudentMistakeRecords,
+    activeStudentMistakeStats,
+    loadMistakeRecords,
+    loadMistakeTags,
+    createMistakeTag,
+    updateMistakeTag,
+    deleteMistakeTag,
+    createMistakeRecord,
+    updateMistakeRecord,
+    deleteMistakeRecord,
+    batchUpdateMistakeMastery,
+    toggleMistakeMastery
   };
 });

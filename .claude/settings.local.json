@@ -31,7 +31,25 @@
       "WebFetch(domain:blog.ydxian.xyz)",
       "WebFetch(domain:www.qnaptw.com)",
       "WebFetch(domain:api.github.com)",
-      "Bash(pip3 install *)"
+      "Bash(pip3 install *)",
+      "Bash(go build *)",
+      "Bash(go test *)",
+      "Bash(cargo check *)",
+      "Bash(/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate)",
+      "Bash(/usr/libexec/ApplicationFirewall/socketfilterfw --listapps)",
+      "Bash(file /Users/wikky/Documents/c-teacher/apps/desktop/src-tauri/binaries/c-teacher-api-*)",
+      "Bash(cargo run *)",
+      "Bash(kill %1)",
+      "Bash(/Users/wikky/Documents/c-teacher/apps/desktop/src-tauri/binaries/c-teacher-api-aarch64-apple-darwin)",
+      "Bash(wait)",
+      "Bash(kill -9 94506 94504)",
+      "Bash(cargo build *)",
+      "Bash(awk '/^<template>/,/^<\\\\/template>/' /Users/wikky/Documents/c-teacher/apps/desktop/src/features/mistake-book/MistakeBookPage.vue)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(cargo test *)",
+      "mcp__pencil-designer__get_editor_state",
+      "mcp__pencil-designer__batch_get",
+      "mcp__pencil-designer__snapshot_layout"
     ]
   }
 }

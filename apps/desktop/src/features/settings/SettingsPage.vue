@@ -2,7 +2,7 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { Download, LogOut, Plus, Upload } from "lucide-vue-next";
+import { Download, LogOut, Pencil, Plus, Upload } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "../backup/workspaceBackup";
@@ -30,6 +30,9 @@ const isBackingUp = ref(false);
 const isRestoring = ref(false);
 const isSavingPrompt = ref(false);
 const isSavingSimilarPrompt = ref(false);
+const showMistakePromptModal = ref(false);
+const showSimilarPromptModal = ref(false);
+const showThemeModal = ref(false);
 
 // Prompt editors
 const mistakePrompt = ref(workspace.appSettings.mistakeAnalysisPrompt);
@@ -59,6 +62,16 @@ function restoreDefaultSimilarQuestionsPrompt() {
   workspace.updateAppSettings({ similarQuestionsPrompt: DEFAULT_SIMILAR_QUESTIONS_PROMPT });
   isSavingSimilarPrompt.value = true;
   setTimeout(() => { isSavingSimilarPrompt.value = false; }, 1500);
+}
+
+function saveAndCloseMistakePrompt() {
+  saveMistakePrompt();
+  showMistakePromptModal.value = false;
+}
+
+function saveAndCloseSimilarPrompt() {
+  saveSimilarQuestionsPrompt();
+  showSimilarPromptModal.value = false;
 }
 
 // Provider modal
@@ -474,7 +487,7 @@ function confirmRestore() {
           <div v-if="workspace.appSettings.aiProviders.length === 0" class="settings-empty">
             暂无供应商，点击上方按钮新增
           </div>
-          <div v-for="provider in workspace.appSettings.aiProviders" :key="provider.id" class="provider-list-item">
+          <div v-for="provider in workspace.appSettings.aiProviders.slice(0, 2)" :key="provider.id" class="provider-list-item">
             <div class="provider-info">
               <div class="provider-name-row">
                 <n-switch
@@ -490,11 +503,7 @@ function confirmRestore() {
             <div class="provider-models">
               <div v-for="model in provider.models" :key="model.id" class="model-chip">
                 <span>{{ model.name }}</span>
-                <span class="model-chip-purpose">{{ model.purpose }}</span>
-                <n-tag v-if="model.supportsVision" size="tiny" type="info" round>🖼 识图</n-tag>
                 <n-tag v-if="model.isDefault && provider.id === workspace.appSettings.defaultAiProviderId" size="tiny" type="success" round>默认</n-tag>
-                <button class="model-chip-edit" @click="openEditModel(provider, model)">✎</button>
-                <button class="model-chip-del" @click="deleteModel(provider, model.id)">✕</button>
               </div>
               <n-button size="tiny" quaternary @click="openCreateModel(provider)">+ 新增模型</n-button>
             </div>
@@ -503,76 +512,28 @@ function confirmRestore() {
               <n-button size="tiny" secondary type="error" @click="removeProvider(provider.id)">删除</n-button>
             </div>
           </div>
+          <div v-if="workspace.appSettings.aiProviders.length > 2" class="settings-more-link">
+            <n-button quaternary @click="showProviderModal = true">查看全部 {{ workspace.appSettings.aiProviders.length }} 个供应商 →</n-button>
+          </div>
         </div>
 
         <!-- AI 提示词 -->
         <div class="settings-card">
           <div class="settings-card-head">
             <div>
-              <h2>AI 分析提示词</h2>
-              <p>自定义错题分析时发送给 AI 的系统提示词，定义 AI 的角色和输出格式</p>
+              <h2>AI 提示词</h2>
+              <p>自定义错题分析和出类似题的系统提示词</p>
             </div>
-            <n-space>
-              <n-button size="tiny" secondary @click="restoreDefaultPrompt">恢复默认</n-button>
-              <n-tag v-if="isSavingPrompt" size="tiny" type="success" round>已保存</n-tag>
-            </n-space>
           </div>
-          <n-input
-            v-model:value="mistakePrompt"
-            type="textarea"
-            placeholder="输入 AI 系统提示词..."
-            :autosize="{ minRows: 6, maxRows: 20 }"
-            @blur="saveMistakePrompt"
-          />
-        </div>
-
-        <!-- 出类似题提示词 -->
-        <div class="settings-card">
-          <div class="settings-card-head">
-            <div>
-              <h2>出类似题提示词</h2>
-              <p>自定义"出类似题"功能发送给 AI 的提示词。支持模板变量：<code v-pre>{{original_question}}</code>、<code v-pre>{{knowledge_points}}</code></p>
-            </div>
-            <n-space>
-              <n-button size="tiny" secondary @click="restoreDefaultSimilarQuestionsPrompt">恢复默认</n-button>
-              <n-tag v-if="isSavingSimilarPrompt" size="tiny" type="success" round>已保存</n-tag>
-            </n-space>
-          </div>
-          <n-input
-            v-model:value="similarQuestionsPromptRef"
-            type="textarea"
-            placeholder="输入出类似题的 AI 提示词..."
-            :autosize="{ minRows: 8, maxRows: 24 }"
-            @blur="saveSimilarQuestionsPrompt"
-          />
-        </div>
-
-        <!-- 皮肤 -->
-        <div class="settings-card">
-          <div class="settings-card-head">
-            <div>
-              <h2>皮肤</h2>
-              <p>四套主题快速切换</p>
-            </div>
-            <n-tag round size="small">{{ currentTheme.name }}</n-tag>
-          </div>
-          <div v-for="theme in appThemes" :key="theme.key" class="theme-option" :class="{ active: workspace.appSettings.themeKey === theme.key }">
-            <div class="theme-option-top">
-              <div>
-                <strong>{{ theme.name }}</strong>
-                <span>{{ theme.description }}</span>
-              </div>
-              <n-button
-                v-if="workspace.appSettings.themeKey !== theme.key"
-                size="tiny"
-                secondary
-                @click="switchTheme(theme.key)"
-              >切换</n-button>
-              <n-tag v-else size="tiny" type="success" round>当前</n-tag>
-            </div>
-            <div class="theme-swatches">
-              <span v-for="color in theme.swatches" :key="color" :style="{ background: color }"></span>
-            </div>
+          <div class="settings-action-list settings-action-list-row">
+            <button type="button" @click="showMistakePromptModal = true">
+              <strong>AI 分析提示词</strong>
+              <span>{{ mistakePrompt.slice(0, 60) }}...</span>
+            </button>
+            <button type="button" @click="showSimilarPromptModal = true">
+              <strong>出类似题提示词</strong>
+              <span>{{ similarQuestionsPromptRef.slice(0, 60) }}...</span>
+            </button>
           </div>
         </div>
 
@@ -581,18 +542,18 @@ function confirmRestore() {
           <div class="settings-card-head">
             <h2>账号与工具</h2>
           </div>
-          <div class="settings-action-list">
+          <div class="settings-action-list settings-action-list-row">
             <button type="button" @click="emit('navigate', 'mobile')">
               <strong>手机预览</strong>
-              <span>在 Mac 上查看移动端页面结构</span>
+              <span>查看移动端</span>
             </button>
             <button type="button" @click="settingsPanel = 'diagnostics'">
               <strong>应用诊断</strong>
-              <span>查看本地数据、备份和恢复状态</span>
+              <span>数据状态</span>
             </button>
             <button type="button" @click="emit('navigate', 'backup')">
               <strong>数据备份</strong>
-              <span>导出或恢复工作台数据</span>
+              <span>导出恢复</span>
             </button>
             <button type="button" @click="emit('logout')">
               <strong>退出登录</strong>
@@ -602,29 +563,54 @@ function confirmRestore() {
           </div>
         </div>
 
-        <!-- 数据备份与恢复 -->
-        <div class="settings-card">
-          <div class="settings-card-head">
-            <h2>数据备份与恢复</h2>
+        <!-- 皮肤 + 数据备份 并排 -->
+        <div class="settings-card span-right">
+          <!-- 皮肤 -->
+          <div>
+            <div class="settings-card-head">
+              <div>
+                <h2>皮肤</h2>
+                <p>切换主题</p>
+              </div>
+              <n-button size="small" secondary @click="showThemeModal = true">
+                <template #icon><Pencil :size="14" /></template>
+                切换
+              </n-button>
+            </div>
+            <div class="current-theme-preview">
+              <div class="theme-preview-info">
+                <strong>{{ currentTheme.name }}</strong>
+                <span>{{ currentTheme.description }}</span>
+              </div>
+              <div class="theme-swatches">
+                <span v-for="color in currentTheme.swatches" :key="color" :style="{ background: color }"></span>
+              </div>
+            </div>
           </div>
-          <p class="settings-card-desc">
-            导出所有数据（学生、课程、课堂记录、提醒、设置等）为备份文件，或从备份文件恢复数据。
-          </p>
-          <div class="settings-action-list">
-            <button type="button" @click="exportBackup" :disabled="isBackingUp || isRestoring">
-              <Download :size="17" />
+          <!-- 数据备份 -->
+          <div>
+            <div class="settings-card-head">
               <div>
-                <strong>{{ isBackingUp ? "导出中…" : "导出备份" }}</strong>
-                <span>保存为 .json 文件</span>
+                <h2>数据备份</h2>
+                <p>导出或恢复</p>
               </div>
-            </button>
-            <button type="button" class="restore-btn" @click="confirmRestore" :disabled="isBackingUp || isRestoring">
-              <Upload :size="17" />
-              <div>
-                <strong>{{ isRestoring ? "恢复中…" : "恢复数据" }}</strong>
-                <span>从备份文件导入</span>
-              </div>
-            </button>
+            </div>
+            <div class="settings-action-list">
+              <button type="button" @click="exportBackup" :disabled="isBackingUp || isRestoring">
+                <Download :size="17" />
+                <div>
+                  <strong>{{ isBackingUp ? "导出中…" : "导出备份" }}</strong>
+                  <span>保存为 .json 文件</span>
+                </div>
+              </button>
+              <button type="button" class="restore-btn" @click="confirmRestore" :disabled="isBackingUp || isRestoring">
+                <Upload :size="17" />
+                <div>
+                  <strong>{{ isRestoring ? "恢复中…" : "恢复数据" }}</strong>
+                  <span>从备份文件导入</span>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -709,6 +695,158 @@ function confirmRestore() {
           </n-space>
         </template>
       </n-modal>
+
+      <!-- Mistake Prompt Modal -->
+      <n-modal v-model:show="showMistakePromptModal" preset="card" title="编辑 AI 分析提示词" class="form-modal" style="max-width: 800px;">
+        <n-form label-placement="top">
+          <n-form-item label="提示词内容">
+            <n-input
+              v-model:value="mistakePrompt"
+              type="textarea"
+              placeholder="输入 AI 系统提示词..."
+              :autosize="{ minRows: 12, maxRows: 24 }"
+            />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <n-space justify="space-between">
+            <n-button size="small" secondary @click="restoreDefaultPrompt">恢复默认</n-button>
+            <n-space>
+              <n-button @click="showMistakePromptModal = false">取消</n-button>
+              <n-button type="primary" @click="saveAndCloseMistakePrompt">保存</n-button>
+            </n-space>
+          </n-space>
+        </template>
+      </n-modal>
+
+      <!-- Similar Questions Prompt Modal -->
+      <n-modal v-model:show="showSimilarPromptModal" preset="card" title="编辑出类似题提示词" class="form-modal" style="max-width: 800px;">
+        <n-form label-placement="top">
+          <n-form-item label="提示词内容（支持模板变量：{{original_question}}、{{knowledge_points}}）">
+            <n-input
+              v-model:value="similarQuestionsPromptRef"
+              type="textarea"
+              placeholder="输入出类似题的 AI 提示词..."
+              :autosize="{ minRows: 12, maxRows: 24 }"
+            />
+          </n-form-item>
+        </n-form>
+        <template #footer>
+          <n-space justify="space-between">
+            <n-button size="small" secondary @click="restoreDefaultSimilarQuestionsPrompt">恢复默认</n-button>
+            <n-space>
+              <n-button @click="showSimilarPromptModal = false">取消</n-button>
+              <n-button type="primary" @click="saveAndCloseSimilarPrompt">保存</n-button>
+            </n-space>
+          </n-space>
+        </template>
+      </n-modal>
+
+      <!-- Theme Modal -->
+      <n-modal v-model:show="showThemeModal" preset="card" title="切换皮肤" class="form-modal">
+        <div v-for="theme in appThemes" :key="theme.key" class="theme-option" :class="{ active: workspace.appSettings.themeKey === theme.key }">
+          <div class="theme-option-top">
+            <div>
+              <strong>{{ theme.name }}</strong>
+              <span>{{ theme.description }}</span>
+            </div>
+            <n-button
+              v-if="workspace.appSettings.themeKey !== theme.key"
+              size="small"
+              secondary
+              @click="switchTheme(theme.key); showThemeModal = false"
+            >切换</n-button>
+            <n-tag v-else size="small" type="success" round>当前</n-tag>
+          </div>
+          <div class="theme-swatches">
+            <span v-for="color in theme.swatches" :key="color" :style="{ background: color }"></span>
+          </div>
+        </div>
+      </n-modal>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Settings layout */
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 860px;
+  width: 100%;
+}
+
+/* Provider list items */
+.provider-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.provider-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.provider-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.provider-name-row strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.provider-url {
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+
+.provider-models {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 46px;
+}
+
+.model-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.provider-actions {
+  display: flex;
+  gap: 6px;
+  padding-left: 46px;
+}
+
+.settings-more-link {
+  padding-top: 4px;
+  text-align: center;
+}
+
+</style>

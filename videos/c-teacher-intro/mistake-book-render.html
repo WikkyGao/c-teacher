@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 错题本截图</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        width: 1440px;
+        height: 900px;
+        overflow: hidden;
+        background: #f6f8fb;
+        color: #1a2332;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "Noto Sans SC", sans-serif;
+      }
+
+      .app {
+        width: 1440px;
+        height: 900px;
+        display: flex;
+        flex-direction: column;
+        background: #f6f8fb;
+      }
+
+      .topbar {
+        height: 74px;
+        padding: 14px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #ffffff;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .back {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        border: 1px solid #d7e3f3;
+        display: grid;
+        place-items: center;
+        color: #1769d4;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 22px;
+        line-height: 1.2;
+      }
+
+      .subtitle {
+        margin-top: 4px;
+        color: #7a8aa0;
+        font-size: 14px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        height: 36px;
+        padding: 0 14px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border-radius: 8px;
+        border: 1px solid #d7e3f3;
+        background: #f8fbff;
+        color: #30445f;
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      .btn.primary {
+        border-color: #1769d4;
+        background: #1769d4;
+        color: #ffffff;
+      }
+
+      .main {
+        flex: 1;
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 210px minmax(0, 1fr) 340px;
+      }
+
+      .sidebar,
+      .ai-panel {
+        background: #ffffff;
+      }
+
+      .sidebar {
+        border-right: 1px solid #e2e8f0;
+        padding: 16px 10px;
+      }
+
+      .sidebar-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 8px 14px;
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .group {
+        height: 34px;
+        padding: 0 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 8px;
+        color: #3b4d63;
+        font-size: 13px;
+      }
+
+      .group.active {
+        background: #e7f0ff;
+        color: #0b3f8a;
+        font-weight: 700;
+      }
+
+      .divider {
+        margin: 14px 10px 8px;
+        color: #9aa8ba;
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .student {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 10px;
+      }
+
+      .student.active {
+        background: #eef6ff;
+      }
+
+      .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #8dd7f7, #1769d4);
+      }
+
+      .student strong {
+        display: block;
+        font-size: 14px;
+      }
+
+      .student span {
+        display: block;
+        margin-top: 2px;
+        color: #7a8aa0;
+        font-size: 12px;
+      }
+
+      .center {
+        min-width: 0;
+        padding: 24px 28px;
+      }
+
+      .center-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 20px;
+      }
+
+      h2 {
+        font-size: 25px;
+      }
+
+      .stats {
+        display: flex;
+        gap: 10px;
+      }
+
+      .pill {
+        padding: 9px 16px;
+        border: 1px solid #dce5f0;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #5a6b7f;
+        font-size: 13px;
+      }
+
+      .pill b {
+        margin-left: 6px;
+        color: #1a2332;
+        font-size: 15px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 22px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .tab {
+        padding: 0 0 10px;
+        color: #7a8aa0;
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      .tab.active {
+        color: #1769d4;
+        border-bottom: 2px solid #1769d4;
+      }
+
+      .filters {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .field {
+        height: 34px;
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        border-radius: 8px;
+        border: 1px solid #dce5f0;
+        background: #ffffff;
+        color: #6c7d93;
+        font-size: 13px;
+      }
+
+      .field.search {
+        width: 180px;
+      }
+
+      .mistake-card {
+        margin-bottom: 14px;
+        padding: 20px 22px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 12px 28px rgba(26, 79, 139, 0.05);
+      }
+
+      .tags {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 13px;
+      }
+
+      .tag {
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .tag.medium {
+        background: #fff6dd;
+        color: #946200;
+      }
+
+      .tag.review {
+        background: #fff2e8;
+        color: #b85b00;
+      }
+
+      .tag.done {
+        background: #e8f8ef;
+        color: #25864d;
+      }
+
+      .question {
+        color: #1f2d3d;
+        font-size: 16px;
+        line-height: 1.55;
+      }
+
+      .knowledge {
+        display: flex;
+        gap: 7px;
+        margin-top: 14px;
+      }
+
+      .kp {
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #50627a;
+        font-size: 12px;
+      }
+
+      .card-actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 10px;
+      }
+
+      .small-btn {
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 7px;
+        border: 1px solid #1769d4;
+        color: #1769d4;
+        background: #ffffff;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .small-btn.solid {
+        background: #1769d4;
+        color: #ffffff;
+      }
+
+      .ai-panel {
+        border-left: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .ai-head {
+        padding: 24px 24px 0;
+      }
+
+      .ai-head h3 {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 19px;
+      }
+
+      .ai-head p {
+        margin-top: 8px;
+        color: #7a8aa0;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .select-row,
+      .input-block,
+      .ai-actions,
+      .ai-result {
+        margin: 16px 24px 0;
+      }
+
+      .select-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .select-row span {
+        color: #50627a;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .select {
+        flex: 1;
+        height: 32px;
+        padding: 0 10px;
+        display: flex;
+        align-items: center;
+        border: 1px solid #dce5f0;
+        border-radius: 8px;
+        color: #30445f;
+        font-size: 13px;
+      }
+
+      .segment {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        padding: 4px;
+        border-radius: 8px;
+        background: #f1f5f9;
+      }
+
+      .segment div {
+        height: 30px;
+        display: grid;
+        place-items: center;
+        border-radius: 6px;
+        color: #6c7d93;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .segment .active {
+        color: #1769d4;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(26, 79, 139, 0.08);
+      }
+
+      .textarea {
+        margin-top: 12px;
+        min-height: 92px;
+        padding: 13px;
+        border: 1px solid #dce5f0;
+        border-radius: 9px;
+        background: #ffffff;
+        color: #50627a;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .ai-actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .ai-result {
+        padding-top: 16px;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .result-card {
+        padding: 13px;
+        border: 1px solid #dce5f0;
+        border-radius: 10px;
+        background: #f8fbff;
+        color: #30445f;
+        font-size: 13px;
+        line-height: 1.55;
+      }
+
+      .result-card b {
+        color: #1769d4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="title-wrap">
+          <div class="back">‹</div>
+          <div>
+            <h1>错题本</h1>
+            <p class="subtitle">管理错题，AI 辅助分析薄弱知识点</p>
+          </div>
+        </div>
+        <div class="actions">
+          <div class="btn">🏷 标签管理</div>
+          <div class="btn">↻ 复习模式</div>
+          <div class="btn">🖼 批量导入</div>
+          <div class="btn">🖨 导出打印</div>
+          <div class="btn primary">📱 手机拍照</div>
+        </div>
+      </header>
+
+      <main class="main">
+        <aside class="sidebar">
+          <div class="sidebar-head">👥 学生列表</div>
+          <div class="group active"><span>全部学生</span><b>3</b></div>
+          <div class="group"><span>初二数学</span><b>2</b></div>
+          <div class="group"><span>英语阅读</span><b>1</b></div>
+          <div class="divider">学生</div>
+          <div class="student active">
+            <div class="avatar"></div>
+            <div><strong>陈一诺</strong><span>12 道错题</span></div>
+          </div>
+          <div class="student">
+            <div class="avatar"></div>
+            <div><strong>孟然</strong><span>8 道错题</span></div>
+          </div>
+          <div class="student">
+            <div class="avatar"></div>
+            <div><strong>何青</strong><span>5 道错题</span></div>
+          </div>
+        </aside>
+
+        <section class="center">
+          <div class="center-head">
+            <div>
+              <h2>陈一诺 · 错题本</h2>
+              <p class="subtitle">管理和复习错题，巩固薄弱知识点</p>
+            </div>
+            <div class="stats">
+              <div class="pill">总题数 <b>12 题</b></div>
+              <div class="pill">已掌握 <b>5 题</b></div>
+              <div class="pill">正确率 <b>42%</b></div>
+            </div>
+          </div>
+          <div class="tabs">
+            <div class="tab active">错题列表</div>
+            <div class="tab">统计看板</div>
+          </div>
+          <div class="filters">
+            <div class="field search">🔎 搜索题目关键字</div>
+            <div class="field">数学</div>
+            <div class="field">全部知识点</div>
+            <div class="field">重置</div>
+          </div>
+
+          <article class="mistake-card">
+            <div class="tags">
+              <span class="tag medium">中等</span>
+              <span class="tag review">⟳ 练习中</span>
+            </div>
+            <p class="question">二次函数 y = a(x-h)² + k 的图像向右平移 3 个单位后，顶点坐标如何变化？</p>
+            <div class="knowledge">
+              <span class="kp">函数图像平移</span>
+              <span class="kp">顶点式</span>
+              <span class="kp">参数变化</span>
+            </div>
+            <div class="card-actions">
+              <button class="small-btn solid">查看详情</button>
+              <button class="small-btn">重新练习</button>
+            </div>
+          </article>
+
+          <article class="mistake-card">
+            <div class="tags">
+              <span class="tag medium">困难</span>
+              <span class="tag done">✓ 已掌握</span>
+            </div>
+            <p class="question">阅读题中根据转折词判断作者态度，学生容易忽略上下文指代关系。</p>
+            <div class="knowledge">
+              <span class="kp">阅读推断</span>
+              <span class="kp">上下文指代</span>
+              <span class="kp">转折关系</span>
+            </div>
+            <div class="card-actions">
+              <button class="small-btn solid">查看详情</button>
+              <button class="small-btn">重新练习</button>
+            </div>
+          </article>
+        </section>
+
+        <aside class="ai-panel">
+          <div class="ai-head">
+            <h3>✨ AI 分析</h3>
+            <p>粘贴题目文本，AI 将自动分析错题原因、知识点关联和学习建议。</p>
+          </div>
+          <div class="select-row">
+            <span>科目</span>
+            <div class="select">数学</div>
+          </div>
+          <div class="input-block">
+            <div class="segment">
+              <div class="active">手动输入</div>
+              <div>图片上传</div>
+            </div>
+            <div class="textarea">输入题目内容，或在图片上传模式中选择 png/jpg/jpeg/webp 错题图片。</div>
+          </div>
+          <div class="ai-actions">
+            <div class="btn primary">✨ AI 分析</div>
+          </div>
+          <div class="ai-result">
+            <div class="result-card">
+              <b>分析结果</b><br />
+              错误原因：把函数图像向右平移误写成 x+3。<br />
+              知识点：函数图像平移、顶点坐标。<br />
+              建议：先标顶点，再根据方向调整横坐标，并生成 3 道相似练习。
+            </div>
+          </div>
+        </aside>
+      </main>
+    </div>
+  </body>
+</html>
