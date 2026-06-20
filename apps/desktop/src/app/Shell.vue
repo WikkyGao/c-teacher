@@ -17,6 +17,7 @@ import { reactive, ref } from "vue";
 import type { TeacherProfile } from "../features/students/studentStore";
 import type { NavKey } from "../shared/types/navigation";
 import { navItems, settingsNavItem } from "../shared/types/navigation";
+import { updateState } from "../features/updater/versionCheck";
 
 const props = defineProps<{
   activeNav: NavKey;
@@ -92,6 +93,7 @@ function saveTeacherProfile() {
       >
         <Settings :size="17" />
         <span>{{ settingsNavItem.label }}</span>
+        <i v-if="updateState.status === 'available'" class="nav-update-dot"></i>
       </button>
     </aside>
     <section class="workspace">

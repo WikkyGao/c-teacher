@@ -606,6 +606,15 @@ svg {
   line-height: 1;
 }
 
+.nav-update-dot {
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: #4fc3f7;
+  font-style: normal;
+}
+
 .nav-item:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.11);

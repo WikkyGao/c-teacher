@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect } from "vue";
+import { computed, onMounted, ref, watchEffect } from "vue";
 import LoginPage from "../features/auth/LoginPage.vue";
 import { clearAuthSession, getAuthSession, saveAuthSession } from "../features/auth/authSession";
 import BackupPage from "../features/backup/BackupPage.vue";
@@ -17,6 +17,11 @@ import type { TeacherProfile } from "../features/students/studentStore";
 import type { NavKey } from "../shared/types/navigation";
 import { naiveThemeOverridesFor } from "./appThemeOverrides";
 import Shell from "./Shell.vue";
+import { checkSilent } from "../features/updater/versionCheck";
+
+onMounted(() => {
+  checkSilent();
+});
 
 const activeNav = ref<NavKey>("students");
 const studentPageTarget = ref<"list" | "detail" | "mistakeBook">("list");

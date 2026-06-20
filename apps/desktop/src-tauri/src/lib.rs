@@ -172,6 +172,11 @@ struct SystemReminderRequest {
 }
 
 #[tauri::command]
+fn get_app_version(app: AppHandle) -> String {
+    app.config().version.clone().unwrap_or_else(|| "0.0.0".to_string())
+}
+
+#[tauri::command]
 fn health_check() -> &'static str {
     "ok"
 }
@@ -1798,6 +1803,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_http::init())
         .invoke_handler(tauri::generate_handler![
+            get_app_version,
             health_check,
             load_workspace_state,
             save_workspace_state,

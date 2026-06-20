@@ -2,7 +2,7 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { Download, LogOut, Pencil, Plus, Upload } from "lucide-vue-next";
+import { Download, ExternalLink, LogOut, Pencil, Plus, Upload } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "../backup/workspaceBackup";
@@ -12,6 +12,7 @@ import { appThemes, DEFAULT_MISTAKE_ANALYSIS_PROMPT, DEFAULT_SIMILAR_QUESTIONS_P
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 import { testProviderConnection } from "../ai/aiClient";
 import { fetchProviderModels, mergeFetchedModels } from "./aiModelCatalog";
+import { checkForUpdates, updateState, setDismissedVersion } from "../updater/versionCheck";
 
 defineProps<{
   teacherName?: string;
@@ -446,6 +447,19 @@ function confirmRestore() {
     }
   });
 }
+
+function openUpdateDownload() {
+  if (updateState.downloadUrl) {
+    window.open(updateState.downloadUrl, "_blank");
+  }
+}
+
+function dismissVersion() {
+  if (updateState.latestVersion) {
+    setDismissedVersion(updateState.latestVersion);
+    updateState.status = "latest";
+  }
+}
 </script>
 
 <template>
@@ -610,6 +624,41 @@ function confirmRestore() {
                   <span>从备份文件导入</span>
                 </div>
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 关于 C-teacher -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div>
+              <h2>关于 C-teacher</h2>
+              <p>版本更新与项目信息</p>
+            </div>
+          </div>
+          <div class="settings-action-list settings-action-list-row about-section">
+            <div class="about-version-row">
+              <strong>当前版本</strong>
+              <span class="about-version-value">v{{ updateState.localVersion || "—" }}</span>
+            </div>
+            <div class="about-update-row">
+              <template v-if="updateState.status === 'idle'">
+                <n-button size="small" secondary @click="checkForUpdates">检查更新</n-button>
+              </template>
+              <template v-else-if="updateState.status === 'checking'">
+                <n-button size="small" secondary loading disabled>检查中…</n-button>
+              </template>
+              <template v-else-if="updateState.status === 'latest'">
+                <n-button size="small" secondary disabled>已是最新版本</n-button>
+              </template>
+              <template v-else-if="updateState.status === 'available'">
+                <n-button size="small" type="primary" @click="openUpdateDownload">发现新版本 v{{ updateState.latestVersion }}</n-button>
+                <n-button size="tiny" quaternary @click="dismissVersion">不再提醒</n-button>
+              </template>
+              <template v-else-if="updateState.status === 'error'">
+                <span class="about-error">{{ updateState.errorMessage }}</span>
+                <n-button size="small" secondary @click="checkForUpdates">重试</n-button>
+              </template>
             </div>
           </div>
         </div>
@@ -847,6 +896,44 @@ function confirmRestore() {
 .settings-more-link {
   padding-top: 4px;
   text-align: center;
+}
+
+/* About section */
+.about-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.about-version-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.about-version-row strong {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.about-version-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.about-update-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.about-error {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 </style>
