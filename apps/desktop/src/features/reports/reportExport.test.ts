@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createLearningReportMarkdown } from "./reportExport";
-import type { LearningReportSummary } from "../students/studentStore";
+import type { LearningReportSummary } from "../children/childStore";
 
 describe("reportExport", () => {
   it("creates shareable markdown for a learning report", () => {

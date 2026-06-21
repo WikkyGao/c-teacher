@@ -1,4 +1,4 @@
-import type { LearningReportSummary } from "../students/studentStore";
+import type { LearningReportSummary } from "../children/childStore";
 
 export function createLearningReportMarkdown(report: LearningReportSummary) {
   const weakPoints = report.weakPoints.length > 0 ? report.weakPoints.join("、") : "暂无";

@@ -2,38 +2,43 @@
 import { Plus, ArrowLeft } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import type { ClassRecord, GradingStatus } from "../students/studentStore";
-import { useStudentStore } from "../students/studentStore";
+import type { ClassRecord, GradingStatus } from "../children/childStore";
+import { useChildStore } from "../children/childStore";
+import type { UserRole } from "../auth/authSession";
 
-const workspace = useStudentStore();
+const props = defineProps<{
+  userRole?: UserRole;
+}>();
+
+const workspace = useChildStore();
 const message = useMessage();
 const pageMode = ref<"list" | "form">("list");
 const editingRecordId = ref<string | null>(null);
-const assignMode = ref<"student" | "group">("student");
+const assignMode = ref<"child" | "group">("child");
 
 const form = reactive({
-  studentId: workspace.activeStudentId,
+  studentId: workspace.activeChildId,
   groupId: null as string | null,
-  subject: workspace.activeStudent.courses[0]?.subject ?? "数学",
+  subject: workspace.activeChild.courses[0]?.subject ?? "数学",
   lessonContent: "",
   performance: "",
   homework: ""
 });
 
-const studentOptions = computed(() => {
-  return workspace.items.map((student) => ({ label: student.name, value: student.id }));
+const childOptions = computed(() => {
+  return workspace.items.map((child) => ({ label: child.name, value: child.id }));
 });
 const groupOptions = computed(() =>
   workspace.groups.map((g) => ({ label: `${g.name}（${g.type === "class" ? "班级" : "科目"}）`, value: g.id }))
 );
-const selectedStudent = computed(() => workspace.items.find((s) => s.id === form.studentId) ?? workspace.activeStudent);
+const selectedChild = computed(() => workspace.items.find((s) => s.id === form.studentId) ?? workspace.activeChild);
 
 function resetForm() {
   editingRecordId.value = null;
-  assignMode.value = "student";
-  form.studentId = workspace.activeStudentId;
+  assignMode.value = "child";
+  form.studentId = workspace.activeChildId;
   form.groupId = null;
-  form.subject = workspace.activeStudent.courses[0]?.subject ?? "数学";
+  form.subject = workspace.activeChild.courses[0]?.subject ?? "数学";
   form.lessonContent = "";
   form.performance = "";
   form.homework = "";
@@ -41,7 +46,7 @@ function resetForm() {
 
 function editRecord(record: ClassRecord) {
   editingRecordId.value = record.id;
-  assignMode.value = "student";
+  assignMode.value = "child";
   form.studentId = record.studentId;
   form.groupId = null;
   form.subject = record.subject;
@@ -61,9 +66,9 @@ function saveRecord() {
     message.warning("请填写授课内容");
     return;
   }
-  if (assignMode.value === "student") {
+  if (assignMode.value === "child") {
     if (!form.studentId) {
-      message.warning("请选择学生");
+      message.warning("请选择小孩");
       return;
     }
     const draft = {
@@ -87,7 +92,7 @@ function saveRecord() {
     }
     const group = workspace.groups.find((g) => g.id === form.groupId);
     if (!group || group.memberIds.length === 0) {
-      message.warning("该分组下没有学生");
+      message.warning("该分组下没有小孩");
       return;
     }
     for (const studentId of group.memberIds) {
@@ -99,14 +104,14 @@ function saveRecord() {
         homework: form.homework.trim()
       });
     }
-    message.success(`课堂记录已为该分组 ${group.memberIds.length} 名学生创建`);
+    message.success(`课堂记录已为该分组 ${group.memberIds.length} 名小孩创建`);
   }
   pageMode.value = "list";
   editingRecordId.value = null;
 }
 
 function studentName(studentId: string) {
-  return workspace.items.find((student) => student.id === studentId)?.name ?? studentId;
+  return workspace.items.find((child) => child.id === studentId)?.name ?? studentId;
 }
 
 function updateGradingStatus(recordId: string, status: GradingStatus) {
@@ -126,9 +131,9 @@ function goBack() {
       <template v-if="pageMode === 'list'">
         <div>
           <h1 class="page-title">课堂记录</h1>
-          <p class="page-subtitle">记录授课内容、学生表现和作业布置</p>
+          <p class="page-subtitle">记录授课内容、小孩表现和作业布置</p>
         </div>
-        <n-button type="primary" @click="openCreateForm">
+        <n-button v-if="props.userRole !== 'parent'" type="primary" @click="openCreateForm">
           <template #icon>
             <Plus :size="16" />
           </template>
@@ -138,7 +143,7 @@ function goBack() {
       <template v-else>
         <div>
           <h1 class="page-title">{{ editingRecordId ? "编辑课堂记录" : "新建课堂记录" }}</h1>
-          <p class="page-subtitle">记录授课内容、学生表现和作业布置</p>
+          <p class="page-subtitle">记录授课内容、小孩表现和作业布置</p>
         </div>
         <n-button secondary @click="goBack">
           <template #icon>
@@ -158,7 +163,7 @@ function goBack() {
             <p>{{ record.lessonContent }}</p>
             <p>作业：{{ record.homework || "未布置" }} · {{ record.gradingStatus }}</p>
             <n-space>
-              <n-button size="small" secondary @click="editRecord(record)">编辑</n-button>
+              <n-button v-if="props.userRole !== 'parent'" size="small" secondary @click="editRecord(record)">编辑</n-button>
               <n-button
                 v-if="record.homework"
                 size="small"
@@ -179,12 +184,12 @@ function goBack() {
         <n-form label-placement="top">
           <n-form-item label="记录归属" v-if="!editingRecordId">
             <n-radio-group v-model:value="assignMode">
-              <n-radio value="student">单个学生</n-radio>
+              <n-radio value="child">单个小孩</n-radio>
               <n-radio value="group">班级/分组</n-radio>
             </n-radio-group>
           </n-form-item>
-          <n-form-item v-if="assignMode === 'student'" label="学生">
-            <n-select v-model:value="form.studentId" :options="studentOptions" />
+          <n-form-item v-if="assignMode === 'child'" label="小孩">
+            <n-select v-model:value="form.studentId" :options="childOptions" />
           </n-form-item>
           <n-form-item v-else label="班级/分组">
             <n-select v-model:value="form.groupId" :options="groupOptions" placeholder="选择班级或分组" />
@@ -195,13 +200,13 @@ function goBack() {
           <n-form-item label="授课内容">
             <n-input v-model:value="form.lessonContent" type="textarea" />
           </n-form-item>
-          <n-form-item label="学生表现">
+          <n-form-item label="小孩表现">
             <n-input v-model:value="form.performance" type="textarea" />
           </n-form-item>
           <n-form-item label="作业布置">
             <n-input v-model:value="form.homework" />
           </n-form-item>
-          <p v-if="assignMode === 'group'" class="muted-text">选择班级或分组后，记录将自动为该分组内的所有学生创建。</p>
+          <p v-if="assignMode === 'group'" class="muted-text">选择班级或分组后，记录将自动为该分组内的所有小孩创建。</p>
           <n-space>
             <n-button type="primary" @click="saveRecord">{{ editingRecordId ? "更新课堂记录" : "保存课堂记录" }}</n-button>
             <n-button secondary @click="goBack">取消</n-button>

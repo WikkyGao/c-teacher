@@ -261,6 +261,7 @@ svg {
 
 .login-panel {
   width: min(452px, 100%);
+  min-height: 480px;
   display: grid;
   gap: 24px;
   padding: 30px;
@@ -269,19 +270,6 @@ svg {
   background: var(--panel);
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(18px);
-}
-
-.login-brand {
-  width: fit-content;
-  margin-bottom: 14px;
-  padding: 7px 10px;
-  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
-  border-radius: var(--radius-md);
-  color: var(--primary-strong);
-  background: var(--primary-soft);
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1;
 }
 
 .app-shell {
@@ -728,17 +716,17 @@ svg {
   padding: 18px;
 }
 
-.student-management-layout {
+.child-management-layout {
   gap: 8px;
   grid-template-columns: minmax(0, 1fr) 14px var(--detail-panel-width, 380px);
 }
 
-.student-management-layout.resizing {
+.child-management-layout.resizing {
   cursor: col-resize;
   user-select: none;
 }
 
-.student-management-page {
+.child-management-page {
   display: grid;
   grid-template-columns: 200px minmax(0, 1fr);
   gap: 14px;
@@ -981,7 +969,7 @@ svg {
   border-color: var(--muted);
 }
 
-.student-detail-page {
+.child-detail-page {
   display: grid;
   gap: 14px;
 }
@@ -994,12 +982,12 @@ svg {
   overflow: hidden;
 }
 
-.student-page-toolbar {
+.child-page-toolbar {
   display: flex;
   justify-content: flex-start;
 }
 
-.student-detail-panel {
+.child-detail-panel {
   width: min(980px, 100%);
 }
 
@@ -1029,18 +1017,18 @@ svg {
 
 .detail-resizer:hover span,
 .detail-resizer:focus-visible span,
-.student-management-layout.resizing .detail-resizer span {
+.child-management-layout.resizing .detail-resizer span {
   width: 6px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 68%, transparent), color-mix(in srgb, var(--action) 54%, transparent));
 }
 
-.student-grid {
+.child-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
-.student-card,
+.child-card,
 .side-panel,
 .metric-card,
 .n-card {
@@ -1052,12 +1040,12 @@ svg {
 }
 
 .side-panel,
-.student-card,
+.child-card,
 .metric-card {
   backdrop-filter: blur(14px);
 }
 
-.student-card:hover,
+.child-card:hover,
 .side-panel:hover,
 .metric-card:hover,
 .n-card:hover {
@@ -1456,7 +1444,7 @@ svg {
   text-align: left;
 }
 
-.workbench-student-cell {
+.workbench-child-cell {
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
@@ -1464,7 +1452,7 @@ svg {
   min-width: 0;
 }
 
-.workbench-student-cell img {
+.workbench-child-cell img {
   display: block;
   width: 38px;
   height: 38px;
@@ -1474,7 +1462,7 @@ svg {
   box-shadow: var(--shadow-sm);
 }
 
-.workbench-student-cell b {
+.workbench-child-cell b {
   display: grid;
   min-width: 0;
   color: var(--text);
@@ -1482,7 +1470,7 @@ svg {
   line-height: 1.25;
 }
 
-.workbench-student-cell small {
+.workbench-child-cell small {
   overflow: hidden;
   color: var(--muted);
   font-size: 11px;
@@ -1491,7 +1479,7 @@ svg {
   white-space: nowrap;
 }
 
-.workbench-student-cell > em {
+.workbench-child-cell > em {
   display: none;
   color: var(--muted-strong);
   font-size: 12px;
@@ -1740,20 +1728,20 @@ svg {
   color: var(--muted);
 }
 
-.student-card {
+.child-card {
   display: grid;
   gap: 13px;
   padding: 18px;
 }
 
-.student-card header {
+.child-card header {
   display: flex;
   align-items: center;
   gap: 12px;
   min-width: 0;
 }
 
-.student-card-avatar {
+.child-card-avatar {
   display: block;
   flex: 0 0 auto;
   width: 54px;
@@ -1764,7 +1752,7 @@ svg {
   box-shadow: var(--shadow-sm);
 }
 
-.student-card h2,
+.child-card h2,
 .side-panel h2,
 .metric-card h3,
 .phone-frame h2 {
@@ -1775,13 +1763,13 @@ svg {
   line-height: 1.25;
 }
 
-.student-card p,
+.child-card p,
 .side-panel p {
   margin: 0;
   color: var(--muted-strong);
 }
 
-.student-card header p {
+.child-card header p {
   margin-top: 4px;
   color: var(--muted);
   font-size: 13px;
@@ -1978,13 +1966,13 @@ svg {
   font-weight: 700;
 }
 
-.student-follow-section {
+.child-follow-section {
   display: grid;
   gap: 8px;
   padding-top: 4px;
 }
 
-.student-follow-item,
+.child-follow-item,
 .detail-empty {
   display: grid;
   gap: 4px;
@@ -1994,13 +1982,13 @@ svg {
   background: var(--bg-elevated);
 }
 
-.student-follow-item strong {
+.child-follow-item strong {
   color: var(--text);
   font-size: 13px;
   line-height: 1.35;
 }
 
-.student-follow-item span,
+.child-follow-item span,
 .detail-empty {
   color: var(--muted-strong);
   font-size: 12px;
@@ -3478,14 +3466,14 @@ svg {
 
   .dashboard-grid,
   .settings-grid,
-  .student-grid,
+  .child-grid,
   .inline-form,
   .structured-course-row,
   .diagnostic-row {
     grid-template-columns: 1fr;
   }
 
-  .student-management-page {
+  .child-management-page {
     grid-template-columns: 1fr;
   }
 
@@ -3493,7 +3481,7 @@ svg {
     grid-template-columns: 1fr;
   }
 
-  .student-management-layout {
+  .child-management-layout {
     grid-template-columns: 1fr;
   }
 

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { NEmpty } from "naive-ui";
-import { useStudentStore } from "../students/studentStore";
+import { useChildStore } from "../children/childStore";
 
-const students = useStudentStore();
+const students = useChildStore();
 
-const stats = computed(() => students.activeStudentMistakeStats);
-const records = computed(() => students.activeStudentMistakeRecords);
+const stats = computed(() => students.activeChildMistakeStats);
+const records = computed(() => students.activeChildMistakeRecords);
 
 const subjectChartData = computed(() => {
   const counts = stats.value.subjectCounts;

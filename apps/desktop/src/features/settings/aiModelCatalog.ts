@@ -1,4 +1,4 @@
-import type { AiModelConfig, AiProviderConfig } from "../students/studentStore";
+import type { AiModelConfig, AiProviderConfig } from "../children/childStore";
 
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 

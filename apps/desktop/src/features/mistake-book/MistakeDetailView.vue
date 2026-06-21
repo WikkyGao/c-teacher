@@ -13,7 +13,7 @@ import {
   useMessage
 } from "naive-ui";
 import { Save, Sparkles, X, ZoomIn } from "lucide-vue-next";
-import { useStudentStore, type MistakeRecord } from "../students/studentStore";
+import { useChildStore, type MistakeRecord } from "../children/childStore";
 import { formatMistakeContent } from "./contentFormatter";
 import { generateSimilarQuestionsStream } from "./mistakeApi";
 
@@ -26,7 +26,7 @@ const emit = defineEmits<{
   deleted: [];
 }>();
 
-const students = useStudentStore();
+const students = useChildStore();
 const message = useMessage();
 const isEditing = ref(false);
 const showImagePreview = ref(false);
@@ -125,7 +125,7 @@ async function handleGenerateSimilar() {
       studentId: props.record.studentId,
       subject: props.record.subject,
       questionText: props.record.questionText || "（图片题）",
-      studentAnswer: props.record.studentAnswer || "学生答案待补充",
+      studentAnswer: props.record.studentAnswer || "暂无作答",
       imagePath: props.record.imagePath || undefined,
       difficulty: similarDifficulty.value,
       count: similarCount.value
@@ -259,7 +259,7 @@ watch(() => props.record?.id, () => {
       </div>
 
       <div v-if="record.studentAnswer" class="detail-section">
-        <h4>学生答案</h4>
+        <h4>作答</h4>
         <div class="detail-text" v-html="formatMistakeContent(record.studentAnswer)"></div>
       </div>
 
@@ -328,8 +328,8 @@ watch(() => props.record?.id, () => {
         <n-form-item label="题干">
           <n-input v-model:value="form.questionText" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }" placeholder="输入题目内容" />
         </n-form-item>
-        <n-form-item label="学生答案">
-          <n-input v-model:value="form.studentAnswer" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" placeholder="输入学生答案" />
+        <n-form-item label="作答">
+          <n-input v-model:value="form.studentAnswer" type="textarea" :autosize="{ minRows: 1, maxRows: 3 }" placeholder="输入作答" />
         </n-form-item>
         <n-form-item label="参考答案">
           <n-input v-model:value="form.correctAnswer" type="textarea" :autosize="{ minRows: 2, maxRows: 5 }" placeholder="输入正确答案和解题过程" />

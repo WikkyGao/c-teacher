@@ -4,7 +4,7 @@ import { NButton, NModal, NSpace, NSpin, NProgress, useMessage } from "naive-ui"
 import { FileImage, X } from "lucide-vue-next";
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useStudentStore } from "../students/studentStore";
+import { useChildStore } from "../children/childStore";
 import { analyzeMistakeStream } from "./mistakeApi";
 
 const props = defineProps<{
@@ -18,7 +18,7 @@ const emit = defineEmits<{
   complete: [];
 }>();
 
-const students = useStudentStore();
+const students = useChildStore();
 const message = useMessage();
 
 type ImportItem = {
@@ -87,7 +87,7 @@ async function startBatchImport() {
           studentId: props.studentId,
           subject: props.subject,
           questionText: "",
-          studentAnswer: "学生答案待补充",
+          studentAnswer: "暂无作答",
           imagePath: item.file
         },
         () => {}
@@ -98,7 +98,7 @@ async function startBatchImport() {
         subject: props.subject,
         questionText: result.questionText || "（图片题）",
         imagePath: item.file,
-        studentAnswer: "学生答案待补充",
+        studentAnswer: "暂无作答",
         correctAnswer: result.correctAnswer,
         mistakeReason: result.mistakeReason,
         knowledgePoints: result.knowledgePoints,

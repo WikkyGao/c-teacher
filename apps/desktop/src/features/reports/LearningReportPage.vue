@@ -4,15 +4,15 @@ import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { useMessage } from "naive-ui";
 import { computed, ref } from "vue";
-import { useStudentStore } from "../students/studentStore";
+import { useChildStore } from "../children/childStore";
 import { createLearningReportMarkdown } from "./reportExport";
 
-const workspace = useStudentStore();
+const workspace = useChildStore();
 const message = useMessage();
-const selectedStudentId = ref(workspace.activeStudentId);
-const studentOptions = computed(() => workspace.items.map((student) => ({ label: student.name, value: student.id })));
+const selectedChildId = ref(workspace.activeChildId);
+const childOptions = computed(() => workspace.items.map((child) => ({ label: child.name, value: child.id })));
 const selectedReport = computed(() => {
-  return workspace.learningReports.find((report) => report.studentId === selectedStudentId.value) ?? workspace.learningReports[0];
+  return workspace.learningReports.find((report) => report.studentId === selectedChildId.value) ?? workspace.learningReports[0];
 });
 
 async function copyReport() {
@@ -59,7 +59,7 @@ async function exportReport() {
         <p class="page-subtitle">基于课程进度、课堂记录、作业和错题本生成阶段复盘摘要</p>
       </div>
       <n-space>
-        <n-select v-model:value="selectedStudentId" :options="studentOptions" class="report-student-select" />
+        <n-select v-model:value="selectedChildId" :options="childOptions" class="report-child-select" />
         <n-button secondary @click="copyReport">复制报告</n-button>
         <n-button type="primary" @click="exportReport">导出 Markdown</n-button>
       </n-space>
@@ -110,11 +110,11 @@ async function exportReport() {
       </section>
 
       <aside class="side-panel">
-        <h2>全部学生概览</h2>
+        <h2>全部小孩概览</h2>
         <div v-for="report in workspace.learningReports" :key="report.studentId" class="list-row compact-row">
           <strong>{{ report.studentName }} · {{ report.averageProgress }}%</strong>
           <p>{{ report.goal }}</p>
-          <n-button size="small" secondary @click="selectedStudentId = report.studentId">查看报告</n-button>
+          <n-button size="small" secondary @click="selectedChildId = report.studentId">查看报告</n-button>
         </div>
       </aside>
     </div>

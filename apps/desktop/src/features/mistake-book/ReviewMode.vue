@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import { NButton, NEmpty, NModal, NSpace, NTag } from "naive-ui";
 import { CheckCircle2, RotateCcw, Shuffle, TrendingUp } from "lucide-vue-next";
-import { useStudentStore, type MistakeRecord } from "../students/studentStore";
+import { useChildStore, type MistakeRecord } from "../children/childStore";
 import { formatMistakeContent } from "./contentFormatter";
 
 const props = defineProps<{
@@ -13,13 +13,13 @@ const emit = defineEmits<{
   "update:show": [value: boolean];
 }>();
 
-const students = useStudentStore();
+const students = useChildStore();
 const currentIndex = ref(0);
 const showAnswer = ref(false);
 const mode = ref<"random" | "weak">("random");
 
 const reviewRecords = computed(() => {
-  let records = students.activeStudentMistakeRecords.filter((r) => r.masteryStatus === "待复习");
+  let records = students.activeChildMistakeRecords.filter((r) => r.masteryStatus === "待复习");
   if (mode.value === "weak") {
     const kpCounts: Record<string, number> = {};
     for (const r of records) {

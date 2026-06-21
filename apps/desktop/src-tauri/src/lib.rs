@@ -144,10 +144,11 @@ struct FtpListEntry {
     is_dir: bool,
 }
 
+// NOTE: DB layer keeps "students" table name; UI displays as "小孩"
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct EntityCounts {
-    students: i64,
+    children: i64,
     materials: i64,
     material_sources: i64,
     class_records: i64,
@@ -166,7 +167,7 @@ struct WorkspaceBackup {
 #[serde(rename_all = "camelCase")]
 struct SystemReminderRequest {
     title: String,
-    student_name: String,
+    child_name: String,
     related_type: String,
     remind_at: i64,
 }
@@ -1069,7 +1070,8 @@ fn table_count(connection: &Connection, table: &str) -> Result<i64, String> {
 fn workspace_entity_counts(app: AppHandle) -> Result<EntityCounts, String> {
     let connection = open_database(&app)?;
     Ok(EntityCounts {
-        students: table_count(&connection, "students")?,
+        // NOTE: DB layer keeps "students" table name; UI displays as "小孩"
+        children: table_count(&connection, "students")?,
         materials: table_count(&connection, "materials")?,
         material_sources: table_count(&connection, "material_sources")?,
         class_records: table_count(&connection, "class_records")?,
@@ -1133,11 +1135,11 @@ fn build_reminders_applescript(request: &SystemReminderRequest) -> Result<String
 
     let due_date_seconds = request.remind_at / 1000;
     let title = escape_applescript_string(request.title.trim());
-    let student_name = escape_applescript_string(request.student_name.trim());
+    let child_name = escape_applescript_string(request.child_name.trim());
     let related_type = escape_applescript_string(request.related_type.trim());
     let body = format!(
-        "学生：{}\\n类型：{}\\n来自 C-teacher",
-        student_name, related_type
+        "小孩：{}\\n类型：{}\\n来自 C-teacher",
+        child_name, related_type
     );
 
     Ok(format!(
@@ -1745,7 +1747,7 @@ fn migrate_old_mistake_data(app: AppHandle) -> Result<String, String> {
     }
 
     Ok(format!(
-        "迁移完成：{} 条旧数据转为错题记录，{} 名学生已有记录跳过",
+        "迁移完成：{} 条旧数据转为错题记录，{} 名小孩已有记录跳过",
         migrated, skipped
     ))
 }
@@ -1926,7 +1928,7 @@ mod tests {
 
         assert!(script.contains("C-teacher"));
         assert!(script.contains("陈一诺数学课"));
-        assert!(script.contains("学生：陈一诺"));
+        assert!(script.contains("小孩：陈一诺"));
         assert!(script.contains("类型：课程"));
         assert!(script.contains("1717200000"));
         assert!(script.contains("make new reminder"));

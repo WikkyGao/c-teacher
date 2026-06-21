@@ -17,14 +17,19 @@ import {
   Video
 } from "lucide-vue-next";
 import { computed } from "vue";
-import { studentAvatarSourceFor } from "../../shared/assets/studentAvatars";
-import { useStudentStore } from "../students/studentStore";
+import { childAvatarSourceFor } from "../../shared/assets/childAvatars";
+import { useChildStore } from "../children/childStore";
+import type { UserRole } from "../auth/authSession";
 
-const emit = defineEmits<{
-  navigate: [value: "students" | "schedule" | "records" | "materials" | "reminders"];
+const props = defineProps<{
+  userRole?: UserRole;
 }>();
 
-const students = useStudentStore();
+const emit = defineEmits<{
+  navigate: [value: "children" | "schedule" | "records" | "materials" | "reminders"];
+}>();
+
+const students = useChildStore();
 const todayStart = computed(() => {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -42,10 +47,10 @@ const pendingHomework = computed(() =>
   students.classRecords.filter((record) => record.homework.trim() && record.gradingStatus === "待批改")
 );
 const progressRows = computed(() =>
-  students.items.slice(0, 3).map((student) => ({
-    student,
-    courses: student.courses.map((course) => ({ ...course, progress: courseProgress(course.progress) })),
-    latest: latestActivityLabel(student.id)
+  students.items.slice(0, 3).map((child) => ({
+    child,
+    courses: child.courses.map((course) => ({ ...course, progress: courseProgress(course.progress) })),
+    latest: latestActivityLabel(child.id)
   }))
 );
 const reminderItems = computed(() => students.sortedReminders.slice(0, 3));
@@ -66,15 +71,15 @@ const quickActions = [
   { label: "课堂记录", icon: Video, nav: "records" },
   { label: "上传资料", icon: UploadCloud, nav: "materials" },
   { label: "创建测验", icon: ClipboardList, nav: "records" },
-  { label: "学习报告", icon: LayoutDashboard, nav: "students" }
-] satisfies Array<{ label: string; icon: unknown; nav: "students" | "schedule" | "records" | "materials" | "reminders" }>;
+  { label: "学习报告", icon: LayoutDashboard, nav: "children" }
+] satisfies Array<{ label: string; icon: unknown; nav: "children" | "schedule" | "records" | "materials" | "reminders" }>;
 
 function courseProgress(value: number | undefined) {
   return value ?? 0;
 }
 
-function studentAvatar(student: { gender: "male" | "female" }) {
-  return studentAvatarSourceFor(students.appSettings.themeKey, student.gender);
+function studentAvatar(child: { gender: "male" | "female" }) {
+  return childAvatarSourceFor(students.appSettings.themeKey, child.gender);
 }
 
 function formatTime(value: number) {
@@ -96,14 +101,14 @@ function latestActivityLabel(studentId: string) {
   return `${Math.round(hours / 24)}天前`;
 }
 
-function studentClassLabel(studentId: string) {
-  const index = students.items.findIndex((student) => student.id === studentId);
-  return index === -1 ? "学生档案" : `高二（${index + 1}）班`;
+function childClassLabel(studentId: string) {
+  const index = students.items.findIndex((child) => child.id === studentId);
+  return index === -1 ? "小孩档案" : `高二（${index + 1}）班`;
 }
 
 function openStudentDetail(studentId: string) {
   students.selectStudent(studentId);
-  emit("navigate", "students");
+  emit("navigate", "children");
 }
 </script>
 
@@ -112,15 +117,15 @@ function openStudentDetail(studentId: string) {
     <header class="workbench-topbar">
       <div>
         <h1 class="page-title">工作台</h1>
-        <p class="page-subtitle">今天的课程、学生进度与待办提醒</p>
+        <p class="page-subtitle">今天的课程、小孩进度与待办提醒</p>
       </div>
     </header>
 
     <section class="workbench-metrics">
-      <button class="workbench-metric-card" type="button" @click="emit('navigate', 'students')">
+      <button class="workbench-metric-card" type="button" @click="emit('navigate', 'children')">
         <span class="workbench-metric-icon blue"><UsersRound :size="30" /></span>
         <div>
-          <p>学生数</p>
+          <p>小孩数</p>
           <strong>{{ students.items.length }} <small>人</small></strong>
           <em>较昨日 ↑ {{ Math.max(1, Math.min(5, students.items.length - 1)) }}</em>
         </div>
@@ -147,7 +152,7 @@ function openStudentDetail(studentId: string) {
       <section class="workbench-panel workbench-schedule-panel">
         <header>
           <h2>今日课程安排</h2>
-          <button type="button" @click="emit('navigate', 'schedule')"><Plus :size="16" /> 添加课程</button>
+          <button v-if="props.userRole !== 'parent'" type="button" @click="emit('navigate', 'schedule')"><Plus :size="16" /> 添加课程</button>
         </header>
         <div class="workbench-course-list">
           <button
@@ -170,7 +175,7 @@ function openStudentDetail(studentId: string) {
               </span>
               <div>
                 <strong>{{ lesson.subject }} · {{ lesson.topic || "课程复盘" }}</strong>
-                <p>{{ studentClassLabel(lesson.studentId) }} · {{ lesson.studentName }}</p>
+                <p>{{ childClassLabel(lesson.studentId) }} · {{ lesson.studentName }}</p>
               </div>
             </div>
             <div class="workbench-course-bottomline">
@@ -187,14 +192,14 @@ function openStudentDetail(studentId: string) {
 
       <section class="workbench-panel workbench-progress-panel">
         <header>
-          <h2>学生学习进度</h2>
-          <button type="button" @click="emit('navigate', 'students')">查看全部 <ChevronRight :size="15" /></button>
+          <h2>学习进度</h2>
+          <button type="button" @click="emit('navigate', 'children')">查看全部 <ChevronRight :size="15" /></button>
         </header>
         <div class="workbench-progress-list">
-          <button v-for="row in progressRows" :key="row.student.id" class="workbench-progress-row" type="button" @click="openStudentDetail(row.student.id)">
-            <span class="workbench-student-cell">
-              <img :src="studentAvatar(row.student)" :alt="`${row.student.name}头像`" />
-              <b>{{ row.student.name }}<small>{{ studentClassLabel(row.student.id) }}</small></b>
+          <button v-for="row in progressRows" :key="row.child.id" class="workbench-progress-row" type="button" @click="openStudentDetail(row.child.id)">
+            <span class="workbench-child-cell">
+              <img :src="studentAvatar(row.child)" :alt="`${row.child.name}头像`" />
+              <b>{{ row.child.name }}<small>{{ childClassLabel(row.child.id) }}</small></b>
               <em>{{ row.latest }}</em>
             </span>
             <span class="workbench-subject-progress">
@@ -206,7 +211,7 @@ function openStudentDetail(studentId: string) {
           </button>
         </div>
         <footer>
-          <button type="button" @click="emit('navigate', 'students')">查看学生管理 <ChevronRight :size="15" /></button>
+          <button type="button" @click="emit('navigate', 'children')">查看小孩管理 <ChevronRight :size="15" /></button>
         </footer>
       </section>
 
@@ -218,7 +223,7 @@ function openStudentDetail(studentId: string) {
           </header>
           <button v-for="(reminder, index) in reminderItems" :key="reminder.id" class="workbench-reminder-row" type="button" @click="emit('navigate', 'reminders')">
             <span :class="`tone-${index}`"><BellRing v-if="index === 1" :size="18" /><FileText v-else :size="18" /></span>
-            <b>{{ reminder.title }}<small>{{ studentClassLabel(reminder.studentId) }} · {{ reminder.relatedType }}</small></b>
+            <b>{{ reminder.title }}<small>{{ childClassLabel(reminder.studentId) }} · {{ reminder.relatedType }}</small></b>
             <i>{{ index + 1 }}</i>
             <ChevronRight :size="16" />
           </button>
@@ -245,7 +250,7 @@ function openStudentDetail(studentId: string) {
       </aside>
     </main>
 
-    <section class="workbench-panel workbench-actions">
+    <section v-if="props.userRole !== 'parent'" class="workbench-panel workbench-actions">
       <h2>快捷操作</h2>
       <button v-for="action in quickActions" :key="action.label" type="button" @click="emit('navigate', action.nav)">
         <span><component :is="action.icon" :size="21" /></span>

@@ -4,21 +4,21 @@ import { invoke } from "@tauri-apps/api/core";
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import { useStudentStore } from "../students/studentStore";
+import { useChildStore } from "../children/childStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 
-const workspace = useStudentStore();
+const workspace = useChildStore();
 const message = useMessage();
 const { confirmDelete } = useConfirmDelete();
 const showCompleted = ref(false);
 const form = reactive({
-  studentId: workspace.activeStudentId,
+  studentId: workspace.activeChildId,
   title: "陈一诺数学课",
   relatedType: "课程" as "课程" | "作业" | "批改" | "报告",
   remindAt: Date.now() + 60 * 60 * 1000
 });
-const studentOptions = computed(() => {
-  return workspace.items.map((student) => ({ label: student.name, value: student.id }));
+const childOptions = computed(() => {
+  return workspace.items.map((child) => ({ label: child.name, value: child.id }));
 });
 const typeOptions = ["课程", "作业", "批改", "报告"].map((item) => ({ label: item, value: item }));
 
@@ -32,7 +32,7 @@ function formatTime(value: number) {
 }
 
 function studentName(studentId: string) {
-  return workspace.items.find((student) => student.id === studentId)?.name ?? studentId;
+  return workspace.items.find((child) => child.id === studentId)?.name ?? studentId;
 }
 
 async function notify(title: string) {
@@ -155,8 +155,8 @@ function undoCompleteReminder(reminderId: string) {
       <aside class="side-panel">
         <h2>创建系统提醒</h2>
         <n-form label-placement="top">
-          <n-form-item label="学生">
-            <n-select v-model:value="form.studentId" :options="studentOptions" />
+          <n-form-item label="小孩">
+            <n-select v-model:value="form.studentId" :options="childOptions" />
           </n-form-item>
           <n-form-item label="类型">
             <n-select v-model:value="form.relatedType" :options="typeOptions" />

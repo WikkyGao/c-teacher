@@ -4,12 +4,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
-import type { MaterialSourceProtocol, ScannedMaterial, TeachingMaterial } from "../students/studentStore";
-import { useStudentStore } from "../students/studentStore";
+import type { MaterialSourceProtocol, ScannedMaterial, TeachingMaterial } from "../children/childStore";
+import { useChildStore } from "../children/childStore";
 import { createMaterialFileDraft } from "./materialFile";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 
-const workspace = useStudentStore();
+const workspace = useChildStore();
 const message = useMessage();
 const { confirmDelete } = useConfirmDelete();
 const query = ref("");
@@ -31,8 +31,8 @@ const sourceForm = reactive({
   path: "/C-teacher/teaching-materials",
   authMethod: "系统钥匙串"
 });
-const studentOptions = computed(() => {
-  return workspace.items.map((student) => ({ label: student.name, value: student.id }));
+const childOptions = computed(() => {
+  return workspace.items.map((child) => ({ label: child.name, value: child.id }));
 });
 const protocolOptions = [
   { label: "SMB", value: "smb" },
@@ -44,7 +44,7 @@ const filteredMaterials = computed(() => {
   if (!keyword) return workspace.materials;
   return workspace.materials.filter((material) => {
     const assignedNames = material.assignedStudentIds
-      .map((id) => workspace.items.find((student) => student.id === id)?.name ?? "")
+      .map((id) => workspace.items.find((child) => child.id === id)?.name ?? "")
       .join(" ");
     return [material.title, material.category, material.tags.join(" "), assignedNames, material.sourcePath]
       .join(" ")
@@ -54,7 +54,7 @@ const filteredMaterials = computed(() => {
 });
 
 function names(ids: string[]) {
-  return ids.map((id) => workspace.items.find((student) => student.id === id)?.name ?? id).join("、");
+  return ids.map((id) => workspace.items.find((child) => child.id === id)?.name ?? id).join("、");
 }
 
 function tagsFromText(text: string) {
@@ -109,7 +109,7 @@ function saveMaterial() {
 
 function removeMaterial(materialId: string) {
   confirmDelete({
-    content: "确定要删除这份资料吗？已分配该资料的学生将不再能访问。",
+    content: "确定要删除这份资料吗？已分配该资料的小孩将不再能访问。",
     onOk: () => {
       const deleted = workspace.deleteMaterial(materialId);
       if (deleted) {
@@ -143,7 +143,7 @@ async function chooseMaterialFile() {
   materialForm.tags = draft.tags.join("，");
   materialForm.sourceType = "local";
   materialForm.sourcePath = draft.sourcePath;
-  message.success("已选择本地资料，请确认分类和学生分配后保存");
+  message.success("已选择本地资料，请确认分类和小孩分配后保存");
 }
 
 async function openMaterial(material: TeachingMaterial) {
@@ -250,7 +250,7 @@ async function scanSource(sourceId?: string) {
     <div class="page-top">
       <div>
         <h1 class="page-title">资料库与分配</h1>
-        <p class="page-subtitle">搜索资料、查看学生归属并连接外部共享资料源</p>
+        <p class="page-subtitle">搜索资料、查看小孩归属并连接外部共享资料源</p>
       </div>
       <n-space>
         <n-button secondary @click="chooseMaterialFile">选择本地文件</n-button>
@@ -260,13 +260,13 @@ async function scanSource(sourceId?: string) {
 
     <div class="dashboard-grid">
       <section class="side-panel wide-panel">
-        <n-input v-model:value="query" placeholder="搜索资料、标签、学生进度..." />
+        <n-input v-model:value="query" placeholder="搜索资料、标签、小孩进度..." />
 
         <div class="inline-form">
           <n-input v-model:value="materialForm.title" placeholder="资料名称" />
           <n-input v-model:value="materialForm.category" placeholder="分类" />
           <n-input v-model:value="materialForm.tags" placeholder="标签，用逗号分隔" />
-          <n-select v-model:value="materialForm.assignedStudentIds" multiple :options="studentOptions" placeholder="分配给学生" />
+          <n-select v-model:value="materialForm.assignedStudentIds" multiple :options="childOptions" placeholder="分配给小孩" />
           <n-select v-model:value="materialForm.sourceType" :options="protocolOptions" placeholder="来源" />
           <n-input v-model:value="materialForm.sourcePath" placeholder="文件路径或共享路径" />
         </div>

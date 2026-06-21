@@ -2,8 +2,8 @@
 import { ArrowLeft, Plus } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
-import type { ScheduledLesson } from "../students/studentStore";
-import { useStudentStore } from "../students/studentStore";
+import type { ScheduledLesson } from "../children/childStore";
+import { useChildStore } from "../children/childStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 import {
   addDays,
@@ -16,7 +16,7 @@ import {
   visibleRangeForMode
 } from "./scheduleCalendar";
 
-const workspace = useStudentStore();
+const workspace = useChildStore();
 const message = useMessage();
 const { confirmDelete } = useConfirmDelete();
 const editingLessonId = ref<string | null>(null);
@@ -24,12 +24,12 @@ const calendarMode = ref<CalendarMode>("week");
 const calendarAnchor = ref(Date.now());
 const dayGridRef = ref<HTMLElement | null>(null);
 const pageMode = ref<"calendar" | "form">("calendar");
-const assignMode = ref<"student" | "group">("student");
+const assignMode = ref<"child" | "group">("child");
 const hoveredGroupKey = ref<string | null>(null);
 const form = reactive({
-  studentId: workspace.activeStudentId,
+  studentId: workspace.activeChildId,
   groupId: null as string | null,
-  subject: workspace.activeStudent.courses[0]?.subject ?? "数学",
+  subject: workspace.activeChild.courses[0]?.subject ?? "数学",
   startsAt: nextHour(),
   durationMinutes: 90,
   topic: "",
@@ -68,13 +68,13 @@ const modeOptions = [
   { label: "日", value: "day" }
 ] satisfies Array<{ label: string; value: CalendarMode }>;
 const durationOptions = [45, 60, 90, 120, 150].map((value) => ({ label: `${value} 分钟`, value }));
-const studentOptions = computed(() => workspace.items.map((student) => ({ label: student.name, value: student.id })));
+const childOptions = computed(() => workspace.items.map((child) => ({ label: child.name, value: child.id })));
 const groupOptions = computed(() =>
   workspace.groups.map((g) => ({ label: `${g.name}（${g.type === "class" ? "班级" : "小组"}）`, value: g.id }))
 );
-const selectedStudent = computed(() => workspace.items.find((student) => student.id === form.studentId) ?? workspace.activeStudent);
+const selectedChild = computed(() => workspace.items.find((child) => child.id === form.studentId) ?? workspace.activeChild);
 const subjectOptions = computed(() => {
-  return selectedStudent.value.courses.map((course) => ({ label: course.subject, value: course.subject }));
+  return selectedChild.value.courses.map((course) => ({ label: course.subject, value: course.subject }));
 });
 const selectedGroupHasSubjects = computed(() => {
   if (!form.groupId) return false;
@@ -171,7 +171,7 @@ const calendarItems = computed<CalendarLessonItem[]>(() => {
     if (coveredLessons.has(lesson.id)) continue;
     items.push({
       kind: "individual",
-      key: `student:${lesson.id}`,
+      key: `child:${lesson.id}`,
       lessonId: lesson.id,
       studentName: lesson.studentName,
       studentId: lesson.studentId,
@@ -258,10 +258,10 @@ function openCreateForm(startsAt?: number) {
 
 function resetForm() {
   editingLessonId.value = null;
-  assignMode.value = "student";
-  form.studentId = workspace.activeStudentId;
+  assignMode.value = "child";
+  form.studentId = workspace.activeChildId;
   form.groupId = null;
-  form.subject = workspace.activeStudent.courses[0]?.subject ?? "";
+  form.subject = workspace.activeChild.courses[0]?.subject ?? "";
   form.startsAt = nextHour();
   form.durationMinutes = 90;
   form.topic = "";
@@ -271,7 +271,7 @@ function resetForm() {
 function openEditForm(item: CalendarLessonItem) {
   if (item.kind === "group") return;
   editingLessonId.value = item.lessonId;
-  assignMode.value = "student";
+  assignMode.value = "child";
   form.studentId = item.studentId;
   form.groupId = null;
   form.subject = item.subject;
@@ -294,9 +294,9 @@ function saveLesson() {
     message.warning("请填写科目和开始时间");
     return;
   }
-  if (assignMode.value === "student") {
+  if (assignMode.value === "child") {
     if (!form.studentId) {
-      message.warning("请选择学生");
+      message.warning("请选择小孩");
       return;
     }
     const draft = {
@@ -319,7 +319,7 @@ function saveLesson() {
     }
     const group = workspace.groups.find((g) => g.id === form.groupId);
     if (!group || group.memberIds.length === 0) {
-      message.warning("该分组下没有学生");
+      message.warning("该分组下没有小孩");
       return;
     }
     for (const studentId of group.memberIds) {
@@ -368,7 +368,7 @@ watch(calendarMode, () => {
       <div class="page-top">
         <div>
           <h1 class="page-title">课程表</h1>
-          <p class="page-subtitle">按日、周、月查看班级/小组课程安排，鼠标悬停查看对应学生。</p>
+          <p class="page-subtitle">按日、周、月查看班级/小组课程安排，鼠标悬停查看对应小孩。</p>
         </div>
         <n-space align="center">
           <div class="calendar-view-switch">
@@ -526,7 +526,7 @@ watch(calendarMode, () => {
       <div class="page-top">
         <div>
           <h1 class="page-title">{{ editingLessonId ? "编辑课程" : "新建课程" }}</h1>
-          <p class="page-subtitle">{{ editingLessonId ? "修改选定的课程信息" : "为学生创建新的课程安排" }}</p>
+          <p class="page-subtitle">{{ editingLessonId ? "修改选定的课程信息" : "为小孩创建新的课程安排" }}</p>
         </div>
         <n-button secondary @click="goBack">
           <template #icon>
@@ -540,17 +540,17 @@ watch(calendarMode, () => {
         <n-form label-placement="top" :show-feedback="false">
           <n-form-item label="课程归属">
             <n-radio-group v-model:value="assignMode" :disabled="!!editingLessonId">
-              <n-radio value="student">单个学生</n-radio>
+              <n-radio value="child">单个小孩</n-radio>
               <n-radio value="group">班级/科目分组</n-radio>
             </n-radio-group>
           </n-form-item>
-          <n-form-item v-if="assignMode === 'student'" label="学生">
-            <n-select v-model:value="form.studentId" :options="studentOptions" />
+          <n-form-item v-if="assignMode === 'child'" label="小孩">
+            <n-select v-model:value="form.studentId" :options="childOptions" />
           </n-form-item>
           <n-form-item v-else label="班级/分组">
             <n-select v-model:value="form.groupId" :options="groupOptions" placeholder="选择班级或分组" @update:value="onGroupSelected" />
           </n-form-item>
-          <n-form-item v-if="assignMode === 'student'" label="科目">
+          <n-form-item v-if="assignMode === 'child'" label="科目">
             <n-select v-model:value="form.subject" :options="subjectOptions" filterable tag />
           </n-form-item>
           <n-form-item v-else-if="!selectedGroupHasSubjects" label="科目">
@@ -568,7 +568,7 @@ watch(calendarMode, () => {
           <n-form-item label="备注">
             <n-input v-model:value="form.note" type="textarea" placeholder="资料、作业或课前提醒" :autosize="{ minRows: 1, maxRows: 2 }" />
           </n-form-item>
-          <p v-if="assignMode === 'group'" class="muted-text">选择科目分组后，科目自动使用分组关联科目，课程将自动为该分组内的所有学生创建。</p>
+          <p v-if="assignMode === 'group'" class="muted-text">选择科目分组后，科目自动使用分组关联科目，课程将自动为该分组内的所有小孩创建。</p>
         </n-form>
         <n-space>
           <n-button type="primary" @click="saveLesson">{{ editingLessonId ? "保存课程" : "创建课程" }}</n-button>

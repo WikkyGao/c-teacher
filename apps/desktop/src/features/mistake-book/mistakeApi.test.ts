@@ -82,7 +82,7 @@ describe("analyzeMistake", () => {
       content: JSON.stringify({
         questionText: "一次函数图像向右平移 2 个单位",
         correctAnswer: "应将 x 替换为 x-2",
-        mistakeReason: "学生把左右平移方向记反了",
+        mistakeReason: "小孩把左右平移方向记反了",
         knowledgePoints: ["一次函数图像平移"],
         similarQuestions: ["将 y=2x+1 向左平移 3 个单位"]
       })
@@ -95,7 +95,7 @@ describe("analyzeMistake", () => {
       studentAnswer: "把 x 替换为 x+2"
     });
 
-    expect(result.mistakeReason).toBe("学生把左右平移方向记反了");
+    expect(result.mistakeReason).toBe("小孩把左右平移方向记反了");
     expect(mockedChatCompletion).toHaveBeenCalledWith(
       configuredProvider,
       expect.arrayContaining([
@@ -153,7 +153,7 @@ describe("analyzeMistake", () => {
       studentId: "chen",
       subject: "数学",
       questionText: "",
-      studentAnswer: "学生答案待补充",
+      studentAnswer: "暂无作答",
       imagePath: "/tmp/mistake.png"
     }, vi.fn());
 

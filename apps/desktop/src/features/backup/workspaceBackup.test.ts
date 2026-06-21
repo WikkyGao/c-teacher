@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PersistedState } from "../students/studentStore";
+import type { PersistedState } from "../children/childStore";
 import { buildWorkspaceBackup, isWorkspaceBackup, workspaceStateFromStore } from "./workspaceBackup";
 
 type CompletePersistedState = Required<PersistedState>;
@@ -9,7 +9,7 @@ function sampleState(): CompletePersistedState {
     students: [
       {
         id: "student-a",
-        name: "学生 A",
+        name: "小孩 A",
         gender: "female",
         goal: "提分",
         style: "讲练结合",

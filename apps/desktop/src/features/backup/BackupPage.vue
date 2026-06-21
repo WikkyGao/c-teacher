@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { useDialog, useMessage } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
-import { useStudentStore } from "../students/studentStore";
+import { useChildStore } from "../children/childStore";
 import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "./workspaceBackup";
 
 type BackupSummary = {
@@ -17,7 +17,7 @@ type BackupSummary = {
   aiProviders: number;
 };
 
-const workspace = useStudentStore();
+const workspace = useChildStore();
 const message = useMessage();
 const dialog = useDialog();
 const isExporting = ref(false);
@@ -113,7 +113,7 @@ function onFilePicked(event: Event) {
 function confirmImport() {
   dialog.warning({
     title: "恢复数据",
-    content: "导入备份将覆盖当前所有数据，包括学生、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？",
+    content: "导入备份将覆盖当前所有数据，包括小孩、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？",
     positiveText: "确认导入",
     negativeText: "取消",
     onPositiveClick: async () => {
@@ -176,7 +176,7 @@ onMounted(() => {
           <div class="h5-si-icon students">S</div>
           <div>
             <div class="h5-si-num">{{ summary.students }}</div>
-            <div class="h5-si-label">学生</div>
+            <div class="h5-si-label">小孩</div>
           </div>
         </div>
         <div class="h5-summary-item">

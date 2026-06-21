@@ -9,7 +9,7 @@ import {
 } from "lucide-vue-next";
 import type { Component } from "vue";
 import { computed, ref, watch } from "vue";
-import { useStudentStore } from "../students/studentStore";
+import { useChildStore } from "../children/childStore";
 import {
   mobilePlatformOptions,
   mobilePlatforms,
@@ -17,32 +17,32 @@ import {
   type MobilePlatformKey
 } from "./mobilePreviewConfig";
 
-type MobileAppTab = "dashboard" | "students" | "schedule" | "materials";
+type MobileAppTab = "dashboard" | "children" | "schedule" | "materials";
 
-const workspace = useStudentStore();
-const selectedStudentId = ref(workspace.activeStudentId);
+const workspace = useChildStore();
+const selectedChildId = ref(workspace.activeChildId);
 const activePlatform = ref<MobilePlatformKey>("app");
 const activeTab = ref<MobileAppTab>("dashboard");
 const isActionOpen = ref(false);
 
-const studentOptions = computed(() => workspace.items.map((student) => ({ label: student.name, value: student.id })));
-const selectedStudent = computed(() => workspace.items.find((student) => student.id === selectedStudentId.value) ?? workspace.activeStudent);
+const childOptions = computed(() => workspace.items.map((child) => ({ label: child.name, value: child.id })));
+const selectedChild = computed(() => workspace.items.find((child) => child.id === selectedChildId.value) ?? workspace.activeChild);
 const selectedLessons = computed(() => {
-  return workspace.scheduledLessonCalendarItems.filter((lesson) => lesson.studentId === selectedStudent.value.id).slice(0, 4);
+  return workspace.scheduledLessonCalendarItems.filter((lesson) => lesson.studentId === selectedChild.value.id).slice(0, 4);
 });
-const selectedMaterials = computed(() => workspace.materialTitlesForStudent(selectedStudent.value.id));
+const selectedMaterials = computed(() => workspace.materialTitlesForStudent(selectedChild.value.id));
 const selectedReminders = computed(() =>
-  workspace.incompleteReminders.filter((reminder) => reminder.studentId === selectedStudent.value.id)
+  workspace.incompleteReminders.filter((reminder) => reminder.studentId === selectedChild.value.id)
 );
 const dashboardStats = computed(() => [
-  { label: "课程", value: selectedStudent.value.courses.length },
+  { label: "课程", value: selectedChild.value.courses.length },
   { label: "提醒", value: selectedReminders.value.length },
   { label: "资料", value: selectedMaterials.value.length }
 ]);
 
 const mobileTabs: Array<{ key: MobileAppTab; label: string; icon: Component }> = [
   { key: "dashboard", label: "工作台", icon: LayoutDashboard },
-  { key: "students", label: "学生管理", icon: UsersRound },
+  { key: "children", label: "小孩管理", icon: UsersRound },
   { key: "schedule", label: "课程表", icon: CalendarDays },
   { key: "materials", label: "资料库", icon: LibraryBig }
 ];
@@ -51,7 +51,7 @@ const activePlatformMeta = computed(() => mobilePlatforms[activePlatform.value])
 const quickActions = computed(() => mobileQuickActions[activePlatform.value]);
 const activeTitle = computed(() => mobileTabs.find((tab) => tab.key === activeTab.value)?.label ?? "工作台");
 
-watch(selectedStudentId, (studentId) => {
+watch(selectedChildId, (studentId) => {
   workspace.selectStudent(studentId);
 });
 
@@ -70,11 +70,11 @@ function formatDateTime(value: number) {
     <div class="page-top">
       <div>
         <h1 class="page-title">手机预览</h1>
-        <p class="page-subtitle">在 Mac 上查看移动端页面结构，支持小程序和 App 两种终端：工作台、学生管理、课程表、资料库、提醒和快捷操作。</p>
+        <p class="page-subtitle">在 Mac 上查看移动端页面结构，支持小程序和 App 两种终端：工作台、小孩管理、课程表、资料库、提醒和快捷操作。</p>
       </div>
       <n-space align="center">
         <n-segmented v-model:value="activePlatform" :options="mobilePlatformOptions" />
-        <n-select v-model:value="selectedStudentId" :options="studentOptions" class="mobile-student-select" />
+        <n-select v-model:value="selectedChildId" :options="childOptions" class="mobile-child-select" />
       </n-space>
     </div>
 
@@ -125,9 +125,9 @@ function formatDateTime(value: number) {
               <template v-if="activeTab === 'dashboard'">
                 <section class="mobile-summary-card">
                   <div>
-                    <span>当前学生</span>
-                    <strong>{{ selectedStudent.name }}</strong>
-                    <p>{{ selectedStudent.goal }}</p>
+                    <span>当前小孩</span>
+                    <strong>{{ selectedChild.name }}</strong>
+                    <p>{{ selectedChild.goal }}</p>
                     <button type="button">{{ activePlatformMeta.primaryActionLabel }}</button>
                   </div>
                   <div class="mobile-flat-illustration" aria-hidden="true">
@@ -142,17 +142,17 @@ function formatDateTime(value: number) {
                     <small>{{ stat.label }}</small>
                   </span>
                 </div>
-                <article v-for="course in selectedStudent.courses" :key="course.subject" class="mobile-card">
+                <article v-for="course in selectedChild.courses" :key="course.subject" class="mobile-card">
                   <strong>{{ course.subject }} · {{ course.progress }}%</strong>
                   <span>第 {{ course.currentLesson }}/{{ course.totalLessons }} 节</span>
                   <div class="mobile-progress"><i :style="{ width: `${course.progress}%` }"></i></div>
                 </article>
               </template>
 
-              <template v-else-if="activeTab === 'students'">
-                <article v-for="student in workspace.items" :key="student.id" class="mobile-card">
-                  <strong>{{ student.name }}</strong>
-                  <span>{{ student.goal }} · {{ student.style }}</span>
+              <template v-else-if="activeTab === 'children'">
+                <article v-for="child in workspace.items" :key="child.id" class="mobile-card">
+                  <strong>{{ child.name }}</strong>
+                  <span>{{ child.goal }} · {{ child.style }}</span>
                 </article>
               </template>
 

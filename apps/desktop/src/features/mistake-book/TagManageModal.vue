@@ -12,7 +12,7 @@ import {
 } from "naive-ui";
 import { Pencil, Plus, Trash2 } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
-import { useStudentStore, type MistakeTag } from "../students/studentStore";
+import { useChildStore, type MistakeTag } from "../children/childStore";
 
 const props = defineProps<{
   show: boolean;
@@ -22,7 +22,7 @@ const emit = defineEmits<{
   "update:show": [value: boolean];
 }>();
 
-const students = useStudentStore();
+const students = useChildStore();
 const { mistakeTags } = storeToRefs(students);
 
 const newTagName = ref("");

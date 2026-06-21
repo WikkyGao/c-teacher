@@ -1,5 +1,5 @@
-import type { AiApiFormat, AiProviderConfig } from "../students/studentStore";
-import { useStudentStore } from "../students/studentStore";
+import type { AiApiFormat, AiProviderConfig } from "../children/childStore";
+import { useChildStore } from "../children/childStore";
 
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 
@@ -405,8 +405,8 @@ export async function testProviderConnection(provider: AiProviderConfig): Promis
 /**
  * 获取默认供应商和模型配置。
  */
-export function getDefaultAiConfig(store?: ReturnType<typeof useStudentStore>): { provider: AiProviderConfig; modelName: string } | null {
-  const s = store ?? useStudentStore();
+export function getDefaultAiConfig(store?: ReturnType<typeof useChildStore>): { provider: AiProviderConfig; modelName: string } | null {
+  const s = store ?? useChildStore();
   const providerId = s.appSettings.defaultAiProviderId;
   const modelId = s.appSettings.defaultAiModelId;
 

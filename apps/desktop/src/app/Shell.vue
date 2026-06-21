@@ -7,20 +7,23 @@ import {
   ClipboardList,
   Database,
   LibraryBig,
+  LogOut,
   Pencil,
   Smartphone,
   Settings,
   UsersRound
 } from "lucide-vue-next";
 import type { Component } from "vue";
-import { reactive, ref } from "vue";
-import type { TeacherProfile } from "../features/students/studentStore";
-import type { NavKey } from "../shared/types/navigation";
+import { computed, reactive, ref } from "vue";
+import type { UserRole } from "../features/auth/authSession";
+import type { TeacherProfile } from "../features/children/childStore";
+import type { NavKey, NavItem } from "../shared/types/navigation";
 import { navItems, settingsNavItem } from "../shared/types/navigation";
 import { updateState } from "../features/updater/versionCheck";
 
 const props = defineProps<{
   activeNav: NavKey;
+  userRole: UserRole;
   reminderCount: number;
   teacherProfile: TeacherProfile;
 }>();
@@ -28,6 +31,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   "update:activeNav": [value: NavKey];
   "save:teacherProfile": [value: TeacherProfile];
+  logout: [];
 }>();
 
 const showTeacherEditor = ref(false);
@@ -39,7 +43,7 @@ const teacherDraft = reactive<TeacherProfile>({
 
 const navIcons: Record<NavKey, Component> = {
   dashboard: BarChart3,
-  students: UsersRound,
+  children: UsersRound,
   schedule: CalendarDays,
   records: ClipboardList,
   materials: LibraryBig,
@@ -49,6 +53,16 @@ const navIcons: Record<NavKey, Component> = {
   settings: Settings,
   backup: Database
 };
+
+// Parent-only navigation: reduced set
+const parentNavKeys = new Set<NavKey>(["dashboard", "children", "schedule", "records", "materials", "reminders"]);
+
+const visibleNavItems = computed<NavItem[]>(() => {
+  if (props.userRole === "parent") {
+    return navItems.filter((item) => parentNavKeys.has(item.key));
+  }
+  return navItems;
+});
 
 function openTeacherEditor() {
   Object.assign(teacherDraft, props.teacherProfile);
@@ -64,7 +78,13 @@ function saveTeacherProfile() {
 <template>
   <main class="app-shell">
     <aside class="sidebar">
-      <button class="brand-block teacher-profile-trigger" type="button" @click="openTeacherEditor">
+      <!-- Role indicator + user block -->
+      <button
+        v-if="userRole === 'teacher'"
+        class="brand-block teacher-profile-trigger"
+        type="button"
+        @click="openTeacherEditor"
+      >
         <span class="brand-mark">{{ teacherProfile.name.slice(0, 1) || "师" }}</span>
         <div class="teacher-profile-copy">
           <div class="brand">{{ teacherProfile.name }}</div>
@@ -73,9 +93,19 @@ function saveTeacherProfile() {
         </div>
         <Pencil class="teacher-profile-edit-icon" :size="15" />
       </button>
+
+      <div v-else class="brand-block parent-profile-block">
+        <span class="brand-mark">{{ teacherProfile.name.slice(0, 1) || "家" }}</span>
+        <div class="teacher-profile-copy">
+          <div class="brand">{{ teacherProfile.name }}</div>
+          <div class="brand-subtitle">家长 · 只读</div>
+          <p>查看小孩的学习情况</p>
+        </div>
+      </div>
+
       <nav class="nav-stack" aria-label="主导航">
         <button
-          v-for="item in navItems"
+          v-for="item in visibleNavItems"
           :key="item.key"
           class="nav-item"
           :class="{ active: activeNav === item.key }"
@@ -86,15 +116,23 @@ function saveTeacherProfile() {
           <i v-if="item.key === 'reminders' && reminderCount > 0" class="nav-reminder-badge">{{ reminderCount }}</i>
         </button>
       </nav>
-      <button
-        class="nav-item settings-nav-item"
-        :class="{ active: activeNav === settingsNavItem.key }"
-        @click="emit('update:activeNav', settingsNavItem.key)"
-      >
-        <Settings :size="17" />
-        <span>{{ settingsNavItem.label }}</span>
-        <i v-if="updateState.status === 'available'" class="nav-update-dot"></i>
-      </button>
+
+      <div class="sidebar-bottom">
+        <button
+          class="nav-item settings-nav-item"
+          :class="{ active: activeNav === settingsNavItem.key }"
+          @click="emit('update:activeNav', settingsNavItem.key)"
+        >
+          <Settings :size="17" />
+          <span>{{ settingsNavItem.label }}</span>
+          <i v-if="updateState.status === 'available'" class="nav-update-dot"></i>
+        </button>
+
+        <button class="nav-item logout-nav-item" @click="emit('logout')">
+          <LogOut :size="17" />
+          <span>退出</span>
+        </button>
+      </div>
     </aside>
     <section class="workspace">
       <slot />
@@ -122,3 +160,20 @@ function saveTeacherProfile() {
     </div>
   </n-modal>
 </template>
+
+<style scoped>
+.parent-profile-block {
+  cursor: default;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logout-nav-item {
+  color: var(--muted-strong);
+}
+</style>

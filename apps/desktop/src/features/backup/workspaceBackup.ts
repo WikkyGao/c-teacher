@@ -5,9 +5,9 @@ import type {
   PersistedState,
   ReminderItem,
   ScheduledLesson,
-  Student,
+  Child,
   TeachingMaterial
-} from "../students/studentStore";
+} from "../children/childStore";
 
 export const BACKUP_VERSION = 1;
 
@@ -18,7 +18,7 @@ export type WorkspaceBackup = {
 };
 
 export type WorkspaceStoreSnapshot = {
-  items: Student[];
+  items: Child[];
   materials: TeachingMaterial[];
   materialSources: MaterialSource[];
   classRecords: ClassRecord[];

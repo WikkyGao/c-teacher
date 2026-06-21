@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appThemes } from "../features/students/studentStore";
+import { appThemes } from "../features/children/childStore";
 import { appThemeTokens, naiveThemeOverridesFor } from "./appThemeOverrides";
 
 describe("app theme overrides", () => {

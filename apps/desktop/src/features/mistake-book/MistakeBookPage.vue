@@ -28,8 +28,8 @@ import {
   UsersRound
 } from "lucide-vue-next";
 import { storeToRefs } from "pinia";
-import { useStudentStore, type MistakeRecord, type Student, type StudentGroup } from "../students/studentStore";
-import { studentAvatarSourceFor } from "../../shared/assets/studentAvatars";
+import { useChildStore, type MistakeRecord, type Child, type ChildGroup } from "../children/childStore";
+import { childAvatarSourceFor } from "../../shared/assets/childAvatars";
 import { analyzeMistakeStreamMulti, generateSimilarQuestionsStream } from "./mistakeApi";
 import { exportMistakesToPrint } from "./mistakeExport";
 import BatchImportModal from "./BatchImportModal.vue";
@@ -40,20 +40,23 @@ import ReviewMode from "./ReviewMode.vue";
 import TagManageModal from "./TagManageModal.vue";
 import MobileConnectModal from "../mobile/MobileConnectModal.vue";
 
+import type { UserRole } from "../auth/authSession";
+
 const props = defineProps<{
   studentId?: string;
+  userRole?: UserRole;
 }>();
 
 const emit = defineEmits<{
   back: [];
 }>();
 
-const students = useStudentStore();
+const students = useChildStore();
 const message = useMessage();
-const { activeStudent, defaultAiModel } = storeToRefs(students);
+const { activeChild, defaultAiModel } = storeToRefs(students);
 const modelSupportsVision = computed(() => defaultAiModel.value?.supportsVision ?? false);
 
-const selectedStudentId = ref(props.studentId || activeStudent.value?.id || "");
+const selectedChildId = ref(props.studentId || activeChild.value?.id || "");
 const activeMistakeSubject = ref("");
 const selectedRecord = ref<MistakeRecord | null>(null);
 const detailViewRef = ref<InstanceType<typeof MistakeDetailView> | null>(null);
@@ -87,8 +90,8 @@ const filteredStudents = computed(() => {
 });
 
 const treeItems = computed(() => {
-  const items: Array<{ key: string; label: string; count: number; type: "all" | "class" | "subject" | "ungrouped"; group?: StudentGroup }> = [];
-  items.push({ key: "all", label: "全部学生", count: students.items.length, type: "all" });
+  const items: Array<{ key: string; label: string; count: number; type: "all" | "class" | "subject" | "ungrouped"; group?: ChildGroup }> = [];
+  items.push({ key: "all", label: "全部小孩", count: students.items.length, type: "all" });
   for (const g of students.classes) {
     items.push({ key: g.id, label: g.name, count: g.memberIds.length, type: "class" as const, group: g });
   }
@@ -105,14 +108,14 @@ function studentGroupsFor(studentId: string) {
 }
 
 const currentStudent = computed(() => {
-  return students.items.find((s) => s.id === selectedStudentId.value) || activeStudent.value;
+  return students.items.find((s) => s.id === selectedChildId.value) || activeChild.value;
 });
 
 const subjectOptions = computed(() => {
   return currentStudent.value.mistakeBook.subjects.map((s) => ({ label: s, value: s }));
 });
 
-const stats = computed(() => students.activeStudentMistakeStats);
+const stats = computed(() => students.activeChildMistakeStats);
 
 function cleanOutputText(text: string): string {
   if (!text) return "";
@@ -149,8 +152,8 @@ function closeDetail() {
   selectedRecord.value = null;
 }
 
-function getStudentAvatar(student: Student): string {
-  return studentAvatarSourceFor(students.appSettings.themeKey, student.gender);
+function getStudentAvatar(child: Child): string {
+  return childAvatarSourceFor(students.appSettings.themeKey, child.gender);
 }
 
 function getStudentMistakeCount(studentId: string): number {
@@ -158,7 +161,7 @@ function getStudentMistakeCount(studentId: string): number {
 }
 
 function handleStudentChange(studentId: string) {
-  selectedStudentId.value = studentId;
+  selectedChildId.value = studentId;
   students.selectStudent(studentId);
   students.loadMistakeRecords(studentId);
   activeMistakeSubject.value = "";
@@ -212,10 +215,10 @@ async function runAiAnalysis() {
 
   try {
     const results = await analyzeMistakeStreamMulti({
-      studentId: selectedStudentId.value,
+      studentId: selectedChildId.value,
       subject: activeMistakeSubject.value || currentStudent.value.mistakeBook.subjects[0],
       questionText,
-      studentAnswer: "学生答案待补充",
+      studentAnswer: "暂无作答",
       imagePath: mistakeInputMode.value === "image" ? selectedMistakeImagePath.value : undefined
     }, (_delta, fullContent) => {
       streamingAnalysisText.value = fullContent;
@@ -226,18 +229,18 @@ async function runAiAnalysis() {
 
     for (const item of results) {
       await students.createMistakeRecord({
-        studentId: selectedStudentId.value,
+        studentId: selectedChildId.value,
         subject,
         questionText: item.questionText || questionText,
         imagePath,
-        studentAnswer: "学生答案待补充",
+        studentAnswer: "暂无作答",
         correctAnswer: item.correctAnswer,
         mistakeReason: item.mistakeReason,
         knowledgePoints: item.knowledgePoints
       });
     }
 
-    students.updateMistakeAnalysis(selectedStudentId.value, {
+    students.updateMistakeAnalysis(selectedChildId.value, {
       analysis: results.map((r) => r.mistakeReason).join("\n---\n"),
       knowledgeInsight: [...new Set(results.flatMap((r) => r.knowledgePoints))].join("、"),
       aiPending: Math.max(currentStudent.value.mistakeBook.aiPending - 1, 0)
@@ -254,13 +257,13 @@ async function runAiAnalysis() {
 }
 
 async function handleExportPrint() {
-  const records = students.activeStudentMistakeRecords;
+  const records = students.activeChildMistakeRecords;
   if (records.length === 0) {
     message.warning("暂无错题记录可导出");
     return;
   }
   try {
-    await exportMistakesToPrint(records, currentStudent.value?.name || "学生");
+    await exportMistakesToPrint(records, currentStudent.value?.name || "小孩");
     message.success("已打开打印预览");
   } catch (error) {
     message.error(`导出失败：${error instanceof Error ? error.message : String(error)}`);
@@ -285,9 +288,9 @@ async function handleMobileImage(path: string) {
 }
 
 onMounted(() => {
-  if (selectedStudentId.value) {
-    students.selectStudent(selectedStudentId.value);
-    students.loadMistakeRecords(selectedStudentId.value);
+  if (selectedChildId.value) {
+    students.selectStudent(selectedChildId.value);
+    students.loadMistakeRecords(selectedChildId.value);
     students.loadMistakeTags();
   }
 });
@@ -295,8 +298,8 @@ onMounted(() => {
 
 <template>
   <div class="mistake-book-page">
-    <!-- Detail view toolbar (matches student-page-toolbar style) -->
-    <div v-if="pageView === 'detail'" class="student-page-toolbar detail-toolbar">
+    <!-- Detail view toolbar (matches child-page-toolbar style) -->
+    <div v-if="pageView === 'detail'" class="child-page-toolbar detail-toolbar">
       <n-button secondary @click="closeDetail">
         <template #icon><ArrowLeft :size="16" /></template>
         返回错题列表
@@ -366,11 +369,11 @@ onMounted(() => {
 
     <!-- Main Content -->
     <div class="main-content">
-      <!-- Collapsible Student Sidebar (Plan C) — hidden in detail view -->
-      <aside v-if="pageView !== 'detail'" class="student-sidebar" :class="{ collapsed: sidebarCollapsed }">
+      <!-- Collapsible Child Sidebar (Plan C) — hidden in detail view -->
+      <aside v-if="pageView !== 'detail'" class="child-sidebar" :class="{ collapsed: sidebarCollapsed }">
         <div class="sidebar-header">
           <UsersRound v-if="!sidebarCollapsed" :size="16" />
-          <span v-if="!sidebarCollapsed">学生列表</span>
+          <span v-if="!sidebarCollapsed">小孩列表</span>
           <n-button text size="tiny" @click="toggleSidebar" :style="sidebarCollapsed ? '' : 'margin-left:auto'">
             {{ sidebarCollapsed ? '»' : '«' }}
           </n-button>
@@ -400,21 +403,21 @@ onMounted(() => {
               <span class="group-tree-count">{{ item.count }}</span>
             </button>
           </div>
-          <div class="sidebar-divider">学生</div>
-          <!-- Student list -->
-          <div class="student-list">
-            <div v-if="filteredStudents.length === 0" class="sidebar-empty">无学生</div>
+          <div class="sidebar-divider">小孩</div>
+          <!-- Child list -->
+          <div class="child-list">
+            <div v-if="filteredStudents.length === 0" class="sidebar-empty">无小孩</div>
             <div
-              v-for="student in filteredStudents"
-              :key="student.id"
-              class="student-item"
-              :class="{ active: selectedStudentId === student.id }"
-              @click="handleStudentChange(student.id)"
+              v-for="child in filteredStudents"
+              :key="child.id"
+              class="child-item"
+              :class="{ active: selectedChildId === child.id }"
+              @click="handleStudentChange(child.id)"
             >
-              <img class="student-avatar" :src="getStudentAvatar(student)" :alt="`${student.name}头像`" />
-              <div class="student-info">
-                <span class="student-name">{{ student.name }}</span>
-                <span class="student-stats">{{ getStudentMistakeCount(student.id) }} 道错题</span>
+              <img class="child-avatar" :src="getStudentAvatar(child)" :alt="`${child.name}头像`" />
+              <div class="child-info">
+                <span class="child-name">{{ child.name }}</span>
+                <span class="child-stats">{{ getStudentMistakeCount(child.id) }} 道错题</span>
               </div>
             </div>
           </div>
@@ -452,8 +455,9 @@ onMounted(() => {
               <n-tabs v-model:value="centerTab" type="line" size="small">
                 <n-tab-pane name="list" tab="错题列表">
                   <MistakeCardList
-                    :student-id="selectedStudentId"
+                    :student-id="selectedChildId"
                     :subject="activeMistakeSubject"
+                    :user-role="props.userRole"
                     @open-detail="openDetail"
                     @create-new="handleCreateNew"
                   />
@@ -495,7 +499,7 @@ onMounted(() => {
                     :autosize="{ minRows: 3, maxRows: 6 }"
                   />
                 </n-tab-pane>
-                <n-tab-pane name="image" tab="图片上传" :disabled="!modelSupportsVision">
+                <n-tab-pane name="image" tab="图片上传">
                   <div class="image-upload-area">
                     <n-button type="primary" block @click="chooseMistakeImage">
                       <template #icon><FileImage :size="16" /></template>
@@ -548,9 +552,9 @@ onMounted(() => {
     <!-- Batch Import -->
     <BatchImportModal
       v-model:show="showBatchImport"
-      :student-id="selectedStudentId"
+      :student-id="selectedChildId"
       :subject="activeMistakeSubject || currentStudent.mistakeBook.subjects[0]"
-      @complete="students.loadMistakeRecords(selectedStudentId)"
+      @complete="students.loadMistakeRecords(selectedChildId)"
     />
 
     <!-- Review Mode -->
@@ -613,7 +617,7 @@ onMounted(() => {
   gap: 0;
 }
 
-.student-sidebar {
+.child-sidebar {
   width: 200px;
   min-width: 200px;
   background: var(--panel-solid);
@@ -624,7 +628,7 @@ onMounted(() => {
   transition: width 0.2s, min-width 0.2s;
 }
 
-.student-sidebar.collapsed {
+.child-sidebar.collapsed {
   width: 44px;
   min-width: 44px;
 }
@@ -661,13 +665,13 @@ onMounted(() => {
   color: var(--text);
 }
 
-.student-list {
+.child-list {
   flex: 1;
   overflow-y: auto;
   padding: 10px;
 }
 
-.student-item {
+.child-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -677,15 +681,15 @@ onMounted(() => {
   transition: background 0.2s;
 }
 
-.student-item:hover {
+.child-item:hover {
   background: var(--surface-soft);
 }
 
-.student-item.active {
+.child-item.active {
   background: var(--action-soft);
 }
 
-.student-avatar {
+.child-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -693,13 +697,13 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.student-info {
+.child-info {
   display: flex;
   flex-direction: column;
   min-width: 0;
 }
 
-.student-name {
+.child-name {
   font-size: 14px;
   font-weight: 500;
   color: var(--text);
@@ -708,7 +712,7 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
-.student-stats {
+.child-stats {
   font-size: 12px;
   color: var(--muted);
 }

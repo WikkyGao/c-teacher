@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { chatCompletion, chatCompletionStream, testProviderConnection } from "./aiClient";
-import type { AiProviderConfig } from "../students/studentStore";
+import type { AiProviderConfig } from "../children/childStore";
 
 const tauriFetchMock = vi.hoisted(() => vi.fn());
 

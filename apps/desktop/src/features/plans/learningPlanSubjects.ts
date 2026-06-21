@@ -1,5 +1,5 @@
-import type { Course } from "../students/studentStore";
-import { K12_MISTAKE_BOOK_SUBJECTS } from "../students/studentStore";
+import type { Course } from "../children/childStore";
+import { K12_MISTAKE_BOOK_SUBJECTS } from "../children/childStore";
 
 export function buildLearningPlanSubjectOptions(courses: Course[]) {
   const courseSubjects = courses.map((course) => course.subject.trim()).filter(Boolean);

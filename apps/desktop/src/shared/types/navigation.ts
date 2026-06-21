@@ -1,6 +1,6 @@
 export type NavKey =
   | "dashboard"
-  | "students"
+  | "children"
   | "schedule"
   | "records"
   | "materials"
@@ -17,7 +17,7 @@ export type NavItem = {
 
 export const navItems: NavItem[] = [
   { key: "dashboard", label: "工作台" },
-  { key: "students", label: "学生管理" },
+  { key: "children", label: "小孩管理" },
   { key: "schedule", label: "课程表" },
   { key: "records", label: "课堂记录" },
   { key: "materials", label: "资料库" },

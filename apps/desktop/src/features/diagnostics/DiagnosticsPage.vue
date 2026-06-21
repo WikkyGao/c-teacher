@@ -5,7 +5,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { Download, RefreshCw, Upload } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
-import { useStudentStore } from "../students/studentStore";
+import { useChildStore } from "../children/childStore";
 
 type EntityCounts = {
   students: number;
@@ -15,14 +15,14 @@ type EntityCounts = {
   reminders: number;
 };
 
-const workspace = useStudentStore();
+const workspace = useChildStore();
 const message = useMessage();
 const isLoading = ref(false);
 const isBackupBusy = ref(false);
 const errorMessage = ref("");
 const counts = ref<EntityCounts | null>(null);
 const countRows = computed(() => [
-  { label: "学生", value: counts.value?.students ?? 0, local: workspace.items.length },
+  { label: "小孩", value: counts.value?.students ?? 0, local: workspace.items.length },
   { label: "资料", value: counts.value?.materials ?? 0, local: workspace.materials.length },
   { label: "资料源", value: counts.value?.materialSources ?? 0, local: workspace.materialSources.length },
   { label: "课堂记录", value: counts.value?.classRecords ?? 0, local: workspace.classRecords.length },

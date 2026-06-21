@@ -1,8 +1,8 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { appThemes, K12_MISTAKE_BOOK_SUBJECTS, useStudentStore } from "./studentStore";
+import { appThemes, K12_MISTAKE_BOOK_SUBJECTS, useChildStore } from "./childStore";
 
-describe("studentStore", () => {
+describe("childStore", () => {
   const storage = new Map<string, string>();
 
   beforeEach(() => {
@@ -17,15 +17,15 @@ describe("studentStore", () => {
   });
 
   it("selects the active student", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
     store.selectStudent("meng");
 
-    expect(store.activeStudent.name).toBe("孟然");
+    expect(store.activeChild.name).toBe("孟然");
   });
 
   it("updates mistake book AI analysis", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
     store.updateMistakeAnalysis("chen", {
       analysis: "新的错误分析",
@@ -34,22 +34,22 @@ describe("studentStore", () => {
       aiPending: 2
     });
 
-    expect(store.activeStudent.mistakeBook.analysis).toBe("新的错误分析");
-    expect(store.activeStudent.mistakeBook.similarQuestions).toBe("新的类似题");
-    expect(store.activeStudent.mistakeBook.knowledgeInsight).toBe("新的知识点分析");
-    expect(store.activeStudent.mistakeBook.aiPending).toBe(2);
+    expect(store.activeChild.mistakeBook.analysis).toBe("新的错误分析");
+    expect(store.activeChild.mistakeBook.similarQuestions).toBe("新的类似题");
+    expect(store.activeChild.mistakeBook.knowledgeInsight).toBe("新的知识点分析");
+    expect(store.activeChild.mistakeBook.aiPending).toBe(2);
   });
 
   it("supports all primary and secondary school subjects in mistake books", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
-    expect(store.activeStudent.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
+    expect(store.activeChild.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
   });
 
   it("describes mistake books as multi-subject notebooks", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
-    expect(store.activeStudent.mistakeBook.summary).toContain("覆盖 11 个中小学科目");
+    expect(store.activeChild.mistakeBook.summary).toContain("覆盖 11 个中小学科目");
   });
 
   it("migrates cached mistake books to all K12 subjects", () => {
@@ -59,7 +59,7 @@ describe("studentStore", () => {
         students: [
           {
             id: "cached",
-            name: "缓存学生",
+            name: "缓存小孩",
             goal: "缓存目标",
             style: "缓存风格",
             courses: [{ subject: "数学", currentLesson: 1, totalLessons: 10, progress: 10 }],
@@ -83,44 +83,44 @@ describe("studentStore", () => {
     );
     setActivePinia(createPinia());
 
-    const store = useStudentStore();
+    const store = useChildStore();
 
-    expect(store.activeStudent.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
-    expect(store.activeStudent.mistakeBook.summary).toContain("覆盖 11 个中小学科目");
+    expect(store.activeChild.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
+    expect(store.activeChild.mistakeBook.summary).toContain("覆盖 11 个中小学科目");
   });
 
   it("creates, updates and deletes students", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
     store.createStudent({
-      name: "新学生",
+      name: "新小孩",
       goal: "完成入门课",
       style: "高频反馈",
       courses: [{ subject: "数学", currentLesson: 1, totalLessons: 8, progress: 12 }],
       materials: ["入门讲义"]
     });
 
-    expect(store.activeStudent.name).toBe("新学生");
-    expect(store.activeStudent.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
+    expect(store.activeChild.name).toBe("新小孩");
+    expect(store.activeChild.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
 
-    store.updateStudent(store.activeStudent.id, {
-      name: "新学生 A",
+    store.updateStudent(store.activeChild.id, {
+      name: "新小孩 A",
       goal: "完成基础课",
       style: "慢速讲解",
       courses: [{ subject: "英语", currentLesson: 2, totalLessons: 10, progress: 20 }],
       materials: ["阅读卡片"]
     });
 
-    expect(store.activeStudent.name).toBe("新学生 A");
-    expect(store.activeStudent.courses[0].subject).toBe("英语");
+    expect(store.activeChild.name).toBe("新小孩 A");
+    expect(store.activeChild.courses[0].subject).toBe("英语");
 
-    expect(store.deleteStudent(store.activeStudent.id)).toBe(true);
-    expect(store.items.some((student) => student.name === "新学生 A")).toBe(false);
+    expect(store.deleteStudent(store.activeChild.id)).toBe(true);
+    expect(store.items.some((student) => student.name === "新小孩 A")).toBe(false);
   });
 
   it("creates materials, class records and reminders", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createMaterial({
       title: "新资料",
@@ -150,8 +150,8 @@ describe("studentStore", () => {
   });
 
   it("updates class records", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createClassRecord({
       studentId,
@@ -176,8 +176,8 @@ describe("studentStore", () => {
   });
 
   it("updates homework grading status", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createClassRecord({
       studentId,
@@ -192,13 +192,13 @@ describe("studentStore", () => {
     expect(store.classRecords[0].gradingStatus).toBe("待批改");
     expect(store.updateHomeworkGradingStatus(recordId, "已批改")).toBe(true);
     expect(store.classRecords[0].gradingStatus).toBe("已批改");
-    expect(store.activeStudentHomework[0].gradingStatus).toBe("已批改");
+    expect(store.activeChildHomework[0].gradingStatus).toBe("已批改");
     expect(store.updateHomeworkGradingStatus("missing-record", "已批改")).toBe(false);
   });
 
   it("resets grading status when homework content changes", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createClassRecord({
       studentId,
@@ -222,8 +222,8 @@ describe("studentStore", () => {
   });
 
   it("updates a student course plan", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     expect(
       store.updateStudentCourse(studentId, "数学", {
@@ -234,14 +234,14 @@ describe("studentStore", () => {
       })
     ).toBe(true);
 
-    expect(store.activeStudent.courses.find((course) => course.subject === "数学")?.currentLesson).toBe(9);
-    expect(store.activeStudent.courses.find((course) => course.subject === "数学")?.progress).toBe(56);
+    expect(store.activeChild.courses.find((course) => course.subject === "数学")?.currentLesson).toBe(9);
+    expect(store.activeChild.courses.find((course) => course.subject === "数学")?.progress).toBe(56);
     expect(store.updateStudentCourse(studentId, "不存在", { subject: "物理", currentLesson: 1, totalLessons: 8, progress: 12 })).toBe(false);
   });
 
   it("calculates course progress from completed and total lessons", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     expect(
       store.createStudentCourse(studentId, {
@@ -252,7 +252,7 @@ describe("studentStore", () => {
       })
     ).toBe(true);
 
-    const course = store.activeStudent.courses.find((item) => item.subject === "化学");
+    const course = store.activeChild.courses.find((item) => item.subject === "化学");
 
     expect(course).toMatchObject({
       currentLesson: 3,
@@ -262,8 +262,8 @@ describe("studentStore", () => {
   });
 
   it("checks in completed lessons and recalculates progress", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.updateStudentCourse(studentId, "数学", {
       subject: "数学",
@@ -273,7 +273,7 @@ describe("studentStore", () => {
     });
 
     expect(store.checkInStudentCourse(studentId, "数学")).toBe(true);
-    expect(store.activeStudent.courses.find((course) => course.subject === "数学")).toMatchObject({
+    expect(store.activeChild.courses.find((course) => course.subject === "数学")).toMatchObject({
       currentLesson: 16,
       totalLessons: 16,
       progress: 100
@@ -283,8 +283,8 @@ describe("studentStore", () => {
   });
 
   it("undoes completed lesson check-ins and recalculates progress", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.updateStudentCourse(studentId, "数学", {
       subject: "数学",
@@ -293,19 +293,19 @@ describe("studentStore", () => {
       progress: 99
     });
 
-    expect(store.undoStudentCourseCheckIn(studentId, "数学")).toBe(true);
-    expect(store.activeStudent.courses.find((course) => course.subject === "数学")).toMatchObject({
+    expect(store.undoChildCourseCheckIn(studentId, "数学")).toBe(true);
+    expect(store.activeChild.courses.find((course) => course.subject === "数学")).toMatchObject({
       currentLesson: 0,
       totalLessons: 10,
       progress: 0
     });
-    expect(store.undoStudentCourseCheckIn(studentId, "数学")).toBe(false);
-    expect(store.undoStudentCourseCheckIn(studentId, "不存在")).toBe(false);
+    expect(store.undoChildCourseCheckIn(studentId, "数学")).toBe(false);
+    expect(store.undoChildCourseCheckIn(studentId, "不存在")).toBe(false);
   });
 
   it("creates student course plans and keeps mistake book subjects in sync", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     expect(
       store.createStudentCourse(studentId, {
@@ -316,12 +316,12 @@ describe("studentStore", () => {
       })
     ).toBe(true);
 
-    expect(store.activeStudent.courses.find((course) => course.subject === "物理")).toMatchObject({
+    expect(store.activeChild.courses.find((course) => course.subject === "物理")).toMatchObject({
       currentLesson: 1,
       totalLessons: 8,
       progress: 13
     });
-    expect(store.activeStudent.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
+    expect(store.activeChild.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
     expect(
       store.createStudentCourse(studentId, {
         subject: "物理",
@@ -330,23 +330,23 @@ describe("studentStore", () => {
         progress: 24
       })
     ).toBe(false);
-    expect(store.activeStudent.courses.filter((course) => course.subject === "物理")).toHaveLength(1);
+    expect(store.activeChild.courses.filter((course) => course.subject === "物理")).toHaveLength(1);
   });
 
   it("deletes student course plans without removing the final course", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
     store.createStudent({
-      name: "单科学生",
+      name: "单科小孩",
       goal: "先完成数学",
       style: "小步推进",
       courses: [{ subject: "数学", currentLesson: 1, totalLessons: 8, progress: 12 }],
       materials: []
     });
-    const studentId = store.activeStudent.id;
+    const studentId = store.activeChild.id;
 
     expect(store.deleteStudentCourse(studentId, "数学")).toBe(false);
-    expect(store.activeStudent.courses.map((course) => course.subject)).toEqual(["数学"]);
+    expect(store.activeChild.courses.map((course) => course.subject)).toEqual(["数学"]);
 
     expect(
       store.createStudentCourse(studentId, {
@@ -357,14 +357,14 @@ describe("studentStore", () => {
       })
     ).toBe(true);
     expect(store.deleteStudentCourse(studentId, "数学")).toBe(true);
-    expect(store.activeStudent.courses.map((course) => course.subject)).toEqual(["英语"]);
-    expect(store.activeStudent.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
+    expect(store.activeChild.courses.map((course) => course.subject)).toEqual(["英语"]);
+    expect(store.activeChild.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
     expect(store.deleteStudentCourse(studentId, "不存在")).toBe(false);
   });
 
   it("deletes reminders", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createReminder({
       studentId,
@@ -380,8 +380,8 @@ describe("studentStore", () => {
   });
 
   it("marks reminders complete, undoes completion and prioritizes incomplete reminders", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createReminder({
       studentId,
@@ -409,15 +409,15 @@ describe("studentStore", () => {
   });
 
   it("creates course reminders from a student course plan", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
     const remindAt = new Date("2026-06-12T18:00:00+08:00").getTime();
 
     expect(store.createCourseReminder(studentId, "数学", remindAt)).toBe(true);
 
     expect(store.reminders[0]).toMatchObject({
       studentId,
-      title: `${store.activeStudent.name}数学第 9 节课`,
+      title: `${store.activeChild.name}数学第 9 节课`,
       remindAt,
       relatedType: "课程",
       status: "待提醒"
@@ -427,8 +427,8 @@ describe("studentStore", () => {
   });
 
   it("does not create course reminder titles beyond the total lesson count", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
     const remindAt = new Date("2026-06-12T18:00:00+08:00").getTime();
 
     store.updateStudentCourse(studentId, "数学", {
@@ -439,12 +439,12 @@ describe("studentStore", () => {
     });
 
     expect(store.createCourseReminder(studentId, "数学", remindAt)).toBe(true);
-    expect(store.reminders[0].title).toBe(`${store.activeStudent.name}数学第 16 节课`);
+    expect(store.reminders[0].title).toBe(`${store.activeChild.name}数学第 16 节课`);
   });
 
   it("derives student material titles from assigned materials", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createMaterial({
       title: "新分配讲义",
@@ -459,8 +459,8 @@ describe("studentStore", () => {
   });
 
   it("updates and deletes materials", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createMaterial({
       title: "待编辑资料",
@@ -491,7 +491,7 @@ describe("studentStore", () => {
   });
 
   it("tests local material sources by path and deletes sources", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
     store.createMaterialSource({
       protocol: "local",
@@ -510,8 +510,8 @@ describe("studentStore", () => {
   });
 
   it("builds calendar plan items from reminders and class records", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createReminder({
       studentId,
@@ -532,8 +532,8 @@ describe("studentStore", () => {
   });
 
   it("creates, updates and deletes scheduled lessons", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
     const startsAt = new Date("2026-06-08T18:00:00+08:00").getTime();
 
     store.createScheduledLesson({
@@ -554,7 +554,7 @@ describe("studentStore", () => {
       note: "带讲义"
     });
     expect(store.scheduledLessonCalendarItems[0]).toMatchObject({
-      studentName: store.activeStudent.name,
+      studentName: store.activeChild.name,
       subject: "数学",
       durationMinutes: 90
     });
@@ -583,8 +583,8 @@ describe("studentStore", () => {
   });
 
   it("cleans scheduled lessons when deleting a student", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createScheduledLesson({
       studentId,
@@ -600,7 +600,7 @@ describe("studentStore", () => {
   });
 
   it("manages AI providers, models and default model settings", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
     store.createAiProvider({
       name: "测试供应商",
@@ -653,7 +653,7 @@ describe("studentStore", () => {
   });
 
   it("switches app themes", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
     expect(["松石白板", "墨蓝夜读", "晴蓝讲台", "梅紫书房"]).toEqual(
       expect.arrayContaining(appThemes.map((theme) => theme.name))
@@ -688,7 +688,7 @@ describe("studentStore", () => {
     );
     setActivePinia(createPinia());
 
-    const store = useStudentStore();
+    const store = useChildStore();
 
     expect(store.appSettings.teacherProfile).toEqual({
       name: "王老师",
@@ -714,8 +714,8 @@ describe("studentStore", () => {
   });
 
   it("derives active student homework items from class records", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createClassRecord({
       studentId,
@@ -725,7 +725,7 @@ describe("studentStore", () => {
       homework: "第 1-3 题"
     });
 
-    expect(store.activeStudentHomework[0]).toMatchObject({
+    expect(store.activeChildHomework[0]).toMatchObject({
       studentId,
       subject: "数学",
       homework: "第 1-3 题"
@@ -733,8 +733,8 @@ describe("studentStore", () => {
   });
 
   it("builds student learning report summaries", () => {
-    const store = useStudentStore();
-    const studentId = store.activeStudent.id;
+    const store = useChildStore();
+    const studentId = store.activeChild.id;
 
     store.createClassRecord({
       studentId,
@@ -747,8 +747,8 @@ describe("studentStore", () => {
     const report = store.learningReports.find((item) => item.studentId === studentId);
 
     expect(report).toMatchObject({
-      studentName: store.activeStudent.name,
-      goal: store.activeStudent.goal,
+      studentName: store.activeChild.name,
+      goal: store.activeChild.goal,
       classRecordCount: 2,
       homeworkCount: 2,
       pendingGradingCount: 2
@@ -759,7 +759,7 @@ describe("studentStore", () => {
   });
 
   it("imports scanned materials without duplicating paths", () => {
-    const store = useStudentStore();
+    const store = useChildStore();
 
     const firstImportCount = store.importScannedMaterials(
       [

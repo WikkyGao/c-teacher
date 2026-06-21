@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { K12_MISTAKE_BOOK_SUBJECTS } from "./studentStore";
+import { K12_MISTAKE_BOOK_SUBJECTS } from "./childStore";
 import { buildMistakeBookSubjectOptions, mistakeBookSubjectCountText } from "./mistakeBookPanel";
 
 describe("mistakeBookPanel", () => {

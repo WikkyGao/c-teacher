@@ -62,7 +62,7 @@ export type CreateMistakeRecordDraft = {
   similarQuestions?: string[];
 };
 
-export type Student = {
+export type Child = {
   id: string;
   name: string;
   gender: "male" | "female";
@@ -73,7 +73,7 @@ export type Student = {
   mistakeBook: MistakeBookSummary;
 };
 
-export type StudentGroup = {
+export type ChildGroup = {
   id: string;
   name: string;
   description: string;
@@ -83,8 +83,8 @@ export type StudentGroup = {
   memberIds: string[];
 };
 
-export type StudentDraft = Pick<Student, "name" | "goal" | "style" | "courses" | "materials"> & {
-  gender?: Student["gender"];
+export type ChildDraft = Pick<Child, "name" | "goal" | "style" | "courses" | "materials"> & {
+  gender?: Child["gender"];
 };
 
 export type MistakeBookPatch = Partial<
@@ -245,14 +245,14 @@ export type DefaultAiModel = AiModelConfig & {
 };
 
 type PersistedState = {
-  students: Student[];
+  students: Child[];
   materials: TeachingMaterial[];
   materialSources: MaterialSource[];
   classRecords: ClassRecord[];
   reminders: ReminderItem[];
   scheduledLessons?: ScheduledLesson[];
   appSettings?: AppSettings;
-  groups?: StudentGroup[];
+  groups?: ChildGroup[];
 };
 
 export type { PersistedState };
@@ -295,7 +295,7 @@ const seedTeacherProfile: TeacherProfile = {
 export const DEFAULT_MISTAKE_ANALYSIS_PROMPT = `【角色与核心任务 (ROLE AND CORE TASK)】
 你是一位世界顶尖的、经验丰富的、专业的跨学科考试分析专家（Interdisciplinary Exam Analysis Expert）。你的核心任务是极致准确地分析用户提供的考试题目图片，全面理解所有文本、图表和隐含约束，并提供一个完整、高度结构化且专业的解决方案。
 
-**重要：忽略书写规范。** 只关注题目内容的知识正确性和解题逻辑。不要评价或提及字迹、排版、格式、语法细节、标点使用等书写规范问题。即使学生的作答书写潦草或有涂改，也仅以可识别的内容为准进行分析。
+**重要：忽略书写规范。** 只关注题目内容的知识正确性和解题逻辑。不要评价或提及字迹、排版、格式、语法细节、标点使用等书写规范问题。即使小孩的作答书写潦草或有涂改，也仅以可识别的内容为准进行分析。
 
 【核心输出要求 (OUTPUT REQUIREMENTS)】
 你的响应输出**必须严格遵循以下自定义标签格式**。**严禁**使用 JSON 或 Markdown 代码块。**严禁**对 LaTeX 公式中的反斜杠进行二次转义（如 "\\frac" 是错误的，必须是 "\\frac"）。
@@ -335,7 +335,7 @@ export const DEFAULT_MISTAKE_ANALYSIS_PROMPT = `【角色与核心任务 (ROLE A
 4. **内容完整**：如果包含子问题，请在 question_text 中完整列出。
 5. **禁止图片**：严禁包含任何图片链接或 markdown 图片语法。`;
 
-export const DEFAULT_SIMILAR_QUESTIONS_PROMPT = `你是一位资深的K12教育题目生成专家，具备跨学科的题目创作能力。你的核心任务是**根据以下原题和知识点，举一反三生成高质量教学题目**，帮助学生巩固知识并拓展解题思路。
+export const DEFAULT_SIMILAR_QUESTIONS_PROMPT = `你是一位资深的K12教育题目生成专家，具备跨学科的题目创作能力。你的核心任务是**根据以下原题和知识点，举一反三生成高质量教学题目**，帮助小孩巩固知识并拓展解题思路。
 ### 角色定义
 1. **学科全能专家**
    - 精通K12阶段所有学科（数学/语文/英语/物理/化学/生物/历史/地理/政治）
@@ -345,7 +345,7 @@ export const DEFAULT_SIMILAR_QUESTIONS_PROMPT = `你是一位资深的K12教育�
    - 掌握12种变式技法：条件替换/情境迁移/问题转化/数据重构/图形变形/角色反转/跨学科融合/难度阶梯/开放拓展/陷阱设计/逆向思维/生活应用
    - 确保变式题目保持原题核心考点，改变题目表现形式
 3. **学情分析师**
-   - 预判学生易错点（认知盲区/概念混淆/计算失误/审题偏差）
+   - 预判小孩易错点（认知盲区/概念混淆/计算失误/审题偏差）
    - 在变式题目中针对性强化易错点训练
 ### 执行流程
 1. **接收任务**
@@ -401,7 +401,7 @@ export const K12_MISTAKE_BOOK_SUBJECTS = [
 ];
 const mistakeBookSubjectSummary = `覆盖 ${K12_MISTAKE_BOOK_SUBJECTS.length} 个中小学科目`;
 
-const seedStudents: Student[] = [
+const seedChildren: Child[] = [
   {
     id: "chen",
     name: "陈一诺",
@@ -478,7 +478,7 @@ export const GROUP_COLORS = [
   "#4a7db4"
 ];
 
-const seedGroups: StudentGroup[] = [
+const seedGroups: ChildGroup[] = [
   {
     id: "class-weekend-math",
     name: "周六数学班",
@@ -491,7 +491,7 @@ const seedGroups: StudentGroup[] = [
   {
     id: "group-competition",
     name: "竞赛突击科目组",
-    description: "为准备数学竞赛的学生开设的强化小组",
+    description: "为准备数学竞赛的小孩开设的强化小组",
     type: "subject",
     color: GROUP_COLORS[1],
     subjects: ["数学"],
@@ -692,17 +692,17 @@ function normalizeCourse(course: Course): Course {
   };
 }
 
-function normalizeStudent(student: Student): Student {
+function normalizeChild(child: Child): Child {
   return {
-    ...student,
-    gender: student.gender === "male" || student.gender === "female" ? student.gender : "female",
-    courses: student.courses.map(normalizeCourse),
-    mistakeBook: normalizeMistakeBook(student.mistakeBook)
+    ...child,
+    gender: child.gender === "male" || child.gender === "female" ? child.gender : "female",
+    courses: child.courses.map(normalizeCourse),
+    mistakeBook: normalizeMistakeBook(child.mistakeBook)
   };
 }
 
-function syncMistakeBookSubjects(student: Student) {
-  student.mistakeBook.subjects = K12_MISTAKE_BOOK_SUBJECTS;
+function syncMistakeBookSubjects(child: Child) {
+  child.mistakeBook.subjects = K12_MISTAKE_BOOK_SUBJECTS;
 }
 
 function normalizeClassRecord(record: ClassRecord): ClassRecord {
@@ -798,7 +798,7 @@ function readPersistedState(): PersistedState | null {
       reminders: state.reminders.map(normalizeReminder),
       scheduledLessons: (state.scheduledLessons ?? seedScheduledLessons).map(normalizeScheduledLesson),
       appSettings: normalizeAppSettings(state.appSettings),
-      students: state.students.map(normalizeStudent)
+      students: state.students.map(normalizeChild)
     };
   } catch {
     localStorage.removeItem(storageKey);
@@ -816,14 +816,14 @@ function writePersistedState(state: PersistedState) {
 }
 
 function createPersistedState(
-  students: Student[],
+  students: Child[],
   materials: TeachingMaterial[],
   materialSources: MaterialSource[],
   classRecords: ClassRecord[],
   reminders: ReminderItem[],
   scheduledLessons: ScheduledLesson[],
   appSettings: AppSettings,
-  groups: StudentGroup[]
+  groups: ChildGroup[]
 ): PersistedState {
   return {
     students,
@@ -837,27 +837,27 @@ function createPersistedState(
   };
 }
 
-export const useStudentStore = defineStore("students", () => {
+export const useChildStore = defineStore("children", () => {
   const persisted = readPersistedState();
-  const items = ref<Student[]>(clone(persisted?.students ?? seedStudents).map(normalizeStudent));
+  const items = ref<Child[]>(clone(persisted?.students ?? seedChildren).map(normalizeChild));
   const materials = ref<TeachingMaterial[]>(clone(persisted?.materials ?? seedMaterials));
   const materialSources = ref<MaterialSource[]>(clone(persisted?.materialSources ?? seedSources));
   const classRecords = ref<ClassRecord[]>(clone(persisted?.classRecords ?? seedRecords).map(normalizeClassRecord));
   const reminders = ref<ReminderItem[]>(clone(persisted?.reminders ?? seedReminders).map(normalizeReminder));
   const scheduledLessons = ref<ScheduledLesson[]>(clone(persisted?.scheduledLessons ?? seedScheduledLessons).map(normalizeScheduledLesson));
-  const groups = ref<StudentGroup[]>(clone(persisted?.groups ?? seedGroups));
+  const groups = ref<ChildGroup[]>(clone(persisted?.groups ?? seedGroups));
   const appSettings = ref<AppSettings>(normalizeAppSettings(persisted?.appSettings));
-  const activeStudentId = ref(seedStudents[0].id);
+  const activeChildId = ref(seedChildren[0].id);
   const isHydrated = ref(false);
   const storageStatus = ref<"local" | "sqlite" | "error">("local");
-  const activeStudent = computed(() => {
-    return items.value.find((student) => student.id === activeStudentId.value) ?? items.value[0];
+  const activeChild = computed(() => {
+    return items.value.find((child) => child.id === activeChildId.value) ?? items.value[0];
   });
-  const activeStudentRecords = computed(() => {
-    return classRecords.value.filter((record) => record.studentId === activeStudent.value?.id);
+  const activeChildRecords = computed(() => {
+    return classRecords.value.filter((record) => record.studentId === activeChild.value?.id);
   });
-  const activeStudentHomework = computed<HomeworkItem[]>(() => {
-    return activeStudentRecords.value
+  const activeChildHomework = computed<HomeworkItem[]>(() => {
+    return activeChildRecords.value
       .filter((record) => record.homework.trim())
       .map((record) => ({
         id: record.id,
@@ -868,8 +868,8 @@ export const useStudentStore = defineStore("students", () => {
         createdAt: record.createdAt
       }));
   });
-  const activeStudentReminders = computed(() => {
-    return reminders.value.filter((reminder) => reminder.studentId === activeStudent.value?.id && reminder.status !== "已完成");
+  const activeChildReminders = computed(() => {
+    return reminders.value.filter((reminder) => reminder.studentId === activeChild.value?.id && reminder.status !== "已完成");
   });
   const incompleteReminders = computed(() => reminders.value.filter((reminder) => reminder.status !== "已完成"));
   const completedReminders = computed(() =>
@@ -886,7 +886,7 @@ export const useStudentStore = defineStore("students", () => {
     return scheduledLessons.value
       .map((lesson) => ({
         ...lesson,
-        studentName: items.value.find((student) => student.id === lesson.studentId)?.name ?? lesson.studentId,
+        studentName: items.value.find((child) => child.id === lesson.studentId)?.name ?? lesson.studentId,
         endsAt: lesson.startsAt + lesson.durationMinutes * 60 * 1000
       }))
       .sort((left, right) => left.startsAt - right.startsAt);
@@ -911,7 +911,7 @@ export const useStudentStore = defineStore("students", () => {
     const reminderItems = reminders.value.map((reminder) => ({
       id: reminder.id,
       studentId: reminder.studentId,
-      studentName: items.value.find((student) => student.id === reminder.studentId)?.name ?? reminder.studentId,
+      studentName: items.value.find((child) => child.id === reminder.studentId)?.name ?? reminder.studentId,
       title: reminder.title,
       time: reminder.remindAt,
       type: "提醒" as const,
@@ -920,7 +920,7 @@ export const useStudentStore = defineStore("students", () => {
     const recordItems = classRecords.value.map((record) => ({
       id: record.id,
       studentId: record.studentId,
-      studentName: items.value.find((student) => student.id === record.studentId)?.name ?? record.studentId,
+      studentName: items.value.find((child) => child.id === record.studentId)?.name ?? record.studentId,
       title: `${record.subject} · ${record.lessonContent}`,
       time: new Date(record.createdAt).getTime(),
       type: "课堂记录" as const,
@@ -929,40 +929,40 @@ export const useStudentStore = defineStore("students", () => {
     return [...reminderItems, ...recordItems].sort((left, right) => right.time - left.time);
   });
   const learningReports = computed<LearningReportSummary[]>(() => {
-    return items.value.map((student) => {
-      const records = classRecords.value.filter((record) => record.studentId === student.id);
+    return items.value.map((child) => {
+      const records = classRecords.value.filter((record) => record.studentId === child.id);
       const homeworkCount = records.filter((record) => record.homework.trim()).length;
       const pendingGradingCount = records.filter((record) => record.homework.trim() && record.gradingStatus === "待批改").length;
       const averageProgress =
-        student.courses.length === 0
+        child.courses.length === 0
           ? 0
-          : Math.round(student.courses.reduce((total, course) => total + course.progress, 0) / student.courses.length);
+          : Math.round(child.courses.reduce((total, course) => total + course.progress, 0) / child.courses.length);
       const nextActions = [
-        student.mistakeBook.aiPending > 0
-          ? `优先处理 ${student.mistakeBook.aiPending} 道待分析错题`
+        child.mistakeBook.aiPending > 0
+          ? `优先处理 ${child.mistakeBook.aiPending} 道待分析错题`
           : "复盘已完成错题并更新薄弱点",
         pendingGradingCount > 0 ? `批改 ${pendingGradingCount} 条待处理作业` : "检查最近课堂作业完成情况",
         averageProgress < 60 ? "安排基础知识点巩固课" : "推进下一阶段课程目标"
       ];
 
       return {
-        studentId: student.id,
-        studentName: student.name,
-        goal: student.goal,
-        style: student.style,
+        studentId: child.id,
+        studentName: child.name,
+        goal: child.goal,
+        style: child.style,
         averageProgress,
         classRecordCount: records.length,
         homeworkCount,
         pendingGradingCount,
-        materialCount: materialTitlesForStudent(student.id).length,
-        weakPoints: student.mistakeBook.weakPoints,
+        materialCount: materialTitlesForStudent(child.id).length,
+        weakPoints: child.mistakeBook.weakPoints,
         nextActions
       };
     });
   });
   const dashboardStats = computed(() => {
-    const mistakeCount = items.value.reduce((count, student) => {
-      const numbers = student.mistakeBook.summary.match(/\d+/g)?.map(Number) ?? [];
+    const mistakeCount = items.value.reduce((count, child) => {
+      const numbers = child.mistakeBook.summary.match(/\d+/g)?.map(Number) ?? [];
       return count + numbers.reduce((total, current) => total + current, 0);
     }, 0);
     return {
@@ -977,12 +977,12 @@ export const useStudentStore = defineStore("students", () => {
   const mistakeTags = ref<MistakeTag[]>([]);
   const isLoadingMistakeRecords = ref(false);
 
-  const activeStudentMistakeRecords = computed(() => {
-    return mistakeRecords.value.filter((r) => r.studentId === activeStudent.value?.id);
+  const activeChildMistakeRecords = computed(() => {
+    return mistakeRecords.value.filter((r) => r.studentId === activeChild.value?.id);
   });
 
-  const activeStudentMistakeStats = computed(() => {
-    const records = activeStudentMistakeRecords.value;
+  const activeChildMistakeStats = computed(() => {
+    const records = activeChildMistakeRecords.value;
     const total = records.length;
     const mastered = records.filter((r) => r.masteryStatus === "已掌握").length;
     const pending = total - mastered;
@@ -1125,7 +1125,7 @@ export const useStudentStore = defineStore("students", () => {
   }
 
   function selectStudent(studentId: string) {
-    activeStudentId.value = studentId;
+    activeChildId.value = studentId;
   }
 
   function studentGroupsFor(studentId: string) {
@@ -1133,8 +1133,8 @@ export const useStudentStore = defineStore("students", () => {
   }
 
   function materialTitlesForStudent(studentId: string) {
-    const student = items.value.find((item) => item.id === studentId);
-    const profileMaterials = student?.materials ?? [];
+    const child = items.value.find((item) => item.id === studentId);
+    const profileMaterials = child?.materials ?? [];
     const assignedMaterials = materials.value
       .filter((material) => material.assignedStudentIds.includes(studentId))
       .map((material) => material.title);
@@ -1142,7 +1142,7 @@ export const useStudentStore = defineStore("students", () => {
   }
 
 function applyPersistedState(state: PersistedState) {
-    items.value = clone(state.students).map(normalizeStudent);
+    items.value = clone(state.students).map(normalizeChild);
     materials.value = clone(state.materials);
     materialSources.value = clone(state.materialSources);
     classRecords.value = clone(state.classRecords).map(normalizeClassRecord);
@@ -1150,8 +1150,8 @@ function applyPersistedState(state: PersistedState) {
     scheduledLessons.value = clone(state.scheduledLessons ?? seedScheduledLessons).map(normalizeScheduledLesson);
     groups.value = clone(state.groups ?? seedGroups);
     appSettings.value = normalizeAppSettings(state.appSettings);
-    if (!items.value.some((student) => student.id === activeStudentId.value)) {
-      activeStudentId.value = items.value[0]?.id ?? "";
+    if (!items.value.some((child) => child.id === activeChildId.value)) {
+      activeChildId.value = items.value[0]?.id ?? "";
     }
   }
 
@@ -1202,20 +1202,20 @@ function applyPersistedState(state: PersistedState) {
     await hydrateFromNativeStorage();
   }
 
-  function createStudent(draft: StudentDraft) {
-  const student: Student = {
-      id: createId("student"),
+  function createStudent(draft: ChildDraft) {
+  const child: Child = {
+      id: createId("child"),
       ...draft,
       gender: draft.gender ?? "female",
       courses: draft.courses.map(normalizeCourse),
       mistakeBook: createMistakeBook(draft.courses)
     };
-    items.value.unshift(student);
-    activeStudentId.value = student.id;
+    items.value.unshift(child);
+    activeChildId.value = child.id;
   }
 
-  function updateStudent(studentId: string, draft: StudentDraft) {
-    const index = items.value.findIndex((student) => student.id === studentId);
+  function updateStudent(studentId: string, draft: ChildDraft) {
+    const index = items.value.findIndex((child) => child.id === studentId);
     if (index === -1) return;
     const existing = items.value[index];
     items.value[index] = {
@@ -1231,56 +1231,56 @@ function applyPersistedState(state: PersistedState) {
   }
 
   function updateStudentCourse(studentId: string, subject: string, course: Course) {
-    const student = items.value.find((item) => item.id === studentId);
-    if (!student) return false;
-    const courseIndex = student.courses.findIndex((item) => item.subject === subject);
+    const child = items.value.find((item) => item.id === studentId);
+    if (!child) return false;
+    const courseIndex = child.courses.findIndex((item) => item.subject === subject);
     if (courseIndex === -1) return false;
-    student.courses[courseIndex] = normalizeCourse(course);
-    syncMistakeBookSubjects(student);
+    child.courses[courseIndex] = normalizeCourse(course);
+    syncMistakeBookSubjects(child);
     return true;
   }
 
   function createStudentCourse(studentId: string, course: Course) {
-    const student = items.value.find((item) => item.id === studentId);
+    const child = items.value.find((item) => item.id === studentId);
     const normalizedCourse = normalizeCourse(course);
-    if (!student || !normalizedCourse.subject) return false;
-    if (student.courses.some((item) => item.subject === normalizedCourse.subject)) return false;
-    student.courses.push(normalizedCourse);
-    syncMistakeBookSubjects(student);
+    if (!child || !normalizedCourse.subject) return false;
+    if (child.courses.some((item) => item.subject === normalizedCourse.subject)) return false;
+    child.courses.push(normalizedCourse);
+    syncMistakeBookSubjects(child);
     return true;
   }
 
   function deleteStudentCourse(studentId: string, subject: string) {
-    const student = items.value.find((item) => item.id === studentId);
-    if (!student || student.courses.length <= 1) return false;
-    const beforeCount = student.courses.length;
-    student.courses = student.courses.filter((course) => course.subject !== subject);
-    if (student.courses.length === beforeCount) return false;
-    syncMistakeBookSubjects(student);
+    const child = items.value.find((item) => item.id === studentId);
+    if (!child || child.courses.length <= 1) return false;
+    const beforeCount = child.courses.length;
+    child.courses = child.courses.filter((course) => course.subject !== subject);
+    if (child.courses.length === beforeCount) return false;
+    syncMistakeBookSubjects(child);
     return true;
   }
 
   function checkInStudentCourse(studentId: string, subject: string) {
-    const student = items.value.find((item) => item.id === studentId);
-    const course = student?.courses.find((item) => item.subject === subject);
-    if (!student || !course || course.currentLesson >= course.totalLessons) return false;
+    const child = items.value.find((item) => item.id === studentId);
+    const course = child?.courses.find((item) => item.subject === subject);
+    if (!child || !course || course.currentLesson >= course.totalLessons) return false;
     Object.assign(course, normalizeCourse({ ...course, currentLesson: course.currentLesson + 1 }));
-    syncMistakeBookSubjects(student);
+    syncMistakeBookSubjects(child);
     return true;
   }
 
-  function undoStudentCourseCheckIn(studentId: string, subject: string) {
-    const student = items.value.find((item) => item.id === studentId);
-    const course = student?.courses.find((item) => item.subject === subject);
-    if (!student || !course || course.currentLesson <= 0) return false;
+  function undoChildCourseCheckIn(studentId: string, subject: string) {
+    const child = items.value.find((item) => item.id === studentId);
+    const course = child?.courses.find((item) => item.subject === subject);
+    if (!child || !course || course.currentLesson <= 0) return false;
     Object.assign(course, normalizeCourse({ ...course, currentLesson: course.currentLesson - 1 }));
-    syncMistakeBookSubjects(student);
+    syncMistakeBookSubjects(child);
     return true;
   }
 
   function deleteStudent(studentId: string) {
     if (items.value.length <= 1) return false;
-    items.value = items.value.filter((student) => student.id !== studentId);
+    items.value = items.value.filter((child) => child.id !== studentId);
     materials.value = materials.value.map((material) => ({
       ...material,
       assignedStudentIds: material.assignedStudentIds.filter((id) => id !== studentId)
@@ -1292,28 +1292,28 @@ function applyPersistedState(state: PersistedState) {
       ...g,
       memberIds: g.memberIds.filter((id) => id !== studentId)
     }));
-    if (activeStudentId.value === studentId) {
-      activeStudentId.value = items.value[0]?.id ?? "";
+    if (activeChildId.value === studentId) {
+      activeChildId.value = items.value[0]?.id ?? "";
     }
     return true;
   }
 
   function updateMistakeAnalysis(studentId: string, patch: MistakeBookPatch) {
-    const student = items.value.find((item) => item.id === studentId);
-    if (!student) return;
-    student.mistakeBook = {
-      ...student.mistakeBook,
+    const child = items.value.find((item) => item.id === studentId);
+    if (!child) return;
+    child.mistakeBook = {
+      ...child.mistakeBook,
       ...patch
     };
   }
 
-  function createGroup(draft: Omit<StudentGroup, "id">) {
+  function createGroup(draft: Omit<ChildGroup, "id">) {
     const id = createId("group");
     groups.value.push({ ...draft, id });
     return id;
   }
 
-  function updateGroup(groupId: string, patch: Partial<Omit<StudentGroup, "id">>) {
+  function updateGroup(groupId: string, patch: Partial<Omit<ChildGroup, "id">>) {
     const index = groups.value.findIndex((g) => g.id === groupId);
     if (index === -1) return false;
     Object.assign(groups.value[index], patch);
@@ -1453,13 +1453,13 @@ function applyPersistedState(state: PersistedState) {
   }
 
   function createCourseReminder(studentId: string, subject: string, remindAt: number) {
-    const student = items.value.find((item) => item.id === studentId);
-    const course = student?.courses.find((item) => item.subject === subject);
-    if (!student || !course || !remindAt) return false;
+    const child = items.value.find((item) => item.id === studentId);
+    const course = child?.courses.find((item) => item.subject === subject);
+    if (!child || !course || !remindAt) return false;
     const lessonNumber = Math.min(course.currentLesson + 1, course.totalLessons);
     createReminder({
       studentId,
-      title: `${student.name}${course.subject}第 ${lessonNumber} 节课`,
+      title: `${child.name}${course.subject}第 ${lessonNumber} 节课`,
       remindAt,
       relatedType: "课程"
     });
@@ -1635,11 +1635,11 @@ function applyPersistedState(state: PersistedState) {
     reminders,
     scheduledLessons,
     appSettings,
-    activeStudent,
-    activeStudentId,
-    activeStudentRecords,
-    activeStudentHomework,
-    activeStudentReminders,
+    activeChild,
+    activeChildId,
+    activeChildRecords,
+    activeChildHomework,
+    activeChildReminders,
     incompleteReminders,
     completedReminders,
     sortedReminders,
@@ -1658,7 +1658,7 @@ function applyPersistedState(state: PersistedState) {
     createStudentCourse,
     deleteStudentCourse,
     checkInStudentCourse,
-    undoStudentCourseCheckIn,
+    undoChildCourseCheckIn,
     deleteStudent,
     createMaterial,
     updateMaterial,
@@ -1702,8 +1702,8 @@ function applyPersistedState(state: PersistedState) {
     mistakeRecords,
     mistakeTags,
     isLoadingMistakeRecords,
-    activeStudentMistakeRecords,
-    activeStudentMistakeStats,
+    activeChildMistakeRecords,
+    activeChildMistakeStats,
     loadMistakeRecords,
     loadMistakeTags,
     createMistakeTag,

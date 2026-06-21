@@ -1,5 +1,5 @@
 import { isTauri, invoke } from "@tauri-apps/api/core";
-import type { MistakeRecord } from "../students/studentStore";
+import type { MistakeRecord } from "../children/childStore";
 
 export type ExportOptions = {
   includeAnswer: boolean;

@@ -1,5 +1,5 @@
 import type { GlobalThemeOverrides } from "naive-ui";
-import type { AppThemeKey } from "../features/students/studentStore";
+import type { AppThemeKey } from "../features/children/childStore";
 
 export type AppThemeTokens = {
   primary: string;

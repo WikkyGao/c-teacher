@@ -14,7 +14,7 @@ import {
   useMessage
 } from "naive-ui";
 import { FileText, Pencil, Save, Sparkles, Trash2, X, ZoomIn } from "lucide-vue-next";
-import { useStudentStore, type MistakeRecord } from "../students/studentStore";
+import { useChildStore, type MistakeRecord } from "../children/childStore";
 import { formatMistakeContent } from "./contentFormatter";
 import { generateSimilarQuestionsStream } from "./mistakeApi";
 
@@ -28,7 +28,7 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const students = useStudentStore();
+const students = useChildStore();
 const message = useMessage();
 const isEditing = ref(false);
 const showImagePreview = ref(false);
@@ -133,7 +133,7 @@ async function handleGenerateSimilar() {
       studentId: props.record.studentId,
       subject: props.record.subject,
       questionText: props.record.questionText || "（图片题）",
-      studentAnswer: props.record.studentAnswer || "学生答案待补充",
+      studentAnswer: props.record.studentAnswer || "暂无作答",
       imagePath: props.record.imagePath || undefined,
       difficulty: similarDifficulty.value,
       count: similarCount.value
@@ -285,7 +285,7 @@ watch(() => props.show, (val) => {
         </div>
 
         <div v-if="record.studentAnswer" class="detail-section">
-          <h4>学生答案</h4>
+          <h4>作答</h4>
           <div class="detail-text" v-html="formatMistakeContent(record.studentAnswer)"></div>
         </div>
 
@@ -374,12 +374,12 @@ watch(() => props.show, (val) => {
             />
           </n-form-item>
 
-          <n-form-item label="学生答案">
+          <n-form-item label="作答">
             <n-input
               v-model:value="form.studentAnswer"
               type="textarea"
               :autosize="{ minRows: 1, maxRows: 3 }"
-              placeholder="输入学生答案"
+              placeholder="输入作答"
             />
           </n-form-item>
 

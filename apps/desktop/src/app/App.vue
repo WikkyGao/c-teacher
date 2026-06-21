@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watchEffect } from "vue";
 import LoginPage from "../features/auth/LoginPage.vue";
 import { clearAuthSession, getAuthSession, saveAuthSession } from "../features/auth/authSession";
+import type { UserRole } from "../features/auth/authSession";
 import BackupPage from "../features/backup/BackupPage.vue";
 import DashboardPage from "../features/dashboard/DashboardPage.vue";
 import DiagnosticsPage from "../features/diagnostics/DiagnosticsPage.vue";
@@ -11,9 +12,9 @@ import ClassRecordPage from "../features/records/ClassRecordPage.vue";
 import ReminderPage from "../features/reminders/ReminderPage.vue";
 import SchedulePage from "../features/schedule/SchedulePage.vue";
 import SettingsPage from "../features/settings/SettingsPage.vue";
-import StudentManagementPage from "../features/students/StudentManagementPage.vue";
-import { useStudentStore } from "../features/students/studentStore";
-import type { TeacherProfile } from "../features/students/studentStore";
+import ChildManagementPage from "../features/children/ChildManagementPage.vue";
+import { useChildStore } from "../features/children/childStore";
+import type { TeacherProfile } from "../features/children/childStore";
 import type { NavKey } from "../shared/types/navigation";
 import { naiveThemeOverridesFor } from "./appThemeOverrides";
 import Shell from "./Shell.vue";
@@ -23,16 +24,16 @@ onMounted(() => {
   checkSilent();
 });
 
-const activeNav = ref<NavKey>("students");
-const studentPageTarget = ref<"list" | "detail" | "mistakeBook">("list");
+const activeNav = ref<NavKey>("children");
+const childPageTarget = ref<"list" | "detail" | "mistakeBook">("list");
 const authSession = ref(getAuthSession());
-const workspace = useStudentStore();
+const workspace = useChildStore();
 const naiveThemeOverrides = computed(() => naiveThemeOverridesFor(workspace.appSettings.themeKey));
 
 const activeComponent = computed(() => {
     const pages: Record<NavKey, unknown> = {
       dashboard: DashboardPage,
-      students: StudentManagementPage,
+      children: ChildManagementPage,
       schedule: SchedulePage,
       records: ClassRecordPage,
       materials: MaterialLibraryPage,
@@ -50,35 +51,36 @@ watchEffect(() => {
   document.documentElement.dataset.appTheme = workspace.appSettings.themeKey;
 });
 
-function login(teacherName: string) {
-  saveAuthSession(teacherName);
-  workspace.updateTeacherProfile({ name: teacherName });
+function login(userName: string, role: UserRole) {
+  saveAuthSession(userName, role);
+  workspace.updateTeacherProfile({ name: userName, title: role === "teacher" ? "" : "家长", bio: role === "teacher" ? "" : "家长视图 · 只读" });
   authSession.value = getAuthSession();
+  activeNav.value = role === "parent" ? "dashboard" : "children";
 }
 
 function logout() {
   clearAuthSession();
   authSession.value = getAuthSession();
-  activeNav.value = "students";
+  activeNav.value = "children";
 }
 
 function navigateFromPage(value: NavKey) {
-  if (value === "students") {
-    studentPageTarget.value = "detail";
+  if (value === "children") {
+    childPageTarget.value = "detail";
   }
   activeNav.value = value;
 }
 
 function navigateFromShell(value: NavKey) {
-  if (value === "students") {
-    studentPageTarget.value = "list";
+  if (value === "children") {
+    childPageTarget.value = "list";
   }
   activeNav.value = value;
 }
 
 function saveTeacherProfile(profile: TeacherProfile) {
   if (!workspace.updateTeacherProfile(profile)) return;
-  saveAuthSession(profile.name);
+  saveAuthSession(profile.name, "teacher");
   authSession.value = getAuthSession();
 }
 </script>
@@ -91,15 +93,18 @@ function saveTeacherProfile(profile: TeacherProfile) {
         <Shell
           v-else
           :active-nav="activeNav"
+          :user-role="authSession.role"
           :reminder-count="workspace.incompleteReminders.length"
           :teacher-profile="workspace.appSettings.teacherProfile"
           @update:active-nav="navigateFromShell"
           @save:teacher-profile="saveTeacherProfile"
+          @logout="logout"
         >
           <component
             :is="activeComponent"
-            :teacher-name="authSession.teacherName"
-            :initial-mode="activeNav === 'students' ? studentPageTarget : undefined"
+            :user-name="authSession.userName"
+            :user-role="authSession.role"
+            :initial-mode="activeNav === 'children' ? childPageTarget : undefined"
             @navigate="navigateFromPage"
             @logout="logout"
           />

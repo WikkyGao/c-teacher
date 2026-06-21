@@ -7,15 +7,17 @@ import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "../backup/workspaceBackup";
 import DiagnosticsPage from "../diagnostics/DiagnosticsPage.vue";
-import type { AiApiFormat, AiModelConfig, AiProviderConfig, AiProviderDraft, AppThemeKey } from "../students/studentStore";
-import { appThemes, DEFAULT_MISTAKE_ANALYSIS_PROMPT, DEFAULT_SIMILAR_QUESTIONS_PROMPT, useStudentStore } from "../students/studentStore";
+import type { AiApiFormat, AiModelConfig, AiProviderConfig, AiProviderDraft, AppThemeKey } from "../children/childStore";
+import { appThemes, DEFAULT_MISTAKE_ANALYSIS_PROMPT, DEFAULT_SIMILAR_QUESTIONS_PROMPT, useChildStore } from "../children/childStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 import { testProviderConnection } from "../ai/aiClient";
 import { fetchProviderModels, mergeFetchedModels } from "./aiModelCatalog";
 import { checkForUpdates, updateState, setDismissedVersion } from "../updater/versionCheck";
+import type { UserRole } from "../auth/authSession";
 
 defineProps<{
   teacherName?: string;
+  userRole?: UserRole;
 }>();
 
 const emit = defineEmits<{
@@ -23,7 +25,7 @@ const emit = defineEmits<{
   logout: [];
 }>();
 
-const workspace = useStudentStore();
+const workspace = useChildStore();
 const message = useMessage();
 const { confirmDelete } = useConfirmDelete();
 const settingsPanel = ref<"main" | "diagnostics">("main");
@@ -77,6 +79,7 @@ function saveAndCloseSimilarPrompt() {
 
 // Provider modal
 const showProviderModal = ref(false);
+const showAllProviders = ref(false);
 const editingProviderId = ref<string | null>(null);
 const providerForm = reactive({
   name: "",
@@ -117,6 +120,12 @@ const providerPresets: ProviderPreset[] = [
     baseUrl: "https://integrate.api.nvidia.com/v1",
     apiFormat: "nvidia",
     docUrl: "https://build.nvidia.com/models"
+  },
+  {
+    name: "Agnes",
+    baseUrl: "https://apihub.agnes-ai.com/v1",
+    apiFormat: "openai-chat",
+    docUrl: "https://docs.agnes.chat"
   }
 ];
 
@@ -421,7 +430,7 @@ function confirmRestore() {
   const { confirmAction } = useConfirmDelete();
   confirmAction({
     title: "恢复数据",
-    content: "导入备份将覆盖当前所有数据，包括学生、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？",
+    content: "导入备份将覆盖当前所有数据，包括小孩、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？",
     positiveText: "确认导入",
     onOk: async () => {
       isRestoring.value = true;
@@ -501,7 +510,7 @@ function dismissVersion() {
           <div v-if="workspace.appSettings.aiProviders.length === 0" class="settings-empty">
             暂无供应商，点击上方按钮新增
           </div>
-          <div v-for="provider in workspace.appSettings.aiProviders.slice(0, 2)" :key="provider.id" class="provider-list-item">
+          <div v-for="provider in (showAllProviders ? workspace.appSettings.aiProviders : workspace.appSettings.aiProviders.slice(0, 2))" :key="provider.id" class="provider-list-item">
             <div class="provider-info">
               <div class="provider-name-row">
                 <n-switch
@@ -518,6 +527,7 @@ function dismissVersion() {
               <div v-for="model in provider.models" :key="model.id" class="model-chip">
                 <span>{{ model.name }}</span>
                 <n-tag v-if="model.isDefault && provider.id === workspace.appSettings.defaultAiProviderId" size="tiny" type="success" round>默认</n-tag>
+                <button class="model-chip-btn" @click="openEditModel(provider, model)">✎</button>
               </div>
               <n-button size="tiny" quaternary @click="openCreateModel(provider)">+ 新增模型</n-button>
             </div>
@@ -527,7 +537,7 @@ function dismissVersion() {
             </div>
           </div>
           <div v-if="workspace.appSettings.aiProviders.length > 2" class="settings-more-link">
-            <n-button quaternary @click="showProviderModal = true">查看全部 {{ workspace.appSettings.aiProviders.length }} 个供应商 →</n-button>
+            <n-button quaternary @click="showAllProviders = !showAllProviders">{{ showAllProviders ? '收起' : `查看全部 ${workspace.appSettings.aiProviders.length} 个供应商` }} →</n-button>
           </div>
         </div>
 
@@ -885,6 +895,21 @@ function dismissVersion() {
   border-radius: var(--radius-sm);
   font-size: 12px;
   color: var(--text);
+}
+
+.model-chip-btn {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.model-chip-btn:hover {
+  color: var(--primary);
 }
 
 .provider-actions {

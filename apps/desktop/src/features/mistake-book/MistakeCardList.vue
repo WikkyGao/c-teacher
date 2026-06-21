@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { NButton, NEmpty, NInput, NSelect, NSpace, NSpin, NTag } from "naive-ui";
+import { NButton, NEmpty, NInput, NPopconfirm, NSelect, NSpace, NSpin, NTag } from "naive-ui";
 import { NotebookPen, RefreshCw, Search } from "lucide-vue-next";
-import { useStudentStore, type MistakeRecord } from "../students/studentStore";
+import { useChildStore, type MistakeRecord } from "../children/childStore";
 import { formatMistakeContent } from "./contentFormatter";
+import type { UserRole } from "../auth/authSession";
 
 const props = defineProps<{
   studentId: string;
   subject?: string;
+  userRole?: UserRole;
 }>();
 
 const emit = defineEmits<{
@@ -15,7 +17,7 @@ const emit = defineEmits<{
   createNew: [];
 }>();
 
-const students = useStudentStore();
+const students = useChildStore();
 const selectedSubject = ref(props.subject || "");
 const selectedKnowledgePoint = ref("");
 const keyword = ref("");
@@ -30,7 +32,7 @@ const subjectOptions = [
 
 const knowledgePointOptions = computed(() => {
   const points = new Set<string>();
-  for (const r of students.activeStudentMistakeRecords) {
+  for (const r of students.activeChildMistakeRecords) {
     for (const kp of r.knowledgePoints) {
       if (kp) points.add(kp);
     }
@@ -42,7 +44,7 @@ const knowledgePointOptions = computed(() => {
 });
 
 const filteredRecords = computed(() => {
-  let records = students.activeStudentMistakeRecords;
+  let records = students.activeChildMistakeRecords;
 
   if (selectedSubject.value) {
     records = records.filter((r) => r.subject === selectedSubject.value);
@@ -89,9 +91,7 @@ async function toggleMastery(record: MistakeRecord) {
 }
 
 async function handleDelete(record: MistakeRecord) {
-  if (confirm(`确定要删除这条错题记录吗？`)) {
-    await students.deleteMistakeRecord(record.id);
-  }
+  await students.deleteMistakeRecord(record.id);
 }
 
 onMounted(() => {
@@ -192,6 +192,16 @@ watch(() => props.subject, (s) => {
             <button class="btn btn-primary" @click.stop="emit('openDetail', record)">查看详情</button>
             <button class="btn btn-outline" @click.stop="emit('openDetail', record)">重新练习</button>
           </div>
+
+          <n-popconfirm
+            v-if="props.userRole !== 'parent'"
+            @positive-click="handleDelete(record)"
+          >
+            <template #trigger>
+              <button class="mistake-card-delete-btn" @click.stop>🗑</button>
+            </template>
+            确定要删除这条错题记录吗？
+          </n-popconfirm>
         </div>
       </div>
     </n-spin>
@@ -226,6 +236,7 @@ watch(() => props.subject, (s) => {
 }
 
 .mistake-card {
+  position: relative;
   background: #fff;
   border: 1px solid #e8edf2;
   border-radius: 12px;
@@ -300,6 +311,24 @@ watch(() => props.subject, (s) => {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.mistake-card-delete-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  border: none;
+  background: transparent;
+  font-size: 15px;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.mistake-card-delete-btn:hover {
+  opacity: 1;
 }
 
 .btn {

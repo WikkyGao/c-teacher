@@ -1,7 +1,7 @@
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { chatCompletion, chatCompletionStream, getDefaultAiConfig } from "../ai/aiClient";
 import type { ChatMessage } from "../ai/aiClient";
-import { DEFAULT_SIMILAR_QUESTIONS_PROMPT, useStudentStore } from "../students/studentStore";
+import { DEFAULT_SIMILAR_QUESTIONS_PROMPT, useChildStore } from "../children/childStore";
 
 export type AnalyzeMistakeInput = {
   studentId: string;
@@ -58,16 +58,16 @@ function userMessage(prompt: string, imageDataUrl?: string): ChatMessage {
 
 function getMistakeSystemPrompt(): string {
   try {
-    const s = useStudentStore();
-    return s.appSettings.mistakeAnalysisPrompt || "你是一位严谨的教学辅导老师，擅长分析学生错题并给出有针对性的建议。";
+    const s = useChildStore();
+    return s.appSettings.mistakeAnalysisPrompt || "你是一位严谨的教学辅导老师，擅长分析小孩错题并给出有针对性的建议。";
   } catch {
-    return "你是一位严谨的教学辅导老师，擅长分析学生错题并给出有针对性的建议。";
+    return "你是一位严谨的教学辅导老师，擅长分析小孩错题并给出有针对性的建议。";
   }
 }
 
 function getSimilarQuestionsSystemPrompt(): string {
   try {
-    const s = useStudentStore();
+    const s = useChildStore();
     return s.appSettings.similarQuestionsPrompt || DEFAULT_SIMILAR_QUESTIONS_PROMPT;
   } catch {
     return DEFAULT_SIMILAR_QUESTIONS_PROMPT;
@@ -75,10 +75,10 @@ function getSimilarQuestionsSystemPrompt(): string {
 }
 
 const DIFFICULTY_INSTRUCTIONS: Record<string, string> = {
-  "简单": "请生成比原题更基础的题目，侧重基本概念和简单计算，适合刚接触该知识点的学生巩固基础。",
-  "中等": "请生成与原题难度相当的题目，保持相同的知识点和解题思路，帮助学生熟练掌握。",
+  "简单": "请生成比原题更基础的题目，侧重基本概念和简单计算，适合刚接触该知识点的小孩巩固基础。",
+  "中等": "请生成与原题难度相当的题目，保持相同的知识点和解题思路，帮助小孩熟练掌握。",
   "困难": "请生成比原题更复杂的题目，增加条件或步骤，需要综合运用多个知识点求解。",
-  "挑战": "请生成高难度竞赛级题目，需要创造性思维和多步骤推理，适合学有余力的学生挑战。"
+  "挑战": "请生成高难度竞赛级题目，需要创造性思维和多步骤推理，适合学有余力的小孩挑战。"
 };
 
 export type SimilarQuestionsInput = AnalyzeMistakeInput & {
@@ -115,17 +115,17 @@ function getRequiredAiConfig() {
 
 function buildPrompt(input: AnalyzeMistakeInput): string {
   const imageInfo = input.imagePath ? `（已上传错题图片：${input.imagePath}）` : "";
-  return `你是一位经验丰富的${input.subject}老师。请分析以下学生的错题。
+  return `你是一位经验丰富的${input.subject}老师。请分析以下小孩的错题。
 
 题干：${input.questionText}
-学生答案：${input.studentAnswer}
+小孩答案：${input.studentAnswer}
 ${imageInfo}
 
 请按以下 JSON 格式返回分析结果：
 {
   "questionText": "纠正或补充后的完整题干",
   "correctAnswer": "正确的解题过程和答案",
-  "mistakeReason": "错误原因分析，说明学生错在哪里",
+  "mistakeReason": "错误原因分析，说明小孩错在哪里",
   "knowledgePoints": ["涉及知识点1", "涉及知识点2"]
 }
 
@@ -137,7 +137,7 @@ function buildReadablePrompt(input: AnalyzeMistakeInput): string {
   return `你是一位经验丰富的${input.subject}老师。请分析图片中的错题。
 
 题干：${input.questionText}
-学生答案：${input.studentAnswer}
+小孩答案：${input.studentAnswer}
 ${imageInfo}
 
 请直接输出给老师看的分析内容，不要输出 JSON、代码块、字段引号、花括号或 markdown 表格。
@@ -159,7 +159,7 @@ function buildMultiQuestionJsonPrompt(input: AnalyzeMistakeInput): string {
   return `你是一位经验丰富的${input.subject}老师。请仔细观察图片，识别其中的每一道题目。
 
 题干：${input.questionText}
-学生答案：${input.studentAnswer}
+小孩答案：${input.studentAnswer}
 ${imageInfo}
 
 请严格返回一个 JSON 数组，数组中每个元素代表一道独立的题目。不要包含任何 markdown 标记、代码块、注释或额外文字，只返回纯 JSON。
