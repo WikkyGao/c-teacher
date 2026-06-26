@@ -4,6 +4,9 @@
 
 | 版本 | 日期 | 变更内容 | 变更人 |
 | --- | --- | --- | --- |
+| v2.1.2 | 2026-06-26 | 课堂记录类型化改造：类型选择从多选改为单选，更新接口、需求描述和页面设计。 | — |
+| v2.1.1 | 2026-06-26 | 课堂记录类型化改造：类型选择从多选改为单选，更新接口、需求描述和页面设计。 | — |
+| v2.1.0 | 2026-06-25 | 课堂记录类型化改造：8 种记录类型、动态表单字段、差异化状态流转、多选类型、按类型筛选。 | — |
 | v2.0.0 | 2026-06-14 | 大合并：整合 PRD.before-*.md、资料库功能需求分析、移动端拍照传桌面端需求分析、错题本实施计划、资料库实施计划。新增模块 9（错题本）详细实现状态、模块 10（移动端拍照传桌面端）。版本记录移至文档顶部。 | — |
 | v1.0.3 | 2026-05-30 | 补充学生错题本入口、按科目错题本、AI 拍照改题、错误分析、类似题生成与知识点分析。 | — |
 | v1.0.2 | 2026-05-30 | 补充学生管理一级入口、多学科课程卡片、学生 CRUD、FTP/SMB 外部资料源连接。 | — |
@@ -56,7 +59,7 @@ C-teacher 面向教师的一对多个性化教学管理场景，帮助教师管�
 | 阶段 | 范围 | 周期 | 包含需求 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
 | V1 | MVP | 6 周 | P0 | 学生档案、学生错题本入口、个性化学习计划、课堂记录、资料库、资料-学生关联、macOS 优先教师端、移动端核心适配、系统提醒调用 | 需求记录.txt, 功能模块.xlsx, 需求分析过程.md, 用户补充 |
-| V2 | 增强版 | 4 周 | P1 | 资料共享与复用、进度看板、作业与批改跟踪、错题本 AI 分析、资料打标签/搜索、移动端拍照传桌面端 | 需求记录.txt, 需求分析过程.md, 用户补充 |
+| V2 | 增强版 | 4 周 | P1 | 资料共享与复用、进度看板、作业与批改跟踪、错题本 AI 分析、资料打标签/搜索、移动端拍照传桌面端、**课堂记录类型化** | 需求记录.txt, 需求分析过程.md, 用户补充 |
 | V3 | 智能化 | 6 周 | P1 + P2 | 学习报告自动生成、智能备课推荐、学生自助端、知识点图谱、跨知识点错因洞察 | 需求记录.txt, 需求分析过程.md, 用户补充 |
 
 > ⚠️ 待确认  
@@ -84,10 +87,194 @@ C-teacher 面向教师的一对多个性化教学管理场景，帮助教师管�
 
 ### 模块 3: 课堂记录
 
-| 功能 ID | 功能 | 阶段 | 优先级 | 是否 MVP | 描述 | 来源 |
-| --- | --- | --- | --- | --- | --- | --- |
-| REQ-003 | 课堂记录系统 | V1 | P0 | 是 | 每节课后记录授课内容、学生表现和作业布置。 | 需求分析过程.md |
-| REQ-013 | 课堂 AI 纪要 | V3 | P2 | 否 | 语音记录课堂内容，自动生成结构化课堂笔记。 | 需求分析过程.md |
+> #### 3.1 课堂记录类型化（REQ-019）
+
+**功能概述**：在现有课堂记录基础上引入类型化概念，支持 8 种记录类型，不同类型录入字段、状态流转差异化处理，支持按类型筛选。
+
+**交互方式**：选择类型后，表单动态切换，只显示该类型相关字段（保留已填数据，切换回来时恢复）。
+
+**单选类型**：类型选择为单选，一条记录只属于一种类型（如"课堂讲授"或"课后作业"）。
+
+**列表展示**：用标签（Tag）展示类型，支持按类型、状态、批改状态组合筛选。
+
+#### 3.1.1 数据模型
+
+```typescript
+export type RecordType =
+  | "课堂讲授" | "课堂练习" | "课后作业" | "实验报告"
+  | "测验考试" | "项目任务" | "辅导记录" | "复习笔记";
+
+export type RecordStatus =
+  | "已记录" | "已完成"                        // 课堂讲授
+  | "待完成" | "已完成" | "待批改" | "已批改"   // 课堂练习
+  | "待提交" | "已提交" | "待批改" | "已批改"   // 课后作业
+  | "未提交" | "已提交" | "已批改" | "已点评"   // 实验报告
+  | "未考试" | "已考试" | "待批改" | "已批改" | "已讲评"  // 测验考试
+  | "进行中" | "已提交" | "待批改" | "已批改"   // 项目任务
+  | "已预约" | "已完成" | "待跟进" | "已跟进"   // 辅导记录
+  | "未整理" | "已整理" | "已复习";             // 复习笔记
+
+export type ClassRecord = {
+  id: string;
+  studentId: string;
+  subjects: string[];              // 改为数组，支持多科目
+  recordType: RecordType;        // 新增：记录类型（单选）
+  // --- 通用字段 ---
+  lessonContent: string;           // 授课内容/主题（必填）
+  performance: string;             // 课堂表现（可选）
+  attachments: string[];           // 附件（图片/文件 ID）
+  notes: string;                   // 备注
+  // --- 类型特有字段 ---
+  // [课堂讲授][课堂练习][课后作业][复习笔记]
+  knowledgePoints: string[];       // 知识点
+  duration: number;                // 时长（分钟）
+  // [课堂练习][课后作业][实验报告][测验考试][项目任务]
+  practiceContent: string;         // 练习内容/题目
+  completionStatus: string;        // 完成情况
+  // [课后作业][项目任务]
+  deadline: string;                // 截止日期（ISO）
+  // [实验报告]
+  experimentName: string;          // 实验名称
+  experimentTools: string;         // 实验器材
+  experimentConclusion: string;    // 实验结论
+  // [测验考试]
+  testName: string;                // 测验名称
+  testScore: number;               // 得分
+  testTotal: number;               // 总分
+  testErrors: string;              // 错题记录
+  // [项目任务]
+  projectName: string;             // 项目名称
+  projectDescription: string;      // 任务描述
+  projectProgress: number;         // 进度（%）
+  // [辅导记录]
+  tutoringTopic: string;           // 辅导主题
+  tutoringFocus: string;           // 辅导重点
+  tutoringDuration: number;        // 辅导时长（分钟）
+  followUpPlan: string;            // 下次计划
+  // [复习笔记]
+  reviewTopic: string;             // 复习主题
+  reviewContent: string;           // 复习内容
+  // --- 公共字段 ---
+  status: RecordStatus;            // 新增：状态（根据类型自动设置）
+  gradingStatus: GradingStatus;    // 保留：批改状态
+  createdAt: string;
+  updatedAt: string;
+};
+```
+
+#### 3.1.2 状态流转规则
+
+| 类型 | 状态流转 | 初始状态 | 自动流转条件 |
+|------|----------|----------|--------------|
+| 课堂讲授 | 已记录 → 已完成 | 已记录 | 标记完成时自动流转 |
+| 课堂练习 | 待完成 → 已完成 → 待批改 → 已批改 | 待完成 | 提交→已完成，批改→已批改 |
+| 课后作业 | 待提交 → 已提交 → 待批改 → 已批改 | 待提交 | 提交→已提交，批改→已批改 |
+| 实验报告 | 未提交 → 已提交 → 已批改 → 已点评 | 未提交 | 提交→已提交，批改→已批改，点评→已点评 |
+| 测验考试 | 未考试 → 已考试 → 待批改 → 已批改 → 已讲评 | 未考试 | 考试→已考试，批改→待批改，批改→已批改，讲评→已讲评 |
+| 项目任务 | 进行中 → 已提交 → 待批改 → 已批改 | 进行中 | 提交→已提交，批改→待批改，批改→已批改 |
+| 辅导记录 | 已预约 → 已完成 → 待跟进 → 已跟进 | 已预约 | 完成→已完成，跟进→已跟进 |
+| 复习笔记 | 未整理 → 已整理 → 已复习 | 未整理 | 整理→已整理，复习→已复习 |
+
+#### 3.1.3 各类型必填字段
+
+> `✅` = 可见字段，`(必填)` = 保存时校验必填，`(可选)` = 可选填
+
+| 字段 | 课堂讲授 | 课堂练习 | 课后作业 | 实验报告 | 测验考试 | 项目任务 | 辅导记录 | 复习笔记 |
+|------|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 学生（必填） | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 科目（必填） | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | ✅ |
+| 授课内容/主题（必填） | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 知识点 | ✅ | ✅ | ✅ | | | ✅ | | |
+| 时长（分钟） | ✅ | ✅ | | | | | ✅ | |
+| 练习内容/题目（必填） | | ✅ | ✅ | | | | | |
+| 完成情况（必填） | | ✅ | ✅ | ✅ | | | | ✅ |
+| 得分 | | | | | ✅ | | | |
+| 总分 | | | | | ✅ | | | |
+| 实验名称（必填） | | | | ✅ | | | | |
+| 实验器材（必填） | | | | ✅ | | | | |
+| 实验结论 | | | | ✅ | | | | |
+| 测验名称（必填） | | | | | ✅ | | | |
+| 考试时间（必填） | | | | | ✅ | | | |
+| 错题记录 | | | | | ✅ | | | |
+| 项目名称（必填） | | | | | | ✅ | | |
+| 任务描述（必填） | | | | | | ✅ | | |
+| 进度（必填） | | | | | | ✅ | | |
+| 截止日期（必填） | | | ✅ | | | ✅ | | |
+| 辅导主题（必填） | | | | | | | ✅ | |
+| 辅导重点（必填） | | | | | | | ✅ | |
+| 辅导时长 | | | | | | | ✅ | |
+| 下次计划 | | | | | | | ✅ | |
+| 复习内容（必填） | | | | | | | | ✅ |
+| 课堂表现 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 附件 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | | |
+| 备注 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+#### 3.1.4 录入表单交互
+
+- **类型选择器**：单选下拉选择，点击切换选中状态
+- **动态表单**：选择类型后，下方字段区域即时刷新，只显示选中类型需要的字段
+- **数据保留**：已填写内容后切换类型，保留已填数据，切换回来时恢复
+- **必填校验**：保存时校验所有可见字段的必填项，缺失则阻止提交并提示
+- **编辑已有记录**：允许修改类型，缺失字段留空并提示补充，否则提交失败
+
+#### 3.1.5 列表展示
+
+- **类型标签**：每条记录用 Tag 展示类型，如 `课堂讲授`
+- **筛选栏**：
+  - 类型筛选：单选下拉，可选一个类型
+  - 状态筛选：按各类型对应的状态过滤
+  - 批改状态筛选：待批改 / 已批改 / 全部
+  - 组合筛选：三种筛器可同时生效
+
+#### 3.1.6 向后兼容
+
+- 已有课堂记录自动标记为 `"课堂讲授"` 类型
+- 已有记录的 `status` 默认为 `"已记录"`
+- 已有记录的 `gradingStatus` 保持不变
+- 列表展示时，已有记录默认显示为"课堂讲授"类型标签
+
+#### 3.1.7 数据库变更
+
+```sql
+ALTER TABLE class_records ADD COLUMN record_type TEXT NOT NULL DEFAULT '课堂讲授';
+ALTER TABLE class_records ADD COLUMN status TEXT NOT NULL DEFAULT '已记录';
+ALTER TABLE class_records ADD COLUMN knowledge_points TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE class_records ADD COLUMN duration INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE class_records ADD COLUMN practice_content TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN completion_status TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN experiment_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN experiment_tools TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN experiment_conclusion TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN test_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN test_score INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE class_records ADD COLUMN test_total INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE class_records ADD COLUMN test_errors TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN project_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN project_description TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN project_progress INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE class_records ADD COLUMN deadline TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN tutoring_topic TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN tutoring_focus TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN tutoring_duration INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE class_records ADD COLUMN follow_up_plan TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN review_topic TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN review_content TEXT NOT NULL DEFAULT '';
+ALTER TABLE class_records ADD COLUMN attachments TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE class_records ADD COLUMN subjects TEXT NOT NULL DEFAULT '';  -- JSON 数组
+```
+
+#### 3.1.8 涉及变更的文件
+
+| 文件 | 变更类型 | 说明 |
+|------|----------|------|
+| `childStore.ts` | 修改 | 数据类型扩展、状态流转逻辑、normalizeClassRecord 增强 |
+| `ClassRecordPage.vue` | 修改 | 动态表单字段、类型单选、筛选栏、列表标签展示 |
+| `lib.rs` | 修改 | SQLite 表结构 ALTER TABLE |
+| `DashboardPage.vue` | 修改 | 按类型分别统计待批改数量 |
+| `LearningReportPage.vue` | 修改 | 报告按类型分类展示 |
+| `CalendarPlanItem` 相关 | 修改 | 日历中显示类型标签 |
+| `PRD.md` | 修改 | 实体 3 课堂记录字段定义更新 |
+| REQ-019 | 课堂记录类型化 | V2 | P1 | 否 | 课堂记录区分 8 种类型（课堂讲授/课堂练习/课后作业/实验报告/测验考试/项目任务/辅导记录/复习笔记），不同类型录入字段差异化处理，支持单选类型和按类型筛选。 | 用户需求分析 2026-06-25 |
 
 ### 模块 4: 资料库与资料分配
 
@@ -467,10 +654,40 @@ graph TD
 
 | 字段名 | 类型 | 必填 | 说明 | 来源 |
 | --- | --- | --- | --- | --- |
-| student_id | 待补充 | 是 | 关联学生 | 需求分析过程.md |
-| lesson_content | 待补充 | 是 | 授课内容 | 需求分析过程.md |
-| performance | 待补充 | 否 | 学生表现 | 需求分析过程.md |
-| homework | 待补充 | 否 | 作业布置 | 需求分析过程.md |
+| id | string | 是 | 记录唯一标识 | 推断 |
+| student_id | string | 是 | 关联学生 | 需求分析过程.md |
+| subjects | array | 是 | 关联科目（支持多科目） | REQ-019 |
+| record_type | string | 是 | 记录类型：课堂讲授/课堂练习/课后作业/实验报告/测验考试/项目任务/辅导记录/复习笔记 | REQ-019 |
+| lesson_content | string | 是 | 授课内容/主题 | 需求分析过程.md |
+| knowledge_points | array\<string\> | 否 | 知识点 | REQ-019 |
+| duration | number | 否 | 时长（分钟） | REQ-019 |
+| practice_content | string | 否 | 练习内容/题目（课堂练习/课后作业） | REQ-019 |
+| completion_status | string | 否 | 完成情况 | REQ-019 |
+| experiment_name | string | 否 | 实验名称（实验报告） | REQ-019 |
+| experiment_tools | string | 否 | 实验器材（实验报告） | REQ-019 |
+| experiment_conclusion | string | 否 | 实验结论（实验报告） | REQ-019 |
+| test_name | string | 否 | 测验名称（测验考试） | REQ-019 |
+| test_score | number | 否 | 得分（测验考试） | REQ-019 |
+| test_total | number | 否 | 总分（测验考试） | REQ-019 |
+| test_errors | string | 否 | 错题记录（测验考试） | REQ-019 |
+| project_name | string | 否 | 项目名称（项目任务） | REQ-019 |
+| project_description | string | 否 | 任务描述（项目任务） | REQ-019 |
+| project_progress | number | 否 | 进度百分比（项目任务） | REQ-019 |
+| deadline | string (ISO) | 否 | 截止日期（课后作业/项目任务） | REQ-019 |
+| tutoring_topic | string | 否 | 辅导主题（辅导记录） | REQ-019 |
+| tutoring_focus | string | 否 | 辅导重点（辅导记录） | REQ-019 |
+| tutoring_duration | number | 否 | 辅导时长（分钟，辅导记录） | REQ-019 |
+| follow_up_plan | string | 否 | 下次计划（辅导记录） | REQ-019 |
+| review_topic | string | 否 | 复习主题（复习笔记） | REQ-019 |
+| review_content | string | 否 | 复习内容（复习笔记） | REQ-019 |
+| performance | string | 否 | 课堂表现 | 需求分析过程.md |
+| attachments | array\<string\> | 否 | 附件（图片/文件 ID） | REQ-019 |
+| notes | string | 否 | 备注 | REQ-019 |
+| status | RecordStatus | 是 | 记录状态（根据类型自动设置） | REQ-019 |
+| grading_status | enum | 是 | 批改状态：待批改/已批改 | 需求分析过程.md |
+| homework | string | 否 | ~~作业布置~~ 向后兼容字段，逐步废弃 | 需求分析过程.md |
+| created_at | string (ISO) | 是 | 创建时间 | 需求分析过程.md |
+| updated_at | string (ISO) | 是 | 更新时间 | REQ-019 |
 
 ### 实体 4: 教学资料
 
@@ -555,11 +772,11 @@ graph TD
 | --- | ---: |
 | 合并源文档 | 10 |
 | 功能模块 | 10 |
-| 功能项 (REQ) | 18 |
+| 功能项 (REQ) | 19 |
 | 去重合并 | 5 |
 | 信息补充 | 11 |
 | 已实现功能（错题本） | 26/26 |
-| 待确认事项 | 5 |
+| 待确认事项 | 6 |
 
 ### B. 合并记录
 
@@ -573,6 +790,7 @@ graph TD
 | 资料-学生关联 | `REQ-005` 与 Excel"资料分配"合并，单学生/多学生范围待确认。 | 需求分析过程.md, 功能模块.xlsx |
 | 移动端拍照传桌面端 | 独立需求分析 + 技术方案 + 实施计划合并为模块 10。 | outputs/移动端拍照传桌面端需求分析.md + 实施计划 |
 | 错题本功能 | 实施计划清单（26/26 完成）合并为模块 9 详细状态。 | outputs/实施计划清单.md |
+| 课堂记录类型化 | REQ-019：8 种记录类型、动态表单、差异化状态、单选类型、按类型筛选。 | 用户需求分析 2026-06-26 |
 
 ### C. 待确认事项
 
@@ -600,6 +818,10 @@ graph TD
 #### 移动端拍照传桌面端口径
 
 - 推荐方案 A（Go API 扩展 + 移动端 Web）。当前处理: V2/P0。Go API sidecar 管理方式、图片存储路径、局域网安全策略待确认。
+
+#### 课堂记录类型化字段确认
+
+- REQ-019 已定义 8 种记录类型、动态表单字段、差异化状态流转。当前处理: 字段定义完整，SQLite ALTER TABLE 语句待实施时确认兼容性。`subjects` 从 string 改为 array\<string\> 的存量数据迁移策略待确认。
 
 ### D. 原始文档归档
 

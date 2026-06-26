@@ -301,6 +301,7 @@ fn migrate_entity_tables(connection: &Connection) -> Result<(), String> {
                 id TEXT PRIMARY KEY,
                 student_id TEXT NOT NULL,
                 subject TEXT NOT NULL,
+                record_type TEXT NOT NULL DEFAULT '课堂讲授',
                 lesson_content TEXT NOT NULL,
                 performance TEXT NOT NULL,
                 homework TEXT NOT NULL,
@@ -353,6 +354,12 @@ fn migrate_entity_tables(connection: &Connection) -> Result<(), String> {
         "class_records",
         "grading_status",
         "TEXT NOT NULL DEFAULT '待批改'",
+    )?;
+    ensure_column(
+        connection,
+        "class_records",
+        "record_type",
+        "TEXT NOT NULL DEFAULT '课堂讲授'",
     )?;
     Ok(())
 }

@@ -120,12 +120,15 @@ export type ScannedMaterial = {
   fileType: string;
 };
 
+export type RecordType = "课堂讲授" | "课堂练习" | "课后作业" | "实验报告" | "测验考试" | "项目任务" | "辅导记录" | "复习笔记";
+
 export type GradingStatus = "待批改" | "已批改";
 
 export type ClassRecord = {
   id: string;
   studentId: string;
   subject: string;
+  recordType: RecordType;
   lessonContent: string;
   performance: string;
   homework: string;
@@ -539,6 +542,7 @@ const seedRecords: ClassRecord[] = [
     id: "record-chen-1",
     studentId: "chen",
     subject: "数学",
+    recordType: "课堂讲授",
     lessonContent: "函数图像与性质",
     performance: "课堂参与积极，图像变换仍需练习",
     homework: "练习 A 组第 1-8 题",

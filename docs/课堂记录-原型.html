@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C-teacher · 课堂记录 — 可交互原型</title>
+<style>
+:root {
+  --primary: #0d6f65;
+  --primary-light: #e6f5f2;
+  --primary-active: #0a5a51;
+  --bg-page: #f5f6f8;
+  --bg-card: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --border-color: #e5e7eb;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f0f2f5; color: #1a1a2e; }
+
+/* ===== 三栏布局 ===== */
+#app { display: flex; height: 100vh; overflow: hidden; }
+
+#panelLeft {
+  width: 180px; min-width: 150px; max-width: 250px;
+  background: #ffffff; border-right: 1px solid #e5e7eb;
+  display: flex; flex-direction: column; flex-shrink: 0;
+  overflow-y: auto;
+}
+#panelLeft h3 { padding: 16px; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+#panelLeft .nav-item {
+  padding: 10px 16px; cursor: pointer; font-size: 14px; color: #4b5563;
+  border-left: 3px solid transparent; transition: all .15s;
+}
+#panelLeft .nav-item:hover { background: #f9fafb; }
+#panelLeft .nav-item.active { background: #f0fdfa; border-left-color: var(--primary); color: var(--primary); font-weight: 600; }
+
+.splitter {
+  width: 4px; cursor: col-resize; background: transparent; flex-shrink: 0;
+  transition: background .15s;
+}
+.splitter:hover, .splitter.active { background: var(--primary); }
+
+#panelCenter { flex: 1; overflow-y: auto; position: relative; background: #f0f2f5; }
+#panelRight {
+  width: 280px; min-width: 200px; max-width: 500px;
+  background: #ffffff; border-left: 1px solid #e5e7eb;
+  display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto;
+}
+
+/* ===== 页面容器 ===== */
+.page-container { display: none; padding: var(--spacing-xl); }
+.page-container.active { display: block; }
+
+/* ===== 列表页样式 ===== */
+.list-page { max-width: 680px; margin: 0 auto; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--spacing-md); }
+.page-header h1 { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+.page-header p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+.btn-primary {
+  background: var(--primary); color: #fff; border: none; padding: 8px 16px;
+  border-radius: var(--radius-md); font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: background .15s;
+}
+.btn-primary:hover { background: var(--primary-active); }
+
+.filter-bar { display: flex; gap: 12px; margin-bottom: var(--spacing-lg); }
+.filter-dropdown {
+  padding: 8px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color);
+  background: var(--bg-card); font-size: 13px; color: var(--text-secondary); cursor: pointer;
+  min-width: 140px; display: flex; justify-content: space-between; align-items: center;
+  transition: border-color .15s;
+}
+.filter-dropdown:hover { border-color: var(--primary); }
+.filter-dropdown.open { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+
+.record-card {
+  background: var(--bg-card); border-radius: var(--radius-lg); border: 1px solid var(--border-color);
+  padding: 16px; margin-bottom: 12px; transition: box-shadow .15s;
+}
+.record-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.card-left { display: flex; gap: 10px; align-items: center; }
+.card-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-md); display: flex;
+  justify-content: center; align-items: center; font-size: 16px;
+}
+.card-icon.teal { background: var(--primary-light); color: var(--primary); }
+.card-icon.blue { background: #e0f2fe; color: #0284c7; }
+.card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.tag {
+  display: inline-flex; padding: 3px 10px; border-radius: 20px; font-size: 11px;
+  font-weight: 500; white-space: nowrap;
+}
+.tag-teal { background: #e6f5f2; color: #0d6f65; }
+.tag-gray { background: #f3f4f6; color: #4b5563; }
+.tag-blue { background: #dbeafe; color: #1d4ed8; }
+.tag-green { background: #d1fae5; color: #059669; }
+.tag-yellow { background: #fef3c7; color: #d97706; }
+.tag-red { background: #fee2e2; color: #ef4444; }
+
+.card-body { display: flex; justify-content: space-between; align-items: center; }
+.card-info { display: flex; flex-direction: column; gap: 2px; }
+.card-student { font-size: 13px; color: var(--text-secondary); }
+.card-preview { font-size: 13px; color: var(--text-tertiary); max-width: 280px; }
+.card-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.badge-group { display: flex; gap: 6px; }
+.badge {
+  display: inline-flex; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500;
+}
+.card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0; }
+.card-date { font-size: 12px; color: var(--text-tertiary); }
+.card-actions { display: flex; gap: 8px; }
+.btn-edit {
+  padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color);
+  background: var(--bg-card); font-size: 12px; color: var(--text-secondary); cursor: pointer;
+}
+.btn-edit:hover { background: #f9fafb; }
+.btn-delete {
+  padding: 6px 12px; border-radius: var(--radius-sm); border: none;
+  background: transparent; font-size: 12px; color: #ef4444; cursor: pointer;
+}
+.btn-delete:hover { background: #fee2e2; }
+
+/* ===== 表单页样式 ===== */
+.form-page { max-width: 600px; margin: 0 auto; }
+.form-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+.back-btn {
+  display: inline-flex; gap: 6px; align-items: center; padding: 8px 12px;
+  border-radius: var(--radius-md); border: 1px solid var(--border-color);
+  background: var(--bg-card); font-size: 14px; color: var(--text-secondary);
+  cursor: pointer; transition: all .15s;
+}
+.back-btn:hover { background: #f9fafb; }
+.form-title h1 { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+.form-title p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+.form-section { margin-bottom: 20px; }
+.form-label { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 8px; display: block; }
+.form-label .required { color: #ef4444; margin-left: 2px; }
+
+.radio-group { display: flex; gap: 24px; }
+.radio-option { display: flex; gap: 6px; align-items: center; cursor: pointer; font-size: 14px; color: var(--text-primary); }
+.radio-dot {
+  width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-color);
+  display: inline-block; transition: all .15s;
+}
+.radio-dot.checked { border-color: var(--primary); background: var(--primary); box-shadow: inset 0 0 0 3px var(--bg-card); }
+
+.select-input, .text-input {
+  width: 100%; padding: 10px 12px; border-radius: var(--radius-md);
+  border: 1px solid var(--border-color); font-size: 14px; color: var(--text-primary);
+  background: var(--bg-card); transition: border-color .15s;
+  appearance: none;
+}
+.select-input:focus, .text-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+.textarea-input {
+  width: 100%; padding: 12px; border-radius: var(--radius-md);
+  border: 1px solid var(--border-color); font-size: 14px; color: var(--text-primary);
+  background: var(--bg-card); resize: vertical; min-height: 80px;
+  font-family: inherit; transition: border-color .15s;
+}
+.textarea-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
+.textarea-input::placeholder { color: var(--text-tertiary); }
+
+/* 类型多选 */
+.type-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.type-pill {
+  padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all .15s; border: 1.5px solid var(--border-color);
+  background: var(--bg-card); color: var(--text-secondary); user-select: none;
+}
+.type-pill:hover { border-color: var(--primary); color: var(--primary); }
+.type-pill.selected { color: #fff; border-color: transparent; }
+.type-pill[data-type="课堂讲授"].selected { background: #0d6f65; }
+.type-pill[data-type="课堂练习"].selected { background: #3b82f6; }
+.type-pill[data-type="课后作业"].selected { background: #f59e0b; }
+.type-pill[data-type="实验报告"].selected { background: #ef4444; }
+.type-pill[data-type="测验考试"].selected { background: #8b5cf6; }
+.type-pill[data-type="项目任务"].selected { background: #ec4899; }
+.type-pill[data-type="辅导记录"].selected { background: #06b6d4; }
+.type-pill[data-type="复习笔记"].selected { background: #84cc16; }
+
+.dynamic-fields-section {
+  padding: 12px 16px; border-radius: var(--radius-md);
+  border-left: 3px solid var(--primary); background: var(--primary-light);
+  margin-bottom: 20px;
+}
+.dynamic-fields-section h4 { font-size: 13px; font-weight: 500; color: var(--primary); margin-bottom: 12px; }
+
+.attach-area { display: flex; gap: 8px; flex-wrap: wrap; }
+.attach-btn {
+  display: inline-flex; gap: 6px; align-items: center; padding: 8px 16px;
+  border-radius: var(--radius-md); border: 1.5px dashed var(--border-color);
+  font-size: 13px; color: var(--text-secondary); cursor: pointer; transition: all .15s;
+}
+.attach-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+.form-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 1px solid var(--border-color); margin-top: 8px; }
+.btn-cancel {
+  padding: 10px 24px; border-radius: var(--radius-md); border: 1px solid var(--border-color);
+  background: var(--bg-card); font-size: 14px; color: var(--text-secondary); cursor: pointer;
+}
+.btn-cancel:hover { background: #f9fafb; }
+.btn-save {
+  padding: 10px 24px; border-radius: var(--radius-md); border: none;
+  background: var(--primary); font-size: 14px; font-weight: 500; color: #fff; cursor: pointer;
+  transition: background .15s;
+}
+.btn-save:hover { background: var(--primary-active); }
+
+/* ===== 右侧面板 ===== */
+#panelRight h3 { padding: 16px; font-size: 13px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; }
+.info-card {
+  margin: 8px 12px; padding: 12px; border-radius: var(--radius-md);
+  border-left: 3px solid; font-size: 13px; line-height: 1.6;
+  background: #f9fafb; color: #1a1a2e;
+}
+.info-card.feature { background: #eff6ff; border-color: #3b82f6; }
+.info-card.interact { background: #faf5ff; border-color: #8b5cf6; }
+.info-card.field { background: #f0fdf4; border-color: #22c55e; }
+.info-card.warning { background: #fff7ed; border-color: #f59e0b; }
+.info-card h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #1a1a2e; }
+.info-card p { font-size: 12px; color: #374151; }
+
+.font-controls { padding: 12px; display: flex; gap: 8px; justify-content: center; }
+.font-btn {
+  width: 28px; height: 28px; border-radius: 50%; border: 1px solid #e5e7eb;
+  background: #fff; color: #4b5563; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.font-btn:hover { background: #f3f4f6; color: #1a1a2e; }
+
+/* ===== 标注系统 ===== */
+.annotation-wrap {
+  position: absolute; cursor: grab; z-index: 10; user-select: none;
+  transform: translate(-50%, -100%);
+}
+.annotation-wrap.dragging { cursor: grabbing; z-index: 20; }
+.annotation-wrap.dragging svg { animation: none !important; }
+.annotation-wrap svg { animation: dropPulse 2s ease-in-out infinite; }
+@keyframes dropPulse {
+  0%,100% { filter: drop-shadow(0 1px 3px rgba(21,101,192,0.4)); }
+  50% { filter: drop-shadow(0 2px 12px rgba(21,101,192,0.7)); }
+}
+.annotation-num {
+  position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: #1565c0; font-weight: 600; white-space: nowrap;
+}
+
+/* ===== 连线层 ===== */
+.connections-layer {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 1000;
+}
+.connections-layer path {
+  fill: none; stroke: #1565c0; stroke-width: 1.5;
+  stroke-dasharray: 6 3; opacity: 0.7;
+  animation: dashFlow 20s linear infinite;
+}
+@keyframes dashFlow { to { stroke-dashoffset: -180; } }
+
+/* ===== Toast ===== */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+.toast {
+  padding: 12px 20px; border-radius: var(--radius-md); margin-bottom: 8px;
+  font-size: 14px; color: #fff; animation: toastIn .3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+.toast.success { background: #10b981; }
+.toast.error { background: #ef4444; }
+.toast.info { background: #3b82f6; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ===== Confirm Modal ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 9998;
+  display: flex; justify-content: center; align-items: center;
+}
+.modal-box {
+  background: var(--bg-card); border-radius: var(--radius-lg); padding: 24px;
+  max-width: 400px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,.2);
+}
+.modal-box h3 { font-size: 16px; color: var(--text-primary); margin-bottom: 8px; }
+.modal-box p { font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.modal-cancel { padding: 8px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: var(--bg-card); cursor: pointer; }
+.modal-confirm { padding: 8px 16px; border-radius: var(--radius-md); border: none; background: var(--primary); color: #fff; cursor: pointer; }
+
+/* ===== Loading ===== */
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(255,255,255,.8); z-index: 9997;
+  display: flex; justify-content: center; align-items: center;
+}
+.spinner {
+  width: 40px; height: 40px; border: 3px solid var(--border-color);
+  border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== 标注开关 ===== */
+.annotation-toggle {
+  position: fixed; top: 12px; right: 292px; z-index: 1001;
+  display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+  background: #fff; padding: 6px 12px; border-radius: 20px; cursor: pointer;
+  border: 1px solid #e5e7eb;
+}
+.annotation-toggle input { accent-color: var(--primary); }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- 左侧面板：页面导航 -->
+  <div id="panelLeft">
+    <h3>页面导航</h3>
+    <div class="nav-item active" data-page="listPage" onclick="switchPage('listPage')">📋 列表页</div>
+    <div class="nav-item" data-page="formPage" onclick="switchPage('formPage')">✏️ 新建表单</div>
+    <div style="margin-top:auto; padding: 16px;">
+      <div style="font-size:11px; color:#9ca3af;">C-teacher v2.1.0<br/>课堂记录原型</div>
+    </div>
+  </div>
+
+  <div class="splitter" id="splitterLeft"></div>
+
+  <!-- 中间面板：页面预览 -->
+  <div id="panelCenter">
+    <!-- 列表页 -->
+    <div id="listPage" class="page-container active">
+      <div class="list-page">
+        <div class="page-header">
+          <div>
+            <h1>课堂记录</h1>
+            <p>记录授课内容、学生表现和作业布置</p>
+          </div>
+          <button class="btn-primary" onclick="switchPage('formPage'); showToast('info','跳转到新建表单')">+ 新建</button>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-dropdown" onclick="toggleFilter(this)">
+            <span>全部类型</span><span>▾</span>
+          </div>
+          <div class="filter-dropdown" onclick="toggleFilter(this)">
+            <span>全部状态</span><span>▾</span>
+          </div>
+          <div class="filter-dropdown" onclick="toggleFilter(this)">
+            <span>待批改</span><span>▾</span>
+          </div>
+        </div>
+
+        <!-- 卡片 1 -->
+        <div class="record-card" data-note-index="1">
+          <div class="card-top">
+            <div class="card-left">
+              <div class="card-icon teal">📘</div>
+              <div class="card-title">数学 · 二次函数基础</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <span class="tag tag-teal">课堂讲授</span>
+              <span class="tag tag-gray">课后作业</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-info">
+              <span class="card-student">陈一诺</span>
+              <span class="card-preview">介绍了二次函数的定义、图像和基本性质...</span>
+            </div>
+            <div class="card-meta">
+              <div class="badge-group">
+                <span class="badge tag-yellow">待提交</span>
+                <span class="badge tag-red">待批改</span>
+              </div>
+              <span style="font-size:11px;color:var(--text-tertiary);">截止 2026-07-01</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="card-date">2026-06-24</span>
+            <div class="card-actions">
+              <button class="btn-edit" onclick="switchPage('formPage'); showToast('info','进入编辑模式')">编辑</button>
+              <button class="btn-delete" onclick="showConfirm('确认删除这条课堂记录？', () => showToast('success','记录已删除'))">删除</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 卡片 2 -->
+        <div class="record-card" data-note-index="2">
+          <div class="card-top">
+            <div class="card-left">
+              <div class="card-icon blue">🔬</div>
+              <div class="card-title">物理 · 电路连接实验</div>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <span class="tag tag-blue">实验报告</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="card-info">
+              <span class="card-student">小红</span>
+              <span class="card-preview">实验：电路连接，器材：电源、导线、灯泡...</span>
+            </div>
+            <div class="card-meta">
+              <div class="badge-group">
+                <span class="badge tag-green">已批改</span>
+              </div>
+              <span style="font-size:11px;color:var(--text-tertiary);">2026-06-23</span>
+            </div>
+          </div>
+          <div class="card-footer">
+            <span class="card-date">2026-06-23</span>
+            <div class="card-actions">
+              <button class="btn-edit" onclick="switchPage('formPage'); showToast('info','进入编辑模式')">编辑</button>
+              <button class="btn-delete" onclick="showConfirm('确认删除这条课堂记录？', () => showToast('success','记录已删除'))">删除</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 标注点 -->
+        <div class="annotation-wrap" style="left:60px; top:100px;" data-note-index="1">
+          <svg width="24" height="30" viewBox="0 0 24 30">
+            <defs><radialGradient id="td" cx="40%" cy="35%"><stop offset="0%" stop-color="rgba(100,181,246,0.9)"/><stop offset="40%" stop-color="rgba(30,136,229,0.65)"/><stop offset="100%" stop-color="rgba(13,71,161,0.55)"/></radialGradient></defs>
+            <path d="M12 29 C12 29 0 16 0 8 C0 3.6 5.4 0 12 0 C18.6 0 24 3.6 24 8 C24 16 12 29 12 29Z" fill="url(#td)" stroke="#1565c0" stroke-width="1.2"/>
+            <path d="M6 7 C8 5 11 4 12 4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <text x="12" y="17" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="sans-serif">1</text>
+          </svg>
+          <span class="annotation-num">筛选栏 + 类型标签</span>
+        </div>
+        <div class="annotation-wrap" style="left:520px; top:200px;" data-note-index="2">
+          <svg width="24" height="30" viewBox="0 0 24 30">
+            <defs><radialGradient id="td2" cx="40%" cy="35%"><stop offset="0%" stop-color="rgba(100,181,246,0.9)"/><stop offset="40%" stop-color="rgba(30,136,229,0.65)"/><stop offset="100%" stop-color="rgba(13,71,161,0.55)"/></radialGradient></defs>
+            <path d="M12 29 C12 29 0 16 0 8 C0 3.6 5.4 0 12 0 C18.6 0 24 3.6 24 8 C24 16 12 29 12 29Z" fill="url(#td2)" stroke="#1565c0" stroke-width="1.2"/>
+            <path d="M6 7 C8 5 11 4 12 4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <text x="12" y="17" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="sans-serif">2</text>
+          </svg>
+          <span class="annotation-num">类型标签（多选 Tag）</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 表单页 -->
+    <div id="formPage" class="page-container">
+      <div class="form-page">
+        <div class="form-header">
+          <div style="display:flex; gap:16px; align-items:flex-start;">
+            <button class="back-btn" onclick="switchPage('listPage'); showToast('info','返回列表')">← 返回记录列表</button>
+            <div class="form-title">
+              <h1>新建课堂记录</h1>
+              <p>记录授课内容、学生表现和作业布置</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 归属选择 -->
+        <div class="form-section">
+          <span class="form-label">记录归属</span>
+          <div class="radio-group">
+            <label class="radio-option"><span class="radio-dot checked" id="radioSingle"></span> 单个小孩</label>
+            <label class="radio-option"><span class="radio-dot" id="radioGroup"></span> 班级/分组</label>
+          </div>
+        </div>
+
+        <!-- 学生选择 -->
+        <div class="form-section">
+          <label class="form-label">学生</label>
+          <select class="select-input" onchange="showToast('info','已选择：' + this.value)">
+            <option>陈一诺</option>
+            <option>孟然</option>
+            <option>何青</option>
+          </select>
+        </div>
+
+        <!-- 科目 -->
+        <div class="form-section">
+          <label class="form-label">科目</label>
+          <select class="select-input" onchange="showToast('info','科目已切换')">
+            <option>数学</option>
+            <option>物理</option>
+            <option>英语</option>
+            <option>语文</option>
+          </select>
+        </div>
+
+        <!-- 类型多选 -->
+        <div class="form-section">
+          <label class="form-label">类型 <span style="font-size:12px;color:var(--text-tertiary);">（可多选）</span></label>
+          <div class="type-pills" id="typePills">
+            <span class="type-pill selected" data-type="课堂讲授" onclick="toggleTypePill(this)">课堂讲授</span>
+            <span class="type-pill" data-type="课堂练习" onclick="toggleTypePill(this)">课堂练习</span>
+            <span class="type-pill" data-type="课后作业" onclick="toggleTypePill(this)">课后作业</span>
+            <span class="type-pill" data-type="实验报告" onclick="toggleTypePill(this)">实验报告</span>
+            <span class="type-pill" data-type="测验考试" onclick="toggleTypePill(this)">测验考试</span>
+            <span class="type-pill" data-type="项目任务" onclick="toggleTypePill(this)">项目任务</span>
+            <span class="type-pill" data-type="辅导记录" onclick="toggleTypePill(this)">辅导记录</span>
+            <span class="type-pill" data-type="复习笔记" onclick="toggleTypePill(this)">复习笔记</span>
+          </div>
+        </div>
+
+        <!-- 动态表单区域 -->
+        <div class="dynamic-fields-section" id="dynamicFields">
+          <h4>📝 课堂讲授 — 相关字段</h4>
+
+          <div class="form-section">
+            <label class="form-label">授课内容/主题<span class="required">*</span></label>
+            <textarea class="textarea-input" rows="3" placeholder="请输入授课内容或主题..."></textarea>
+          </div>
+
+          <div class="form-section">
+            <label class="form-label">知识点</label>
+            <div style="display:flex; gap:8px;">
+              <input class="text-input" style="flex:1;" placeholder="函数、方程..." />
+              <span style="font-size:14px;color:var(--text-tertiary); align-self:center;">▾</span>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label class="form-label">时长（分钟）</label>
+            <div style="display:flex; gap:8px;">
+              <input class="text-input" style="width:80px;" type="number" value="45" />
+              <span style="font-size:14px;color:var(--text-tertiary); align-self:center;">分钟</span>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label class="form-label">课堂表现</label>
+            <textarea class="textarea-input" rows="2" placeholder="学生课堂参与度、表现情况..."></textarea>
+          </div>
+
+          <div class="form-section">
+            <label class="form-label">附件</label>
+            <div class="attach-area">
+              <div class="attach-btn" onclick="showToast('info','选择文件...')">+ 添加</div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <label class="form-label">备注</label>
+            <textarea class="textarea-input" rows="2" placeholder="补充说明..."></textarea>
+          </div>
+        </div>
+
+        <!-- 底部按钮 -->
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="showToast('info','已取消，返回上一页')">取消</button>
+          <button class="btn-save" onclick="handleSave()">保存课堂记录</button>
+        </div>
+
+        <!-- 标注点 -->
+        <div class="annotation-wrap" style="left:300px; top:250px;">
+          <svg width="24" height="30" viewBox="0 0 24 30">
+            <defs><radialGradient id="td3" cx="40%" cy="35%"><stop offset="0%" stop-color="rgba(100,181,246,0.9)"/><stop offset="40%" stop-color="rgba(30,136,229,0.65)"/><stop offset="100%" stop-color="rgba(13,71,161,0.55)"/></radialGradient></defs>
+            <path d="M12 29 C12 29 0 16 0 8 C0 3.6 5.4 0 12 0 C18.6 0 24 3.6 24 8 C24 16 12 29 12 29Z" fill="url(#td3)" stroke="#1565c0" stroke-width="1.2"/>
+            <path d="M6 7 C8 5 11 4 12 4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <text x="12" y="17" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="sans-serif">3</text>
+          </svg>
+          <span class="annotation-num">类型多选（8种）</span>
+        </div>
+        <div class="annotation-wrap" style="left:300px; top:420px;">
+          <svg width="24" height="30" viewBox="0 0 24 30">
+            <defs><radialGradient id="td4" cx="40%" cy="35%"><stop offset="0%" stop-color="rgba(100,181,246,0.9)"/><stop offset="40%" stop-color="rgba(30,136,229,0.65)"/><stop offset="100%" stop-color="rgba(13,71,161,0.55)"/></radialGradient></defs>
+            <path d="M12 29 C12 29 0 16 0 8 C0 3.6 5.4 0 12 0 C18.6 0 24 3.6 24 8 C24 16 12 29 12 29Z" fill="url(#td4)" stroke="#1565c0" stroke-width="1.2"/>
+            <path d="M6 7 C8 5 11 4 12 4" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <text x="12" y="17" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="sans-serif">4</text>
+          </svg>
+          <span class="annotation-num">动态表单字段</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="splitter" id="splitterRight"></div>
+
+  <!-- 右侧面板：功能说明 -->
+  <div id="panelRight">
+    <h3>功能说明</h3>
+    <div class="font-controls">
+      <button class="font-btn" onclick="adjustFontSize(-1)">A⁻</button>
+      <button class="font-btn" onclick="adjustFontSize(1)">A⁺</button>
+    </div>
+
+    <div id="infoContent">
+      <div class="info-card feature">
+        <h4>📋 列表页</h4>
+        <p>展示所有课堂记录，支持按<strong>类型</strong>/<strong>状态</strong>/<strong>批改状态</strong>组合筛选。每条记录用彩色 Tag 展示多选类型。</p>
+      </div>
+      <div class="info-card interact">
+        <h4>🏷️ 类型多选</h4>
+        <p>8 种记录类型：<strong>课堂讲授、课堂练习、课后作业、实验报告、测验考试、项目任务、辅导记录、复习笔记</strong>。支持多选。</p>
+      </div>
+      <div class="info-card field">
+        <h4>📝 动态表单</h4>
+        <p>选择类型后，表单字段<strong>即时切换</strong>，只显示该类型相关字段。已填数据保留，切换回来时恢复。</p>
+      </div>
+      <div class="info-card warning">
+        <h4>⚠️ 状态自动流转</h4>
+        <p>每种类型有独立的状态机，如课后作业：待提交→已提交→待批改→已批改。保存时自动设置初始状态。</p>
+      </div>
+      <div class="info-card feature">
+        <h4>📊 筛选功能</h4>
+        <p>三种筛器可同时生效：<br/>• 类型筛选（多选）<br/>• 状态筛选<br/>• 批改状态筛选</p>
+      </div>
+      <div class="info-card field">
+        <h4>↩️ 编辑已有记录</h4>
+        <p>允许修改已有记录的类型。若切换后缺失字段，留空并提示补充，否则提交失败。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SVG 连线层 -->
+<svg class="connections-layer" id="connectionsLayer"></svg>
+
+<!-- Toast 容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===== 页面切换 =====
+function switchPage(pageId) {
+  document.querySelectorAll('.page-container').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  document.querySelectorAll('#panelLeft .nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === pageId);
+  });
+  saveState();
+}
+
+// ===== 类型多选 =====
+function toggleTypePill(el) {
+  el.classList.toggle('selected');
+  updateDynamicFields();
+}
+
+function updateDynamicFields() {
+  const selected = [...document.querySelectorAll('.type-pill.selected')].map(p => p.dataset.type);
+  const section = document.getElementById('dynamicFields');
+  if (selected.length === 0) {
+    section.innerHTML = '<h4>⚠️ 请至少选择一种记录类型</h4>';
+    return;
+  }
+  const types = {
+    '课堂讲授': ['授课内容/主题（必填）', '知识点', '时长（分钟）', '课堂表现', '附件', '备注'],
+    '课堂练习': ['练习内容/题目（必填）', '完成情况（必填）', '得分', '附件', '备注'],
+    '课后作业': ['作业内容（必填）', '截止日期（必填）', '完成情况（必填）', '附件', '备注'],
+    '实验报告': ['实验名称（必填）', '实验器材（必填）', '实验结论', '完成情况（必填）', '得分', '附件', '备注'],
+    '测验考试': ['测验名称（必填）', '考试时间（必填）', '得分/总分（必填）', '错题记录', '备注'],
+    '项目任务': ['项目名称（必填）', '任务描述（必填）', '进度（必填）', '截止日期（必填）', '附件', '备注'],
+    '辅导记录': ['辅导主题（必填）', '辅导重点（必填）', '辅导时长', '下次计划', '备注'],
+    '复习笔记': ['复习主题（必填）', '复习内容（必填）', '完成情况（必填）', '备注']
+  };
+  let html = `<h4>📝 ${selected.join(' / ')} — 相关字段</h4>`;
+  selected.forEach(type => {
+    (types[type] || []).forEach(field => {
+      const required = field.includes('必填');
+      html += `<div class="form-section"><label class="form-label">${field.replace('（必填）','')}${required?'<span class="required">*</span>':''}</label>`;
+      if (field.includes('截止') || field.includes('得分') || field.includes('进度') || field.includes('时长') || field.includes('得分/总分')) {
+        html += `<input class="text-input" style="width:120px;" type="text" placeholder="${field}" />`;
+      } else {
+        html += `<textarea class="textarea-input" rows="2" placeholder="${field}"></textarea>`;
+      }
+      html += `</div>`;
+    });
+  });
+  section.innerHTML = html;
+  showToast('info', `已选择 ${selected.length} 种类型，动态字段已更新`);
+}
+
+// ===== 筛选下拉 =====
+function toggleFilter(el) {
+  document.querySelectorAll('.filter-dropdown').forEach(f => { if (f !== el) f.classList.remove('open'); });
+  el.classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.filter-dropdown')) {
+    document.querySelectorAll('.filter-dropdown').forEach(f => f.classList.remove('open'));
+  }
+});
+
+// ===== Toast =====
+function showToast(type, msg) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2500);
+}
+
+// ===== Confirm Modal =====
+function showConfirm(msg, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>确认操作</h3>
+      <p>${msg}</p>
+      <div class="modal-actions">
+        <button class="modal-cancel" id="modalCancel">取消</button>
+        <button class="modal-confirm" id="modalConfirm">确认</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#modalCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#modalConfirm').onclick = () => { overlay.remove(); onConfirm(); };
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ===== 保存 =====
+function handleSave() {
+  const selected = [...document.querySelectorAll('.type-pill.selected')].map(p => p.dataset.type);
+  if (selected.length === 0) {
+    showToast('error', '请至少选择一种记录类型');
+    return;
+  }
+  showToast('success', `课堂记录已保存（${selected.length} 种类型）`);
+  setTimeout(() => switchPage('listPage'), 1000);
+}
+
+// ===== 标注点拖拽 =====
+function initDraggableAnnotations() {
+  const viewport = document.getElementById('panelCenter');
+  let dragging = null;
+  let dragOffset = { x: 0, y: 0 };
+
+  viewport.addEventListener('mousedown', e => {
+    const wrap = e.target.closest('.annotation-wrap');
+    if (!wrap) return;
+    e.preventDefault();
+    dragging = wrap;
+    dragging.classList.add('dragging');
+    const rect = wrap.getBoundingClientRect();
+    dragOffset.x = e.clientX - rect.left - rect.width / 2;
+    dragOffset.y = e.clientY - rect.top;
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const vpRect = viewport.getBoundingClientRect();
+    let left = e.clientX - vpRect.left - dragOffset.x;
+    let top = e.clientY - vpRect.top - dragOffset.y;
+    left = Math.max(0, Math.min(vpRect.width, left));
+    top = Math.max(0, Math.min(vpRect.height, top));
+    dragging.style.left = left + 'px';
+    dragging.style.top = top + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging.classList.remove('dragging'); dragging = null; }
+  });
+}
+
+// ===== 拖拽分割线 =====
+function initSplitter(splitterId, panelId, minW, maxW) {
+  const splitter = document.getElementById(splitterId);
+  const panel = document.getElementById(panelId);
+  let dragging = false;
+
+  splitter.addEventListener('mousedown', e => {
+    dragging = true;
+    splitter.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const appRect = document.getElementById('app').getBoundingClientRect();
+    let w;
+    if (splitterId === 'splitterLeft') {
+      w = e.clientX - appRect.left;
+    } else {
+      w = appRect.right - e.clientX;
+    }
+    w = Math.max(minW, Math.min(maxW, w));
+    panel.style.width = w + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (dragging) { dragging = false; splitter.classList.remove('active'); document.body.style.cursor = ''; }
+  });
+}
+
+// ===== 字体调整 =====
+let fontSize = 14;
+function adjustFontSize(delta) {
+  fontSize = Math.max(10, Math.min(22, fontSize + delta));
+  document.getElementById('infoContent').style.fontSize = fontSize + 'px';
+  saveState();
+}
+
+// ===== localStorage 自动保存 =====
+function saveState() {
+  try {
+    const pages = [];
+    document.querySelectorAll('.page-container').forEach(p => {
+      if (p.classList.contains('active')) pages.push(p.id);
+    });
+    localStorage.setItem('ct_teacher_currentPage', pages[0]);
+    localStorage.setItem('ct_teacher_fontSize', fontSize);
+  } catch(e) {}
+}
+function loadState() {
+  try {
+    const page = localStorage.getItem('ct_teacher_currentPage');
+    if (page) switchPage(page);
+    const fs = parseInt(localStorage.getItem('ct_teacher_fontSize')) || 14;
+    fontSize = fs;
+    document.getElementById('infoContent').style.fontSize = fs + 'px';
+  } catch(e) {}
+}
+
+// ===== 初始化 =====
+initDraggableAnnotations();
+initSplitter('splitterLeft', 'panelLeft', 150, 250);
+initSplitter('splitterRight', 'panelRight', 200, 500);
+loadState();
+</script>
+</body>
+</html>

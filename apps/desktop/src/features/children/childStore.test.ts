@@ -133,6 +133,7 @@ describe("childStore", () => {
     store.createClassRecord({
       studentId,
       subject: "数学",
+      recordType: "课堂讲授",
       lessonContent: "函数复盘",
       performance: "稳定",
       homework: "第 1-3 题"
@@ -156,6 +157,7 @@ describe("childStore", () => {
     store.createClassRecord({
       studentId,
       subject: "数学",
+      recordType: "课堂讲授",
       lessonContent: "函数复盘",
       performance: "稳定",
       homework: "第 1-3 题"
@@ -164,6 +166,7 @@ describe("childStore", () => {
     store.updateClassRecord(store.classRecords[0].id, {
       studentId,
       subject: "物理",
+      recordType: "课堂讲授",
       lessonContent: "受力分析",
       performance: "需要慢速拆解",
       homework: "画受力图 3 题"
@@ -182,6 +185,7 @@ describe("childStore", () => {
     store.createClassRecord({
       studentId,
       subject: "数学",
+      recordType: "课堂讲授",
       lessonContent: "函数复盘",
       performance: "稳定",
       homework: "第 1-3 题"
@@ -203,6 +207,7 @@ describe("childStore", () => {
     store.createClassRecord({
       studentId,
       subject: "数学",
+      recordType: "课堂讲授",
       lessonContent: "函数复盘",
       performance: "稳定",
       homework: "第 1-3 题"
@@ -213,6 +218,7 @@ describe("childStore", () => {
     store.updateClassRecord(recordId, {
       studentId,
       subject: "数学",
+      recordType: "课堂讲授",
       lessonContent: "函数复盘",
       performance: "稳定",
       homework: "第 4-6 题"
@@ -522,6 +528,7 @@ describe("childStore", () => {
     store.createClassRecord({
       studentId,
       subject: "数学",
+      recordType: "课堂讲授",
       lessonContent: "函数复盘",
       performance: "稳定",
       homework: "第 1-3 题"
@@ -720,6 +727,7 @@ describe("childStore", () => {
     store.createClassRecord({
       studentId,
       subject: "数学",
+      recordType: "课堂讲授",
       lessonContent: "函数复盘",
       performance: "稳定",
       homework: "第 1-3 题"
@@ -739,6 +747,7 @@ describe("childStore", () => {
     store.createClassRecord({
       studentId,
       subject: "数学",
+      recordType: "课堂讲授",
       lessonContent: "函数复盘",
       performance: "稳定",
       homework: "第 1-3 题"

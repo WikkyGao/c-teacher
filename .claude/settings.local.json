@@ -49,7 +49,18 @@
       "Bash(cargo test *)",
       "mcp__pencil-designer__get_editor_state",
       "mcp__pencil-designer__batch_get",
-      "mcp__pencil-designer__snapshot_layout"
+      "mcp__pencil-designer__snapshot_layout",
+      "Bash(pencil --out /Users/wikky/Documents/c-teacher/docs/课堂记录.pen --prompt \"Create an empty canvas frame named 课堂记录 with width 1440 and height 900\")",
+      "mcp__pencil-designer__batch_design",
+      "Bash(pencil interactive *)",
+      "Bash(pencil *)",
+      "Bash(pkill -f \"pencil interactive\")",
+      "Bash(pkill -f \"pencil-cli\")",
+      "Bash(rm -f /Users/wikky/.pencil/socket/pencil-cli.sock)",
+      "Bash(mcp__pencil-designer__get_editor_state)",
+      "mcp__pencil-designer__get_screenshot",
+      "Bash(open *)",
+      "Bash(npm test *)"
     ]
   }
 }
