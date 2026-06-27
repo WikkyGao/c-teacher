@@ -3,10 +3,42 @@ import { invoke } from "@tauri-apps/api/core";
 import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 
+export type CourseLesson = {
+  title: string;
+  materialIds: string[];
+  order: number;
+  date?: string;
+  startTime?: string;
+  duration?: number;
+};
+
+export type CourseScope = "personal" | "class" | "subject";
+
+export type ScheduleMode = "specific" | "weekly" | "biweekly";
+
 export type Course = {
+  id: string;
+  name: string;
   subject: string;
-  currentLesson: number;
   totalLessons: number;
+  lessons: CourseLesson[];
+  scope: CourseScope;
+  groupId?: string;
+  studentIds: string[];
+  scheduleMode: ScheduleMode;
+  schedule: {
+    startDate: string;
+    dates?: string[];
+    startTime: string;
+    duration: number;
+    weekday?: number;
+  };
+};
+
+export type CourseStudent = {
+  courseId: string;
+  studentId: string;
+  currentLesson: number;
   progress: number;
 };
 
@@ -68,7 +100,6 @@ export type Child = {
   gender: "male" | "female";
   goal: string;
   style: string;
-  courses: Course[];
   materials: string[];
   mistakeBook: MistakeBookSummary;
 };
@@ -83,7 +114,7 @@ export type ChildGroup = {
   memberIds: string[];
 };
 
-export type ChildDraft = Pick<Child, "name" | "goal" | "style" | "courses" | "materials"> & {
+export type ChildDraft = Pick<Child, "name" | "goal" | "style" | "materials"> & {
   gender?: Child["gender"];
 };
 
@@ -100,6 +131,8 @@ export type MaterialSource = {
   host: string;
   path: string;
   authMethod: string;
+  username: string;
+  password: string;
   connectionStatus: "待测试" | "可用" | "异常";
 };
 
@@ -112,6 +145,7 @@ export type TeachingMaterial = {
   sourceType: MaterialSourceProtocol;
   sourcePath: string;
   syncStatus: "已索引" | "待同步" | "异常";
+  shareable: boolean;
 };
 
 export type ScannedMaterial = {
@@ -156,6 +190,8 @@ export type ReminderItem = {
 
 export type ScheduledLesson = {
   id: string;
+  courseId: string;
+  lessonIndex: number;
   studentId: string;
   subject: string;
   startsAt: number;
@@ -256,6 +292,8 @@ type PersistedState = {
   scheduledLessons?: ScheduledLesson[];
   appSettings?: AppSettings;
   groups?: ChildGroup[];
+  courses?: Course[];
+  courseStudents?: CourseStudent[];
 };
 
 export type { PersistedState };
@@ -411,10 +449,6 @@ const seedChildren: Child[] = [
     gender: "female",
     goal: "期中数学 90+",
     style: "图像化讲解 + 例题驱动",
-    courses: [
-      { subject: "数学", currentLesson: 8, totalLessons: 16, progress: 75 },
-      { subject: "英语", currentLesson: 3, totalLessons: 10, progress: 40 }
-    ],
     materials: ["函数图像讲义.pdf", "练习 A 组", "阅读句型卡片"],
     mistakeBook: {
       summary: `多科目错题本 · ${mistakeBookSubjectSummary}`,
@@ -432,10 +466,6 @@ const seedChildren: Child[] = [
     gender: "male",
     goal: "阅读理解稳定提分",
     style: "短任务 + 高频反馈",
-    courses: [
-      { subject: "语文", currentLesson: 5, totalLessons: 12, progress: 58 },
-      { subject: "英语", currentLesson: 2, totalLessons: 8, progress: 30 }
-    ],
     materials: ["阅读训练 A 组", "错题模板"],
     mistakeBook: {
       summary: `多科目错题本 · ${mistakeBookSubjectSummary}`,
@@ -453,10 +483,6 @@ const seedChildren: Child[] = [
     gender: "male",
     goal: "夯实基础",
     style: "慢节奏 + 复述确认",
-    courses: [
-      { subject: "数学", currentLesson: 3, totalLessons: 10, progress: 40 },
-      { subject: "物理", currentLesson: 1, totalLessons: 8, progress: 18 }
-    ],
     materials: ["入门讲义 01", "课堂记录模板"],
     mistakeBook: {
       summary: `多科目错题本 · ${mistakeBookSubjectSummary}`,
@@ -468,6 +494,84 @@ const seedChildren: Child[] = [
       knowledgeInsight: "基础概念掌握 40%，受力分析掌握 18%。"
     }
   }
+];
+
+const seedCourses: Course[] = [
+  {
+    id: "course-chen-math",
+    name: "数学培优班",
+    subject: "数学",
+    totalLessons: 16,
+    lessons: Array.from({ length: 16 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+    scope: "personal",
+    studentIds: ["chen"],
+    scheduleMode: "weekly",
+    schedule: { startDate: "2026-07-01", startTime: "14:00", duration: 90, weekday: 6 }
+  },
+  {
+    id: "course-chen-english",
+    name: "英语阅读班",
+    subject: "英语",
+    totalLessons: 10,
+    lessons: Array.from({ length: 10 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+    scope: "personal",
+    studentIds: ["chen"],
+    scheduleMode: "weekly",
+    schedule: { startDate: "2026-07-02", startTime: "10:00", duration: 60, weekday: 3 }
+  },
+  {
+    id: "course-meng-chinese",
+    name: "语文提升班",
+    subject: "语文",
+    totalLessons: 12,
+    lessons: Array.from({ length: 12 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+    scope: "personal",
+    studentIds: ["meng"],
+    scheduleMode: "weekly",
+    schedule: { startDate: "2026-07-03", startTime: "16:00", duration: 90, weekday: 5 }
+  },
+  {
+    id: "course-meng-english",
+    name: "英语口语班",
+    subject: "英语",
+    totalLessons: 8,
+    lessons: Array.from({ length: 8 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+    scope: "personal",
+    studentIds: ["meng"],
+    scheduleMode: "weekly",
+    schedule: { startDate: "2026-07-04", startTime: "18:00", duration: 60, weekday: 4 }
+  },
+  {
+    id: "course-he-math",
+    name: "数学基础班",
+    subject: "数学",
+    totalLessons: 10,
+    lessons: Array.from({ length: 10 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+    scope: "personal",
+    studentIds: ["he"],
+    scheduleMode: "weekly",
+    schedule: { startDate: "2026-07-05", startTime: "15:00", duration: 90, weekday: 6 }
+  },
+  {
+    id: "course-he-physics",
+    name: "物理入门班",
+    subject: "物理",
+    totalLessons: 8,
+    lessons: Array.from({ length: 8 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+    scope: "personal",
+    studentIds: ["he"],
+    scheduleMode: "weekly",
+    schedule: { startDate: "2026-07-06", startTime: "17:00", duration: 90, weekday: 2 }
+  }
+];
+
+const seedCourseStudents: CourseStudent[] = [
+  { courseId: "course-chen-math", studentId: "chen", currentLesson: 8, progress: 75 },
+  { courseId: "course-chen-english", studentId: "chen", currentLesson: 3, progress: 40 },
+  { courseId: "course-meng-chinese", studentId: "meng", currentLesson: 5, progress: 58 },
+  { courseId: "course-meng-english", studentId: "meng", currentLesson: 2, progress: 30 },
+  { courseId: "course-he-math", studentId: "he", currentLesson: 3, progress: 40 },
+  { courseId: "course-he-physics", studentId: "he", currentLesson: 1, progress: 18 }
 ];
 
 export const GROUP_COLORS = [
@@ -511,7 +615,8 @@ const seedMaterials: TeachingMaterial[] = [
     assignedStudentIds: ["chen"],
     sourceType: "local",
     sourcePath: "/Teaching/数学/函数图像讲义.pdf",
-    syncStatus: "已索引"
+    syncStatus: "已索引",
+    shareable: true
   },
   {
     id: "material-reading",
@@ -521,7 +626,8 @@ const seedMaterials: TeachingMaterial[] = [
     assignedStudentIds: ["meng"],
     sourceType: "smb",
     sourcePath: "smb://studio-nas.local/C-teacher/reading-a",
-    syncStatus: "待同步"
+    syncStatus: "待同步",
+    shareable: false
   }
 ];
 
@@ -533,6 +639,8 @@ const seedSources: MaterialSource[] = [
     host: "studio-nas.local",
     path: "/C-teacher/teaching-materials",
     authMethod: "系统钥匙串",
+    username: "",
+    password: "",
     connectionStatus: "待测试"
   }
 ];
@@ -570,35 +678,7 @@ const seedReminders: ReminderItem[] = [
   }
 ];
 
-const seedScheduledLessons: ScheduledLesson[] = [
-  {
-    id: "lesson-chen-math",
-    studentId: "chen",
-    subject: "数学",
-    startsAt: new Date("2026-06-01T18:00:00+08:00").getTime(),
-    durationMinutes: 90,
-    topic: "函数图像与性质",
-    note: "带函数图像讲义.pdf"
-  },
-  {
-    id: "lesson-meng-english",
-    studentId: "meng",
-    subject: "英语",
-    startsAt: new Date("2026-06-03T20:00:00+08:00").getTime(),
-    durationMinutes: 60,
-    topic: "阅读理解训练",
-    note: "短任务 + 高频反馈"
-  },
-  {
-    id: "lesson-he-physics",
-    studentId: "he",
-    subject: "物理",
-    startsAt: new Date("2026-06-05T19:30:00+08:00").getTime(),
-    durationMinutes: 90,
-    topic: "受力分析入门",
-    note: "慢节奏复述确认"
-  }
-];
+const seedScheduledLessons: ScheduledLesson[] = [];
 
 const seedAppSettings: AppSettings = {
   aiProviders: [
@@ -687,12 +767,22 @@ function calculateCourseProgress(currentLesson: number, totalLessons: number) {
 
 function normalizeCourse(course: Course): Course {
   const totalLessons = Math.max(Number(course.totalLessons) || 1, 1);
-  const currentLesson = Math.min(Math.max(Number(course.currentLesson) || 0, 0), totalLessons);
+  const lessons = (course.lessons ?? Array.from({ length: totalLessons }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [] as string[], order: i }))).map((l, i) => ({
+    title: l.title || `第${i + 1}课`,
+    materialIds: l.materialIds ?? [],
+    order: l.order ?? i
+  }));
   return {
+    id: course.id || createId("course"),
+    name: course.name || course.subject || "未命名课程",
     subject: course.subject.trim(),
-    progress: calculateCourseProgress(currentLesson, totalLessons),
-    currentLesson,
-    totalLessons
+    totalLessons,
+    lessons,
+    scope: course.scope ?? "personal",
+    groupId: course.groupId,
+    studentIds: course.studentIds ?? [],
+    scheduleMode: course.scheduleMode ?? "weekly",
+    schedule: course.schedule ?? { startDate: new Date().toISOString().split('T')[0], startTime: "14:00", duration: 90 }
   };
 }
 
@@ -700,7 +790,6 @@ function normalizeChild(child: Child): Child {
   return {
     ...child,
     gender: child.gender === "male" || child.gender === "female" ? child.gender : "female",
-    courses: child.courses.map(normalizeCourse),
     mistakeBook: normalizeMistakeBook(child.mistakeBook)
   };
 }
@@ -800,9 +889,11 @@ function readPersistedState(): PersistedState | null {
     return {
       ...state,
       reminders: state.reminders.map(normalizeReminder),
-      scheduledLessons: (state.scheduledLessons ?? seedScheduledLessons).map(normalizeScheduledLesson),
+      scheduledLessons: [],
       appSettings: normalizeAppSettings(state.appSettings),
-      students: state.students.map(normalizeChild)
+      students: state.students.map(normalizeChild),
+      courses: state.courses ?? [],
+      courseStudents: state.courseStudents ?? []
     };
   } catch {
     localStorage.removeItem(storageKey);
@@ -827,7 +918,9 @@ function createPersistedState(
   reminders: ReminderItem[],
   scheduledLessons: ScheduledLesson[],
   appSettings: AppSettings,
-  groups: ChildGroup[]
+  groups: ChildGroup[],
+  courses: Course[],
+  courseStudents: CourseStudent[]
 ): PersistedState {
   return {
     students,
@@ -837,7 +930,9 @@ function createPersistedState(
     reminders,
     scheduledLessons,
     appSettings,
-    groups
+    groups,
+    courses,
+    courseStudents
   };
 }
 
@@ -848,8 +943,10 @@ export const useChildStore = defineStore("children", () => {
   const materialSources = ref<MaterialSource[]>(clone(persisted?.materialSources ?? seedSources));
   const classRecords = ref<ClassRecord[]>(clone(persisted?.classRecords ?? seedRecords).map(normalizeClassRecord));
   const reminders = ref<ReminderItem[]>(clone(persisted?.reminders ?? seedReminders).map(normalizeReminder));
-  const scheduledLessons = ref<ScheduledLesson[]>(clone(persisted?.scheduledLessons ?? seedScheduledLessons).map(normalizeScheduledLesson));
+  const scheduledLessons = ref<ScheduledLesson[]>([]);
   const groups = ref<ChildGroup[]>(clone(persisted?.groups ?? seedGroups));
+  const courses = ref<Course[]>(clone(persisted?.courses ?? []).map(normalizeCourse));
+  const courseStudents = ref<CourseStudent[]>(clone(persisted?.courseStudents ?? []));
   const appSettings = ref<AppSettings>(normalizeAppSettings(persisted?.appSettings));
   const activeChildId = ref(seedChildren[0].id);
   const isHydrated = ref(false);
@@ -937,10 +1034,11 @@ export const useChildStore = defineStore("children", () => {
       const records = classRecords.value.filter((record) => record.studentId === child.id);
       const homeworkCount = records.filter((record) => record.homework.trim()).length;
       const pendingGradingCount = records.filter((record) => record.homework.trim() && record.gradingStatus === "待批改").length;
+      const studentCourses = getStudentCourses(child.id);
       const averageProgress =
-        child.courses.length === 0
+        studentCourses.length === 0
           ? 0
-          : Math.round(child.courses.reduce((total, course) => total + course.progress, 0) / child.courses.length);
+          : Math.round(studentCourses.reduce((total, course) => total + course.progress, 0) / studentCourses.length);
       const nextActions = [
         child.mistakeBook.aiPending > 0
           ? `优先处理 ${child.mistakeBook.aiPending} 道待分析错题`
@@ -1145,6 +1243,10 @@ export const useChildStore = defineStore("children", () => {
     return Array.from(new Set([...profileMaterials, ...assignedMaterials]));
   }
 
+  function materialsForStudent(studentId: string) {
+    return materials.value.filter((material) => material.assignedStudentIds.includes(studentId));
+  }
+
 function applyPersistedState(state: PersistedState) {
     items.value = clone(state.students).map(normalizeChild);
     materials.value = clone(state.materials);
@@ -1153,6 +1255,8 @@ function applyPersistedState(state: PersistedState) {
     reminders.value = clone(state.reminders);
     scheduledLessons.value = clone(state.scheduledLessons ?? seedScheduledLessons).map(normalizeScheduledLesson);
     groups.value = clone(state.groups ?? seedGroups);
+    courses.value = clone(state.courses ?? []).map(normalizeCourse);
+    courseStudents.value = clone(state.courseStudents ?? []);
     appSettings.value = normalizeAppSettings(state.appSettings);
     if (!items.value.some((child) => child.id === activeChildId.value)) {
       activeChildId.value = items.value[0]?.id ?? "";
@@ -1188,7 +1292,9 @@ function applyPersistedState(state: PersistedState) {
       reminders.value,
       scheduledLessons.value,
       appSettings.value,
-      groups.value
+      groups.value,
+      courses.value,
+      courseStudents.value
     );
   }
 
@@ -1211,8 +1317,7 @@ function applyPersistedState(state: PersistedState) {
       id: createId("child"),
       ...draft,
       gender: draft.gender ?? "female",
-      courses: draft.courses.map(normalizeCourse),
-      mistakeBook: createMistakeBook(draft.courses)
+      mistakeBook: createMistakeBook([])
     };
     items.value.unshift(child);
     activeChildId.value = child.id;
@@ -1226,7 +1331,6 @@ function applyPersistedState(state: PersistedState) {
       ...existing,
       ...draft,
       gender: draft.gender ?? existing.gender,
-      courses: draft.courses.map(normalizeCourse),
       mistakeBook: {
         ...existing.mistakeBook,
         subjects: K12_MISTAKE_BOOK_SUBJECTS
@@ -1235,50 +1339,65 @@ function applyPersistedState(state: PersistedState) {
   }
 
   function updateStudentCourse(studentId: string, subject: string, course: Course) {
-    const child = items.value.find((item) => item.id === studentId);
-    if (!child) return false;
-    const courseIndex = child.courses.findIndex((item) => item.subject === subject);
+    const studentCourse = courseStudents.value.find((cs) => cs.studentId === studentId);
+    if (!studentCourse) return false;
+    const courseIndex = courses.value.findIndex((c) => c.id === studentCourse.courseId && c.subject === subject);
     if (courseIndex === -1) return false;
-    child.courses[courseIndex] = normalizeCourse(course);
-    syncMistakeBookSubjects(child);
+    courses.value[courseIndex] = normalizeCourse(course);
     return true;
   }
 
   function createStudentCourse(studentId: string, course: Course) {
-    const child = items.value.find((item) => item.id === studentId);
     const normalizedCourse = normalizeCourse(course);
-    if (!child || !normalizedCourse.subject) return false;
-    if (child.courses.some((item) => item.subject === normalizedCourse.subject)) return false;
-    child.courses.push(normalizedCourse);
-    syncMistakeBookSubjects(child);
+    if (!normalizedCourse.subject) return false;
+    const existingCourse = courses.value.find((c) => c.subject === normalizedCourse.subject);
+    if (existingCourse) {
+      const alreadyAssigned = courseStudents.value.some((cs) => cs.courseId === existingCourse.id && cs.studentId === studentId);
+      if (alreadyAssigned) return false;
+      courseStudents.value.push({ courseId: existingCourse.id, studentId, currentLesson: 0, progress: 0 });
+    } else {
+      const id = normalizedCourse.id || createId("course");
+      const newCourse = { ...normalizedCourse, id };
+      courses.value.push(newCourse);
+      courseStudents.value.push({ courseId: id, studentId, currentLesson: 0, progress: 0 });
+    }
     return true;
   }
 
   function deleteStudentCourse(studentId: string, subject: string) {
-    const child = items.value.find((item) => item.id === studentId);
-    if (!child || child.courses.length <= 1) return false;
-    const beforeCount = child.courses.length;
-    child.courses = child.courses.filter((course) => course.subject !== subject);
-    if (child.courses.length === beforeCount) return false;
-    syncMistakeBookSubjects(child);
+    const course = courses.value.find((c) => c.subject === subject);
+    if (!course) return false;
+    const csIndex = courseStudents.value.findIndex((cs) => cs.courseId === course.id && cs.studentId === studentId);
+    if (csIndex === -1) return false;
+    const beforeCount = courseStudents.value.length;
+    courseStudents.value = courseStudents.value.filter(
+      (cs) => !(cs.courseId === course.id && cs.studentId === studentId)
+    );
+    if (courseStudents.value.length === beforeCount) return false;
+    const otherStudents = courseStudents.value.some((cs) => cs.courseId === course.id);
+    if (!otherStudents) {
+      courses.value = courses.value.filter((c) => c.id !== course.id);
+    }
     return true;
   }
 
   function checkInStudentCourse(studentId: string, subject: string) {
-    const child = items.value.find((item) => item.id === studentId);
-    const course = child?.courses.find((item) => item.subject === subject);
-    if (!child || !course || course.currentLesson >= course.totalLessons) return false;
-    Object.assign(course, normalizeCourse({ ...course, currentLesson: course.currentLesson + 1 }));
-    syncMistakeBookSubjects(child);
+    const course = courses.value.find((c) => c.subject === subject);
+    if (!course) return false;
+    const cs = courseStudents.value.find((c) => c.courseId === course.id && c.studentId === studentId);
+    if (!cs || cs.currentLesson >= course.totalLessons) return false;
+    cs.currentLesson = cs.currentLesson + 1;
+    cs.progress = calculateCourseProgress(cs.currentLesson, course.totalLessons);
     return true;
   }
 
   function undoChildCourseCheckIn(studentId: string, subject: string) {
-    const child = items.value.find((item) => item.id === studentId);
-    const course = child?.courses.find((item) => item.subject === subject);
-    if (!child || !course || course.currentLesson <= 0) return false;
-    Object.assign(course, normalizeCourse({ ...course, currentLesson: course.currentLesson - 1 }));
-    syncMistakeBookSubjects(child);
+    const course = courses.value.find((c) => c.subject === subject);
+    if (!course) return false;
+    const cs = courseStudents.value.find((c) => c.courseId === course.id && c.studentId === studentId);
+    if (!cs || cs.currentLesson <= 0) return false;
+    cs.currentLesson = cs.currentLesson - 1;
+    cs.progress = calculateCourseProgress(cs.currentLesson, course.totalLessons);
     return true;
   }
 
@@ -1292,6 +1411,7 @@ function applyPersistedState(state: PersistedState) {
     classRecords.value = classRecords.value.filter((record) => record.studentId !== studentId);
     reminders.value = reminders.value.filter((reminder) => reminder.studentId !== studentId);
     scheduledLessons.value = scheduledLessons.value.filter((lesson) => lesson.studentId !== studentId);
+    courseStudents.value = courseStudents.value.filter((cs) => cs.studentId !== studentId);
     groups.value = groups.value.map((g) => ({
       ...g,
       memberIds: g.memberIds.filter((id) => id !== studentId)
@@ -1376,6 +1496,40 @@ function applyPersistedState(state: PersistedState) {
     return materials.value.length < beforeCount;
   }
 
+  function batchDeleteMaterials(materialIds: string[]) {
+    const idSet = new Set(materialIds);
+    const beforeCount = materials.value.length;
+    materials.value = materials.value.filter((material) => !idSet.has(material.id));
+    return beforeCount - materials.value.length;
+  }
+
+  function batchAssignMaterials(materialIds: string[], studentIds: string[]) {
+    const idSet = new Set(materialIds);
+    let updated = 0;
+    materials.value.forEach((material) => {
+      if (idSet.has(material.id)) {
+        const merged = new Set([...material.assignedStudentIds, ...studentIds]);
+        material.assignedStudentIds = [...merged];
+        material.syncStatus = "待同步";
+        updated++;
+      }
+    });
+    return updated;
+  }
+
+  function batchCategorizeMaterials(materialIds: string[], category: string) {
+    const idSet = new Set(materialIds);
+    let updated = 0;
+    materials.value.forEach((material) => {
+      if (idSet.has(material.id)) {
+        material.category = category;
+        material.syncStatus = "待同步";
+        updated++;
+      }
+    });
+    return updated;
+  }
+
   function importScannedMaterials(scannedMaterials: ScannedMaterial[], sourceType: MaterialSourceProtocol) {
     const existingPaths = new Set(materials.value.map((material) => material.sourcePath));
     const imported = scannedMaterials.filter((material) => !existingPaths.has(material.sourcePath));
@@ -1389,7 +1543,8 @@ function applyPersistedState(state: PersistedState) {
         assignedStudentIds: [],
         sourceType,
         sourcePath: material.sourcePath,
-        syncStatus: "已索引" as const
+        syncStatus: "已索引" as const,
+        shareable: false
       }))
     );
 
@@ -1402,6 +1557,13 @@ function applyPersistedState(state: PersistedState) {
       id: createId("source"),
       connectionStatus: "待测试"
     });
+  }
+
+  function updateMaterialSource(sourceId: string, updates: Partial<MaterialSource>) {
+    const source = materialSources.value.find((item) => item.id === sourceId);
+    if (!source) return false;
+    Object.assign(source, updates);
+    return true;
   }
 
   function testMaterialSource(sourceId: string) {
@@ -1458,9 +1620,11 @@ function applyPersistedState(state: PersistedState) {
 
   function createCourseReminder(studentId: string, subject: string, remindAt: number) {
     const child = items.value.find((item) => item.id === studentId);
-    const course = child?.courses.find((item) => item.subject === subject);
+    const course = courses.value.find((c) => c.subject === subject);
     if (!child || !course || !remindAt) return false;
-    const lessonNumber = Math.min(course.currentLesson + 1, course.totalLessons);
+    const cs = courseStudents.value.find((c) => c.courseId === course.id && c.studentId === studentId);
+    if (!cs) return false;
+    const lessonNumber = Math.min(cs.currentLesson + 1, course.totalLessons);
     createReminder({
       studentId,
       title: `${child.name}${course.subject}第 ${lessonNumber} 节课`,
@@ -1617,8 +1781,80 @@ function applyPersistedState(state: PersistedState) {
     }
   }
 
+  // --- 课程管理 ---
+  function createCourse(draft: Omit<Course, "id">) {
+    const id = createId("course");
+    courses.value.push(normalizeCourse({ ...draft, id }));
+    return id;
+  }
+
+  function updateCourse(courseId: string, patch: Partial<Course>) {
+    const index = courses.value.findIndex((c) => c.id === courseId);
+    if (index === -1) return false;
+    courses.value[index] = normalizeCourse({ ...courses.value[index], ...patch });
+    return true;
+  }
+
+  function deleteCourse(courseId: string) {
+    const beforeCount = courses.value.length;
+    courses.value = courses.value.filter((c) => c.id !== courseId);
+    courseStudents.value = courseStudents.value.filter((cs) => cs.courseId !== courseId);
+    scheduledLessons.value = scheduledLessons.value.filter((l) => l.courseId !== courseId);
+    return courses.value.length < beforeCount;
+  }
+
+  function assignCourseToStudent(courseId: string, studentId: string) {
+    const exists = courseStudents.value.some((cs) => cs.courseId === courseId && cs.studentId === studentId);
+    if (exists) return false;
+    courseStudents.value.push({ courseId, studentId, currentLesson: 0, progress: 0 });
+    return true;
+  }
+
+  function unassignCourseFromStudent(courseId: string, studentId: string) {
+    const beforeCount = courseStudents.value.length;
+    courseStudents.value = courseStudents.value.filter(
+      (cs) => !(cs.courseId === courseId && cs.studentId === studentId)
+    );
+    scheduledLessons.value = scheduledLessons.value.filter(
+      (l) => !(l.courseId === courseId && l.studentId === studentId)
+    );
+    return courseStudents.value.length < beforeCount;
+  }
+
+  function getStudentCourses(studentId: string): Array<Course & { currentLesson: number; progress: number }> {
+    return courseStudents.value
+      .filter((cs) => cs.studentId === studentId)
+      .map((cs) => {
+        const course = courses.value.find((c) => c.id === cs.courseId);
+        if (!course) return null;
+        return { ...course, currentLesson: cs.currentLesson, progress: cs.progress };
+      })
+      .filter((c): c is Course & { currentLesson: number; progress: number } => c !== null);
+  }
+
+  function getCourseStudents(courseId: string): Array<Child & { currentLesson: number; progress: number }> {
+    return courseStudents.value
+      .filter((cs) => cs.courseId === courseId)
+      .map((cs) => {
+        const child = items.value.find((c) => c.id === cs.studentId);
+        if (!child) return null;
+        return { ...child, currentLesson: cs.currentLesson, progress: cs.progress };
+      })
+      .filter((c): c is Child & { currentLesson: number; progress: number } => c !== null);
+  }
+
+  function updateCourseStudentProgress(courseId: string, studentId: string, currentLesson: number) {
+    const cs = courseStudents.value.find((c) => c.courseId === courseId && c.studentId === studentId);
+    if (!cs) return false;
+    const course = courses.value.find((c) => c.id === courseId);
+    if (!course) return false;
+    cs.currentLesson = currentLesson;
+    cs.progress = course.totalLessons > 0 ? Math.round((currentLesson / course.totalLessons) * 100) : 0;
+    return true;
+  }
+
   watch(
-    [items, materials, materialSources, classRecords, reminders, scheduledLessons, groups, appSettings],
+    [items, materials, materialSources, classRecords, reminders, scheduledLessons, groups, appSettings, courses, courseStudents],
     () => {
       const state = currentPersistedState();
       writePersistedState(state);
@@ -1656,6 +1892,7 @@ function applyPersistedState(state: PersistedState) {
     storageStatus,
     selectStudent,
     materialTitlesForStudent,
+    materialsForStudent,
     createStudent,
     updateStudent,
     updateStudentCourse,
@@ -1667,8 +1904,12 @@ function applyPersistedState(state: PersistedState) {
     createMaterial,
     updateMaterial,
     deleteMaterial,
+    batchDeleteMaterials,
+    batchAssignMaterials,
+    batchCategorizeMaterials,
     importScannedMaterials,
     createMaterialSource,
+    updateMaterialSource,
     testMaterialSource,
     deleteMaterialSource,
     createClassRecord,
@@ -1717,6 +1958,16 @@ function applyPersistedState(state: PersistedState) {
     updateMistakeRecord,
     deleteMistakeRecord,
     batchUpdateMistakeMastery,
-    toggleMistakeMastery
+    toggleMistakeMastery,
+    courses,
+    courseStudents,
+    createCourse,
+    updateCourse,
+    deleteCourse,
+    assignCourseToStudent,
+    unassignCourseFromStudent,
+    getStudentCourses,
+    getCourseStudents,
+    updateCourseStudentProgress
   };
 });
