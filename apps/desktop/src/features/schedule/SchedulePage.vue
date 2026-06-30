@@ -36,7 +36,7 @@ const showDatePicker = ref(false);
 const courseForm = reactive({
   name: "",
   subject: "数学",
-  scope: "personal" as "personal" | "class" | "subject",
+  scope: "personal" as "personal" | "class",
   groupId: null as string | null,
   studentId: null as string | null,
   totalLessons: 12,
@@ -1054,7 +1054,7 @@ const weekdayLabel = computed(() => {
                     {{ course.schedule.startDate }} 起 {{ getScheduleModeLabel(course.scheduleMode) }}{{ course.schedule.weekday ? ' ' + getWeekdayLabel(course.schedule.weekday) : '' }} {{ course.schedule.startTime }}
                   </span>
                   <span class="course-card-scope">
-                    {{ course.scope === 'personal' ? getCourseStudents(course.id).map(s => s.name).join('、') : course.scope === 'class' ? (workspace.groups.find(g => g.id === course.groupId)?.name ?? '班级') : (workspace.groups.find(g => g.id === course.groupId)?.name ?? '科目分组') }}
+                    {{ course.scope === 'personal' ? getCourseStudents(course.id).map(s => s.name).join('、') : (workspace.groups.find(g => g.id === course.groupId)?.name ?? '班级/小组') }}
                   </span>
                 </div>
                 <svg :class="{ expanded: isCourseExpanded(course.id) }" class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
@@ -1130,8 +1130,7 @@ const weekdayLabel = computed(() => {
               <n-form-item label="课程归属">
                 <n-radio-group v-model:value="courseForm.scope">
                   <n-radio value="personal">个人课程</n-radio>
-                  <n-radio value="class">班级课程</n-radio>
-                  <n-radio value="subject">科目分组</n-radio>
+                  <n-radio value="class">班级/小组</n-radio>
                 </n-radio-group>
               </n-form-item>
               <n-form-item v-if="courseForm.scope === 'personal'" label="关联小孩">

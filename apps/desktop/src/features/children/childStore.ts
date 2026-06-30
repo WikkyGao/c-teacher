@@ -13,7 +13,7 @@ export type CourseLesson = {
   duration?: number;
 };
 
-export type CourseScope = "personal" | "class" | "subject";
+export type CourseScope = "personal" | "class";
 
 export type ScheduleMode = "specific" | "weekly" | "biweekly";
 
