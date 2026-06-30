@@ -1776,7 +1776,8 @@ const weekdayLabel = computed(() => {
 }
 
 .schedule-week-hours {
-  display: grid;
+  display: flex;
+  flex-direction: column;
 }
 
 .schedule-week-hour {
