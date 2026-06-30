@@ -1776,12 +1776,13 @@ const weekdayLabel = computed(() => {
   grid-template-columns: repeat(7, 1fr);
   max-height: calc(100vh - 120px);
   overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
 .schedule-week-day {
   border-right: 1px solid var(--border);
   min-width: 0;
-  overflow: hidden;
 }
 
 .schedule-week-day:last-child {
