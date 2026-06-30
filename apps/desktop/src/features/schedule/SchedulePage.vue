@@ -330,6 +330,20 @@ function lessonsBelowVisible(dayStart: number, visibleEndHour: number) {
   return calendarItems.value.filter((item) => item.startsAt >= cutoff && item.startsAt < dayEnd).length;
 }
 
+function scrollToFirstHiddenLesson(dayStart: number, visibleEndHour: number, event: MouseEvent) {
+  const cutoff = dayStart + visibleEndHour * 60 * 60 * 1000;
+  const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+  const hidden = calendarItems.value.filter((item) => item.startsAt >= cutoff && item.startsAt < dayEnd);
+  if (hidden.length === 0) return;
+  const targetHour = new Date(hidden[0].startsAt).getHours();
+  const dayCol = (event.currentTarget as HTMLElement).closest('.schedule-week-day');
+  if (!dayCol) return;
+  const hoursContainer = dayCol.querySelector('.schedule-week-hours');
+  if (!hoursContainer) return;
+  const targetEl = hoursContainer.children[targetHour] as HTMLElement;
+  if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 function openCreateCourse(timestamp?: number) {
   editingCourseId.value = null;
   pageMode.value = "courseForm";
@@ -988,7 +1002,7 @@ const weekdayLabel = computed(() => {
                     </div>
                   </div>
                 </div>
-                <div v-if="lessonsBelowVisible(day.start, 16) > 0" class="week-more-hint">
+                <div v-if="lessonsBelowVisible(day.start, 16) > 0" class="week-more-hint" @click="scrollToFirstHiddenLesson(day.start, 16, $event)">
                   ↓ 还有 {{ lessonsBelowVisible(day.start, 16) }} 节课在下方
                 </div>
               </section>
@@ -1840,9 +1854,11 @@ const weekdayLabel = computed(() => {
   background: var(--bg-elevated);
   border-top: 1px solid var(--border);
   font-size: 11px;
-  color: var(--muted);
+  color: var(--primary);
   text-align: center;
   z-index: 1;
+  cursor: pointer;
+  font-weight: 600;
 }
 
 /* 日视图 */
