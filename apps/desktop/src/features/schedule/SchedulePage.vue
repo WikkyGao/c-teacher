@@ -1758,7 +1758,6 @@ const weekdayLabel = computed(() => {
 
 .schedule-week-day {
   border-right: 1px solid var(--border);
-  overflow: hidden;
   min-width: 0;
 }
 
@@ -1788,6 +1787,7 @@ const weekdayLabel = computed(() => {
   padding: 2px;
   cursor: pointer;
   transition: background 0.15s;
+  overflow: hidden;
 }
 
 .schedule-week-hour:hover {
@@ -1801,6 +1801,9 @@ const weekdayLabel = computed(() => {
   font-size: 11px;
   cursor: pointer;
   margin-bottom: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .schedule-week-lesson:hover {
