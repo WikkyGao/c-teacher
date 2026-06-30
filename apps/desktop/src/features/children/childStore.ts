@@ -991,7 +991,7 @@ export const useChildStore = defineStore("children", () => {
     return scheduledLessons.value
       .map((lesson) => ({
         ...lesson,
-        studentName: items.value.find((child) => child.id === lesson.studentId)?.name ?? lesson.studentId,
+        studentName: lesson.studentId.startsWith("class:") ? "班级课程" : (items.value.find((child) => child.id === lesson.studentId)?.name ?? lesson.studentId),
         endsAt: lesson.startsAt + lesson.durationMinutes * 60 * 1000
       }))
       .sort((left, right) => left.startsAt - right.startsAt);
