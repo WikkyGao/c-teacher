@@ -1758,6 +1758,8 @@ const weekdayLabel = computed(() => {
 
 .schedule-week-day {
   border-right: 1px solid var(--border);
+  overflow: hidden;
+  min-width: 0;
 }
 
 .schedule-week-day:last-child {
