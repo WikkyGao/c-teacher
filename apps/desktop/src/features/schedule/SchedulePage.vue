@@ -324,6 +324,12 @@ function itemsForHour(hourTimestamp: number) {
   return calendarItems.value.filter((item) => item.startsAt >= hourTimestamp && item.startsAt < end);
 }
 
+function lessonsBelowVisible(dayStart: number, visibleEndHour: number) {
+  const cutoff = dayStart + visibleEndHour * 60 * 60 * 1000;
+  const dayEnd = dayStart + 24 * 60 * 60 * 1000;
+  return calendarItems.value.filter((item) => item.startsAt >= cutoff && item.startsAt < dayEnd).length;
+}
+
 function openCreateCourse(timestamp?: number) {
   editingCourseId.value = null;
   pageMode.value = "courseForm";
@@ -981,6 +987,9 @@ const weekdayLabel = computed(() => {
                       </template>
                     </div>
                   </div>
+                </div>
+                <div v-if="lessonsBelowVisible(day.start, 16) > 0" class="week-more-hint">
+                  ↓ 还有 {{ lessonsBelowVisible(day.start, 16) }} 节课在下方
                 </div>
               </section>
             </div>
@@ -1759,6 +1768,9 @@ const weekdayLabel = computed(() => {
 .schedule-week-day {
   border-right: 1px solid var(--border);
   min-width: 0;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  position: relative;
 }
 
 .schedule-week-day:last-child {
@@ -1819,6 +1831,18 @@ const weekdayLabel = computed(() => {
   font-size: 10px;
   color: var(--muted);
   font-style: normal;
+}
+
+.week-more-hint {
+  position: sticky;
+  bottom: 0;
+  padding: 4px 8px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  z-index: 1;
 }
 
 /* 日视图 */
