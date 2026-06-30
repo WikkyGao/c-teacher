@@ -31,6 +31,7 @@ const assignMode = ref<"child" | "group">("child");
 const hoveredGroupKey = ref<string | null>(null);
 const expandedListItems = ref<Set<string>>(new Set());
 const specificDates = ref<number[]>([]);
+const showDatePicker = ref(false);
 
 const courseForm = reactive({
   name: "",
@@ -47,7 +48,7 @@ const courseForm = reactive({
     duration: 90,
     weekday: 1
   },
-  lessons: [] as Array<{ title: string; materialIds: string[]; order: number; date: string; startTime: string; duration: number }>
+  lessons: [] as Array<{ id: string; title: string; materialIds: string[]; order: number; date: string; startTime: string; duration: number }>
 });
 
 type GroupedLessonItem = {
@@ -136,8 +137,14 @@ function isCourseExpanded(courseId: string) {
 }
 
 function getCourseLessons(courseId: string) {
+  const course = workspace.courses.find((c) => c.id === courseId);
+  const isClassScope = course && course.scope !== "personal";
   return workspace.scheduledLessons
-    .filter((l) => l.courseId === courseId)
+    .filter((l) => {
+      if (l.courseId !== courseId) return false;
+      if (isClassScope) return l.studentId.startsWith("class:");
+      return !l.studentId.startsWith("class:");
+    })
     .sort((a, b) => a.startsAt - b.startsAt);
 }
 
@@ -347,7 +354,8 @@ function openCreateCourse(timestamp?: number) {
     order: i,
     date: baseDate,
     startTime: courseForm.schedule.startTime,
-    duration: courseForm.schedule.duration
+    duration: courseForm.schedule.duration,
+    id: `lesson-${Date.now()}-${i}`
   }));
 }
 
@@ -372,6 +380,7 @@ function editCourse(courseId: string) {
   courseForm.schedule.duration = course.schedule.duration;
   courseForm.schedule.weekday = course.schedule.weekday ?? new Date(course.schedule.startDate).getDay();
   courseForm.lessons = course.lessons.map((l, i) => ({
+    id: l.id || `lesson-${Date.now()}-${i}`,
     title: l.title,
     materialIds: [...l.materialIds],
     order: l.order ?? i,
@@ -408,6 +417,7 @@ function saveCourse() {
     subject: courseForm.subject,
     totalLessons: courseForm.totalLessons,
     lessons: courseForm.lessons.map((l, i) => ({
+      id: l.id,
       title: l.title || `第${i + 1}课`,
       materialIds: l.materialIds,
       order: i,
@@ -431,7 +441,13 @@ function saveCourse() {
   if (editingCourseId.value) {
     workspace.updateCourse(editingCourseId.value, courseData);
     const oldStudents = workspace.getCourseStudents(editingCourseId.value).map((s) => s.id);
-    const newStudents = courseForm.scope === "personal" && courseForm.studentId ? [courseForm.studentId] : [];
+    let newStudents: string[] = [];
+    if (courseForm.scope === "personal" && courseForm.studentId) {
+      newStudents = [courseForm.studentId];
+    } else if (courseForm.groupId) {
+      const group = workspace.groups.find((g) => g.id === courseForm.groupId);
+      if (group) newStudents = [...group.memberIds];
+    }
     for (const sid of oldStudents) {
       if (!newStudents.includes(sid)) {
         workspace.unassignCourseFromStudent(editingCourseId.value, sid);
@@ -478,6 +494,7 @@ function addLesson() {
   const index = courseForm.lessons.length;
   const lastDate = courseForm.lessons.length > 0 ? courseForm.lessons[courseForm.lessons.length - 1].date : courseForm.schedule.dates[0] || courseForm.schedule.startDate;
   courseForm.lessons.push({
+    id: `lesson-${Date.now()}-${index}`,
     title: `第${index + 1}课`,
     materialIds: [],
     order: index,
@@ -494,20 +511,76 @@ function removeLesson(index: number) {
   courseForm.totalLessons = courseForm.lessons.length;
 }
 
-function moveLessonUp(index: number) {
-  if (index <= 0) return;
-  const temp = courseForm.lessons[index];
-  courseForm.lessons[index] = courseForm.lessons[index - 1];
-  courseForm.lessons[index - 1] = temp;
-  courseForm.lessons.forEach((l, i) => { l.order = i; });
+const dragIndex = ref<number | null>(null);
+const dragOverIndex = ref<number | null>(null);
+const dragOverPosition = ref<"top" | "bottom">("bottom");
+const isDragging = ref(false);
+const dragStartY = ref(0);
+const dragClone = ref<HTMLElement | null>(null);
+
+function onDragStart(index: number, event: MouseEvent) {
+  dragIndex.value = index;
+  isDragging.value = true;
+  dragStartY.value = event.clientY;
+
+  const el = (event.currentTarget as HTMLElement).closest('.lesson-item') as HTMLElement;
+  if (!el) return;
+  const clone = el.cloneNode(true) as HTMLElement;
+  clone.classList.add('drag-clone');
+  clone.style.position = 'fixed';
+  clone.style.width = el.offsetWidth + 'px';
+  clone.style.zIndex = '9999';
+  clone.style.pointerEvents = 'none';
+  clone.style.opacity = '0.85';
+  clone.style.transform = 'rotate(2deg)';
+  document.body.appendChild(clone);
+  dragClone.value = clone;
+
+  document.addEventListener('mousemove', onDragMove);
+  document.addEventListener('mouseup', onDragMouseUp);
 }
 
-function moveLessonDown(index: number) {
-  if (index >= courseForm.lessons.length - 1) return;
-  const temp = courseForm.lessons[index];
-  courseForm.lessons[index] = courseForm.lessons[index + 1];
-  courseForm.lessons[index + 1] = temp;
-  courseForm.lessons.forEach((l, i) => { l.order = i; });
+function onDragMove(event: MouseEvent) {
+  if (!isDragging.value || !dragClone.value) return;
+  dragClone.value.style.left = (event.clientX - 20) + 'px';
+  dragClone.value.style.top = (event.clientY - 15) + 'px';
+
+  const items = document.querySelectorAll('.lesson-item');
+  let bestIdx: number | null = null;
+  let bestDist = Infinity;
+  items.forEach((item, idx) => {
+    if (idx === dragIndex.value) return;
+    const rect = item.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const dist = Math.abs(event.clientY - midY);
+    if (event.clientY >= rect.top - 10 && event.clientY <= rect.bottom + 10 && dist < bestDist) {
+      bestDist = dist;
+      bestIdx = idx;
+      dragOverPosition.value = event.clientY < midY ? 'top' : 'bottom';
+    }
+  });
+  dragOverIndex.value = bestIdx;
+}
+
+function onDragMouseUp() {
+  document.removeEventListener('mousemove', onDragMove);
+  document.removeEventListener('mouseup', onDragMouseUp);
+  if (dragClone.value) {
+    dragClone.value.remove();
+    dragClone.value = null;
+  }
+  if (dragIndex.value !== null && dragOverIndex.value !== null && dragIndex.value !== dragOverIndex.value) {
+    const from = dragIndex.value;
+    let to = dragOverIndex.value;
+    if (dragOverPosition.value === 'bottom' && from < to) to++;
+    if (dragOverPosition.value === 'top' && from > to) to--;
+    const item = courseForm.lessons.splice(from, 1)[0];
+    courseForm.lessons.splice(to, 0, item);
+    courseForm.lessons.forEach((l, i) => { l.order = i; });
+  }
+  dragIndex.value = null;
+  dragOverIndex.value = null;
+  isDragging.value = false;
 }
 
 function updateLessonCount() {
@@ -516,6 +589,7 @@ function updateLessonCount() {
     const i = courseForm.lessons.length;
     const lastDate = courseForm.lessons.length > 0 ? courseForm.lessons[courseForm.lessons.length - 1].date : courseForm.schedule.dates[0] || courseForm.schedule.startDate;
     courseForm.lessons.push({
+      id: `lesson-${Date.now()}-${i}`,
       title: `第${i + 1}课`,
       materialIds: [],
       order: i,
@@ -576,15 +650,30 @@ function syncCoursesToSchedule() {
       skipped++;
       continue;
     }
-    if (course.scope !== "personal") {
-      skipped++;
-      continue;
+    
+    let courseStudentsList = workspace.getCourseStudents(course.id);
+    
+    if (courseStudentsList.length === 0 && course.scope !== "personal" && course.groupId) {
+      const group = workspace.groups.find((g) => g.id === course.groupId);
+      if (group && group.memberIds.length === 0) {
+        for (const child of workspace.items) {
+          workspace.addStudentToGroup(course.groupId, child.id);
+          workspace.assignCourseToStudent(course.id, child.id);
+        }
+        courseStudentsList = workspace.getCourseStudents(course.id);
+      } else if (group && group.memberIds.length > 0) {
+        for (const sid of group.memberIds) {
+          workspace.assignCourseToStudent(course.id, sid);
+        }
+        courseStudentsList = workspace.getCourseStudents(course.id);
+      }
     }
     
-    const courseStudentsList = workspace.getCourseStudents(course.id);
+    const isClassScope = course.scope !== "personal";
     
-    for (const student of courseStudentsList) {
-      validCourseKeys.add(`${student.id}:${course.subject}`);
+    if (isClassScope) {
+      const dummyStudentId = `class:${course.id}`;
+      validCourseKeys.add(`${dummyStudentId}:${course.subject}`);
       
       for (let i = 0; i < course.totalLessons; i++) {
         let lessonDate: Date;
@@ -619,14 +708,14 @@ function syncCoursesToSchedule() {
         const startsAt = lessonDate.getTime();
         
         const exists = workspace.scheduledLessons.some(
-          (l) => l.courseId === course.id && l.studentId === student.id && l.lessonIndex === i
+          (l) => l.courseId === course.id && l.studentId === dummyStudentId && l.lessonIndex === i
         );
         
         if (!exists) {
           workspace.createScheduledLesson({
             courseId: course.id,
             lessonIndex: i,
-            studentId: student.id,
+            studentId: dummyStudentId,
             subject: course.subject,
             startsAt,
             durationMinutes: lessonDuration,
@@ -636,12 +725,70 @@ function syncCoursesToSchedule() {
           created++;
         }
       }
+    } else {
+      for (const student of courseStudentsList) {
+        validCourseKeys.add(`${student.id}:${course.subject}`);
+        
+        for (let i = 0; i < course.totalLessons; i++) {
+          let lessonDate: Date;
+          let lessonTimeStr = course.schedule.startTime;
+          let lessonDuration = course.schedule.duration || 90;
+          
+          if (course.lessons[i]?.date) {
+            lessonDate = new Date(course.lessons[i].date!);
+          } else if (course.scheduleMode === "specific" && course.schedule.dates && course.schedule.dates.length > 0) {
+            if (i >= course.schedule.dates.length) break;
+            lessonDate = new Date(course.schedule.dates[i]);
+          } else {
+            lessonDate = new Date(course.schedule.startDate);
+            if (course.scheduleMode === "weekly") {
+              lessonDate.setDate(lessonDate.getDate() + i * 7);
+            } else if (course.scheduleMode === "biweekly") {
+              lessonDate.setDate(lessonDate.getDate() + i * 14);
+            } else {
+              lessonDate.setDate(lessonDate.getDate() + i * 7);
+            }
+          }
+          
+          if (course.lessons[i]?.startTime) {
+            lessonTimeStr = course.lessons[i].startTime!;
+          }
+          if (course.lessons[i]?.duration) {
+            lessonDuration = course.lessons[i].duration!;
+          }
+          
+          const [hours, minutes] = lessonTimeStr.split(":").map(Number);
+          lessonDate.setHours(hours, minutes || 0, 0, 0);
+          const startsAt = lessonDate.getTime();
+          
+          const exists = workspace.scheduledLessons.some(
+            (l) => l.courseId === course.id && l.studentId === student.id && l.lessonIndex === i
+          );
+          
+          if (!exists) {
+            workspace.createScheduledLesson({
+              courseId: course.id,
+              lessonIndex: i,
+              studentId: student.id,
+              subject: course.subject,
+              startsAt,
+              durationMinutes: lessonDuration,
+              topic: course.lessons[i]?.title ?? `第${i + 1}课`,
+              note: ""
+            });
+            created++;
+          }
+        }
+      }
     }
   }
   
   const toDelete = workspace.scheduledLessons.filter((lesson) => {
     const key = `${lesson.studentId}:${lesson.subject}`;
-    return !validCourseKeys.has(key);
+    if (!validCourseKeys.has(key)) return true;
+    const lc = workspace.courses.find((c) => c.id === lesson.courseId);
+    if (lc && lc.scope !== "personal" && !lesson.studentId.startsWith("class:")) return true;
+    return false;
   });
   
   for (const lesson of toDelete) {
@@ -667,6 +814,20 @@ function onStartDateChange(dateStr: string) {
   if (!dateStr) return;
   courseForm.schedule.weekday = new Date(dateStr).getDay();
   courseForm.schedule.dates = [dateStr];
+}
+
+function onSpecificDatePick(ts: number | null) {
+  if (!ts) return;
+  const d = new Date(ts);
+  const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  if (!courseForm.schedule.dates.includes(dateStr)) {
+    courseForm.schedule.dates.push(dateStr);
+    courseForm.schedule.dates.sort();
+  }
+}
+
+function removeDate(index: number) {
+  courseForm.schedule.dates.splice(index, 1);
 }
 
 watch(() => specificDates.value, (val) => {
@@ -880,6 +1041,7 @@ const weekdayLabel = computed(() => {
               v-for="course in filteredCourses"
               :key="course.id"
               class="course-card"
+              :style="course.groupId ? { borderLeftColor: workspace.groups.find(g => g.id === course.groupId)?.color || 'var(--border)' } : {}"
             >
               <!-- 课程头部 -->
               <div class="course-card-header" @click="toggleCourseExpand(course.id)">
@@ -921,7 +1083,7 @@ const weekdayLabel = computed(() => {
                       <span class="lesson-title">{{ lesson.topic || '第' + (lesson.lessonIndex + 1) + '课' }}</span>
                       <span class="lesson-date">{{ formatListDate(lesson.startsAt) }}</span>
                       <span class="lesson-time">{{ formatListTime(lesson.startsAt) }}</span>
-                      <span class="lesson-student">{{ workspace.items.find(s => s.id === lesson.studentId)?.name ?? lesson.studentId }}</span>
+                      <span class="lesson-student">{{ lesson.studentId.startsWith('class:') ? '班级课程' : (workspace.items.find(s => s.id === lesson.studentId)?.name ?? lesson.studentId) }}</span>
                     </div>
                   </div>
                 </div>
@@ -940,19 +1102,20 @@ const weekdayLabel = computed(() => {
 
     <!-- ====== 新建/编辑课程表单 ====== -->
     <template v-else>
-      <div class="page-top sticky-top">
-        <div class="page-top-row">
-          <div>
-            <h1 class="page-title">{{ editingCourseId ? "编辑课程" : "新建课程" }}</h1>
-            <p class="page-subtitle">设置课程信息、时间安排和课时内容。</p>
+      <div class="schedule-form-wrapper">
+        <div class="page-top schedule-form-header">
+          <div class="page-top-row">
+            <div>
+              <h1 class="page-title">{{ editingCourseId ? "编辑课程" : "新建课程" }}</h1>
+              <p class="page-subtitle">设置课程信息、时间安排和课时内容。</p>
+            </div>
+            <n-button secondary @click="goBack">
+              <template #icon><ArrowLeft :size="16" /></template>
+              返回课程表
+            </n-button>
           </div>
-          <n-button secondary @click="goBack">
-            <template #icon><ArrowLeft :size="16" /></template>
-            返回课程表
-          </n-button>
         </div>
-      </div>
-      <section class="side-panel schedule-form-page">
+        <section class="schedule-form-body">
         <div class="form-grid">
           <!-- 左列：基本信息 -->
           <div class="form-column">
@@ -988,11 +1151,20 @@ const weekdayLabel = computed(() => {
                 <n-select v-model:value="courseForm.scheduleMode" :options="scheduleModeOptions" />
               </n-form-item>
               <n-form-item v-if="courseForm.scheduleMode === 'specific'" label="上课日期（可多选）">
-                <n-date-picker
-                  v-model:value="specificDates"
-                  type="dates"
-                  style="width: 100%;"
-                />
+                <div class="specific-dates-wrapper">
+                  <div class="selected-dates" v-if="courseForm.schedule.dates.length > 0">
+                    <n-tag v-for="(d, i) in courseForm.schedule.dates" :key="d" closable size="small" @close="removeDate(i)">
+                      {{ d }}
+                    </n-tag>
+                  </div>
+                  <n-date-picker
+                    v-model:value="specificDates"
+                    type="date"
+                    teleport="body"
+                    style="width: 100%;"
+                    :on-update:value="onSpecificDatePick"
+                  />
+                </div>
               </n-form-item>
               <template v-else>
                 <n-form-item label="开始日期">
@@ -1000,6 +1172,7 @@ const weekdayLabel = computed(() => {
                     v-model:formatted-value="courseForm.schedule.startDate"
                     type="date"
                     value-format="yyyy-MM-dd"
+                    teleport="body"
                     style="width: 100%;"
                     :on-update:formatted-value="onStartDateChange"
                   />
@@ -1040,14 +1213,14 @@ const weekdayLabel = computed(() => {
             <span class="lesson-col-actions">操作</span>
           </div>
           <div class="lessons-list">
-            <div v-for="(lesson, index) in courseForm.lessons" :key="index" class="lesson-item">
-              <div class="lesson-drag-handle">
-                <button type="button" class="drag-btn" :disabled="index === 0" @click="moveLessonUp(index)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M18 15l-6-6-6 6"/></svg>
-                </button>
-                <button type="button" class="drag-btn" :disabled="index === courseForm.lessons.length - 1" @click="moveLessonDown(index)">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M6 9l6 6 6-6"/></svg>
-                </button>
+            <div
+              v-for="(lesson, index) in courseForm.lessons"
+              :key="lesson.id"
+              class="lesson-item"
+              :class="{ 'drag-over-top': dragOverIndex === index && dragOverPosition === 'top', 'drag-over-bottom': dragOverIndex === index && dragOverPosition === 'bottom', 'dragging': dragIndex === index }"
+            >
+              <div class="lesson-drag-handle" @mousedown="onDragStart(index, $event)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/></svg>
               </div>
               <span class="lesson-index">{{ index + 1 }}</span>
               <n-input
@@ -1061,6 +1234,7 @@ const weekdayLabel = computed(() => {
                   v-model:formatted-value="lesson.date"
                   type="date"
                   value-format="yyyy-MM-dd"
+                  teleport="body"
                   size="small"
                   style="width: 100%;"
                 />
@@ -1121,6 +1295,7 @@ const weekdayLabel = computed(() => {
           </n-popconfirm>
         </div>
       </section>
+      </div>
     </template>
   </div>
 </template>
@@ -1131,7 +1306,7 @@ const weekdayLabel = computed(() => {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: var(--bg);
+  background: var(--body-bg);
   padding-bottom: 8px;
 }
 
@@ -1151,6 +1326,7 @@ const weekdayLabel = computed(() => {
 .calendar-toolbar.toolbar-hidden {
   visibility: hidden;
   pointer-events: none;
+  border-color: transparent;
 }
 
 .view-switch {
@@ -1249,6 +1425,7 @@ const weekdayLabel = computed(() => {
 
 .course-card {
   border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--panel);
   overflow: hidden;
@@ -1395,7 +1572,7 @@ const weekdayLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
   transition: background 0.15s;
@@ -1696,10 +1873,25 @@ const weekdayLabel = computed(() => {
 }
 
 /* 表单页 */
-.schedule-form-page {
+.schedule-form-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.schedule-form-header {
+  flex-shrink: 0;
+  background: var(--body-bg);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.schedule-form-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 24px;
-  display: block !important;
-  gap: 0 !important;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -1724,7 +1916,9 @@ const weekdayLabel = computed(() => {
   font-weight: 700;
   color: var(--text);
   padding-bottom: 8px;
+  padding-left: 10px;
   border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
 }
 
 .lessons-section {
@@ -1757,7 +1951,7 @@ const weekdayLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 6px 12px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   transition: background 0.15s;
@@ -1771,19 +1965,48 @@ const weekdayLabel = computed(() => {
   background: var(--bg-elevated);
 }
 
-.lesson-col-handle { width: 40px; }
+.lesson-col-handle { width: 24px; }
 .lesson-col-index { width: 32px; text-align: center; }
 .lesson-col-title { flex: 1; }
-.lesson-col-date { width: 130px; }
-.lesson-col-time { width: 110px; }
-.lesson-col-duration { width: 100px; }
-.lesson-col-materials { width: 160px; }
+.lesson-col-date { width: 120px; }
+.lesson-col-time { width: 100px; }
+.lesson-col-duration { width: 90px; }
+.lesson-col-materials { width: 150px; }
 .lesson-col-actions { width: 50px; text-align: center; }
 
 .lesson-drag-handle {
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  cursor: grab;
+  color: var(--muted);
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.lesson-drag-handle:hover {
+  color: var(--primary);
+}
+
+.lesson-item.dragging {
+  opacity: 0.4;
+  background: var(--surface-soft);
+}
+
+.lesson-item.drag-over-top {
+  border-top: 2px solid var(--primary);
+}
+
+.lesson-item.drag-over-bottom {
+  border-bottom: 2px solid var(--primary);
+}
+
+.drag-clone {
+  background: var(--panel-solid);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
 }
 
 .drag-btn {
@@ -1803,6 +2026,7 @@ const weekdayLabel = computed(() => {
 .drag-btn:hover:not(:disabled) {
   background: var(--primary-soft);
   color: var(--primary);
+  transform: scale(1.1);
 }
 
 .drag-btn:disabled {
@@ -1824,11 +2048,11 @@ const weekdayLabel = computed(() => {
 }
 
 .lesson-date-cell {
-  width: 130px;
+  width: 120px;
 }
 
 .lesson-time-cell {
-  width: 110px;
+  width: 100px;
 }
 
 .lesson-duration-cell {
@@ -1867,5 +2091,15 @@ const weekdayLabel = computed(() => {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>

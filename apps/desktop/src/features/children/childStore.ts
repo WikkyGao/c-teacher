@@ -4,6 +4,7 @@ import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 
 export type CourseLesson = {
+  id?: string;
   title: string;
   materialIds: string[];
   order: number;
@@ -770,7 +771,10 @@ function normalizeCourse(course: Course): Course {
   const lessons = (course.lessons ?? Array.from({ length: totalLessons }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [] as string[], order: i }))).map((l, i) => ({
     title: l.title || `第${i + 1}课`,
     materialIds: l.materialIds ?? [],
-    order: l.order ?? i
+    order: l.order ?? i,
+    date: l.date,
+    startTime: l.startTime,
+    duration: l.duration
   }));
   return {
     id: course.id || createId("course"),
