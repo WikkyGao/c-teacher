@@ -1752,12 +1752,12 @@ const weekdayLabel = computed(() => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   min-height: 400px;
-  overflow: hidden;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .schedule-week-day {
   border-right: 1px solid var(--border);
-  overflow: hidden;
 }
 
 .schedule-week-day:last-child {
