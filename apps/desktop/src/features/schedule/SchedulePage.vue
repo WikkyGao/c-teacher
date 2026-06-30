@@ -1774,7 +1774,6 @@ const weekdayLabel = computed(() => {
 .schedule-week-list {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  min-height: 400px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
 }
@@ -1782,9 +1781,6 @@ const weekdayLabel = computed(() => {
 .schedule-week-day {
   border-right: 1px solid var(--border);
   min-width: 0;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
-  position: relative;
 }
 
 .schedule-week-day:last-child {
@@ -1848,15 +1844,12 @@ const weekdayLabel = computed(() => {
 }
 
 .week-more-hint {
-  position: sticky;
-  bottom: 0;
   padding: 4px 8px;
   background: var(--bg-elevated);
   border-top: 1px solid var(--border);
   font-size: 11px;
   color: var(--primary);
   text-align: center;
-  z-index: 1;
   cursor: pointer;
   font-weight: 600;
 }
