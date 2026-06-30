@@ -228,6 +228,11 @@ const calendarItems = computed<CalendarLessonItem[]>(() => {
     if (coveredLessons.has(lesson.id)) continue;
     
     const studentGroups = workspace.groups.filter((g) => {
+      if (lesson.studentId.startsWith("class:")) {
+        const courseId = lesson.studentId.slice(6);
+        const course = workspace.courses.find((c) => c.id === courseId);
+        return course?.groupId === g.id;
+      }
       if (!g.memberIds.includes(lesson.studentId)) return false;
       if (g.type === "subject" && g.subjects.length > 0) {
         return g.subjects.includes(lesson.subject);
@@ -1747,10 +1752,12 @@ const weekdayLabel = computed(() => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   min-height: 400px;
+  overflow: hidden;
 }
 
 .schedule-week-day {
   border-right: 1px solid var(--border);
+  overflow: hidden;
 }
 
 .schedule-week-day:last-child {
