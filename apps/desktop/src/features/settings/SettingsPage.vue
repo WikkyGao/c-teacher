@@ -2,7 +2,7 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import { Download, ExternalLink, LogOut, Pencil, Plus, Upload } from "lucide-vue-next";
+import { ArrowLeft, Download, ExternalLink, LogOut, Pencil, Plus, Upload } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "../backup/workspaceBackup";
@@ -14,11 +14,14 @@ import { testProviderConnection } from "../ai/aiClient";
 import { fetchProviderModels, mergeFetchedModels } from "./aiModelCatalog";
 import { checkForUpdates, updateState, setDismissedVersion } from "../updater/versionCheck";
 import type { UserRole } from "../auth/authSession";
+import { childLabel } from "../../shared/utils/childLabel";
 
-defineProps<{
+const props = defineProps<{
   teacherName?: string;
   userRole?: UserRole;
 }>();
+
+const cl = computed(() => childLabel(props.userRole));
 
 const emit = defineEmits<{
   navigate: [value: "mobile" | "backup"];
@@ -430,7 +433,7 @@ function confirmRestore() {
   const { confirmAction } = useConfirmDelete();
   confirmAction({
     title: "恢复数据",
-    content: "导入备份将覆盖当前所有数据，包括小孩、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？",
+    content: `导入备份将覆盖当前所有数据，包括${cl.value}、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？`,
     positiveText: "确认导入",
     onOk: async () => {
       isRestoring.value = true;
@@ -479,7 +482,10 @@ function dismissVersion() {
         <p class="page-subtitle">管理 AI 供应商、大模型和应用皮肤。配置保存在本机工作区。</p>
       </div>
       <n-space align="center">
-        <n-button v-if="settingsPanel === 'diagnostics'" secondary @click="settingsPanel = 'main'">返回设置</n-button>
+        <n-button v-if="settingsPanel === 'diagnostics'" secondary @click="settingsPanel = 'main'">
+          <template #icon><ArrowLeft :size="14" /></template>
+          返回设置
+        </n-button>
       </n-space>
     </div>
 
@@ -768,12 +774,10 @@ function dismissVersion() {
           </n-form-item>
         </n-form>
         <template #footer>
-          <n-space justify="space-between">
+          <n-space justify="end">
             <n-button size="small" secondary @click="restoreDefaultPrompt">恢复默认</n-button>
-            <n-space>
-              <n-button @click="showMistakePromptModal = false">取消</n-button>
-              <n-button type="primary" @click="saveAndCloseMistakePrompt">保存</n-button>
-            </n-space>
+            <n-button @click="showMistakePromptModal = false">取消</n-button>
+            <n-button type="primary" @click="saveAndCloseMistakePrompt">保存</n-button>
           </n-space>
         </template>
       </n-modal>
@@ -791,12 +795,10 @@ function dismissVersion() {
           </n-form-item>
         </n-form>
         <template #footer>
-          <n-space justify="space-between">
+          <n-space justify="end">
             <n-button size="small" secondary @click="restoreDefaultSimilarQuestionsPrompt">恢复默认</n-button>
-            <n-space>
-              <n-button @click="showSimilarPromptModal = false">取消</n-button>
-              <n-button type="primary" @click="saveAndCloseSimilarPrompt">保存</n-button>
-            </n-space>
+            <n-button @click="showSimilarPromptModal = false">取消</n-button>
+            <n-button type="primary" @click="saveAndCloseSimilarPrompt">保存</n-button>
           </n-space>
         </template>
       </n-modal>

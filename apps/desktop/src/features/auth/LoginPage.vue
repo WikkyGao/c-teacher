@@ -15,7 +15,7 @@ const form = reactive({
 });
 
 const roleOptions = [
-  { label: "教师", value: "teacher" as UserRole, desc: "管理小孩、备课、批改、查看全部数据" },
+  { label: "教师", value: "teacher" as UserRole, desc: "管理学生、备课、批改、查看全部数据" },
   { label: "家长", value: "parent" as UserRole, desc: "只读查看孩子学习进度、错题、报告" }
 ];
 

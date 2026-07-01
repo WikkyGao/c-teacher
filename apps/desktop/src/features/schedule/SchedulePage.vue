@@ -5,6 +5,7 @@ import { computed, nextTick, reactive, ref, watch } from "vue";
 import type { ScheduledLesson } from "../children/childStore";
 import { useChildStore, K12_MISTAKE_BOOK_SUBJECTS } from "../children/childStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
+import { childLabel } from "../../shared/utils/childLabel";
 import {
   addDays,
   buildMonthCells,
@@ -17,6 +18,8 @@ import {
 } from "./scheduleCalendar";
 
 const props = defineProps({ userRole: String });
+
+const cl = computed(() => childLabel(props.userRole as any));
 
 const workspace = useChildStore();
 const message = useMessage();
@@ -425,7 +428,7 @@ function saveCourse() {
     return;
   }
   if (courseForm.scope === "personal" && !courseForm.studentId) {
-    message.warning("请选择一个小孩");
+    message.warning(`请选择一个${cl.value}`);
     return;
   }
   if (courseForm.scope !== "personal" && !courseForm.groupId) {
@@ -1100,7 +1103,7 @@ const weekdayLabel = computed(() => {
                       <span class="lesson-col-title">标题</span>
                       <span class="lesson-col-date">日期</span>
                       <span class="lesson-col-time">时间</span>
-                      <span class="lesson-col-student">学生</span>
+                      <span class="lesson-col-student">{{ cl }}</span>
                     </div>
                     <div
                       v-for="(lesson, li) in getCourseLessons(course.id)"
@@ -1161,8 +1164,8 @@ const weekdayLabel = computed(() => {
                   <n-radio value="class">班级/小组</n-radio>
                 </n-radio-group>
               </n-form-item>
-              <n-form-item v-if="courseForm.scope === 'personal'" label="关联小孩">
-                <n-select v-model:value="courseForm.studentId" :options="childOptions" placeholder="选择小孩" clearable />
+              <n-form-item v-if="courseForm.scope === 'personal'" :label="`关联${cl}`">
+                <n-select v-model:value="courseForm.studentId" :options="childOptions" :placeholder="`选择${cl}`" clearable />
               </n-form-item>
               <n-form-item v-else label="关联班级/小组">
                 <n-select v-model:value="courseForm.groupId" :options="groupOptions" placeholder="选择班级或小组" />

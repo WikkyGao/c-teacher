@@ -6,6 +6,11 @@ import { Download, RefreshCw, Upload } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import { useChildStore } from "../children/childStore";
+import { childLabel } from "../../shared/utils/childLabel";
+import type { UserRole } from "../auth/authSession";
+
+const props = defineProps<{ userRole?: UserRole }>();
+const cl = computed(() => childLabel(props.userRole));
 
 type EntityCounts = {
   students: number;
@@ -22,7 +27,7 @@ const isBackupBusy = ref(false);
 const errorMessage = ref("");
 const counts = ref<EntityCounts | null>(null);
 const countRows = computed(() => [
-  { label: "小孩", value: counts.value?.students ?? 0, local: workspace.items.length },
+  { label: cl.value, value: counts.value?.students ?? 0, local: workspace.items.length },
   { label: "资料", value: counts.value?.materials ?? 0, local: workspace.materials.length },
   { label: "资料源", value: counts.value?.materialSources ?? 0, local: workspace.materialSources.length },
   { label: "课堂记录", value: counts.value?.classRecords ?? 0, local: workspace.classRecords.length },

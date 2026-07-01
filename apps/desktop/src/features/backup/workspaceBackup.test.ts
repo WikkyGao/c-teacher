@@ -13,7 +13,6 @@ function sampleState(): CompletePersistedState {
         gender: "female",
         goal: "提分",
         style: "讲练结合",
-        courses: [{ subject: "数学", currentLesson: 1, totalLessons: 10, progress: 10 }],
         materials: [],
         mistakeBook: {
           summary: "错题本",
@@ -33,6 +32,8 @@ function sampleState(): CompletePersistedState {
     scheduledLessons: [
       {
         id: "lesson-a",
+        courseId: "course-a",
+        lessonIndex: 0,
         studentId: "student-a",
         subject: "数学",
         startsAt: 1780912800000,
@@ -63,7 +64,28 @@ function sampleState(): CompletePersistedState {
       mistakeAnalysisPrompt: "你是一位严谨的教学辅导老师。",
       similarQuestionsPrompt: "你是一位出题专家。"
     },
-    groups: []
+    groups: [],
+    courses: [
+      {
+        id: "course-a",
+        name: "数学基础课",
+        subject: "数学",
+        totalLessons: 20,
+        lessons: [],
+        scope: "personal" as const,
+        studentIds: [],
+        scheduleMode: "weekly" as const,
+        schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
+      }
+    ],
+    courseStudents: [
+      {
+        courseId: "course-a",
+        studentId: "student-a",
+        currentLesson: 5,
+        progress: 25
+      }
+    ]
   };
 }
 

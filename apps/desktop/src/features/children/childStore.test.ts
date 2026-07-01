@@ -62,7 +62,7 @@ describe("childStore", () => {
             name: "缓存小孩",
             goal: "缓存目标",
             style: "缓存风格",
-            courses: [{ subject: "数学", currentLesson: 1, totalLessons: 10, progress: 10 }],
+            courses: [], // old field removed
             materials: [],
             mistakeBook: {
               summary: "错题本 · 数学 1 题",
@@ -96,7 +96,6 @@ describe("childStore", () => {
       name: "新小孩",
       goal: "完成入门课",
       style: "高频反馈",
-      courses: [{ subject: "数学", currentLesson: 1, totalLessons: 8, progress: 12 }],
       materials: ["入门讲义"]
     });
 
@@ -107,12 +106,10 @@ describe("childStore", () => {
       name: "新小孩 A",
       goal: "完成基础课",
       style: "慢速讲解",
-      courses: [{ subject: "英语", currentLesson: 2, totalLessons: 10, progress: 20 }],
       materials: ["阅读卡片"]
     });
 
     expect(store.activeChild.name).toBe("新小孩 A");
-    expect(store.activeChild.courses[0].subject).toBe("英语");
 
     expect(store.deleteStudent(store.activeChild.id)).toBe(true);
     expect(store.items.some((student) => student.name === "新小孩 A")).toBe(false);
@@ -128,7 +125,8 @@ describe("childStore", () => {
       tags: ["函数"],
       assignedStudentIds: [studentId],
       sourceType: "smb",
-      sourcePath: "smb://nas/materials"
+      sourcePath: "smb://nas/materials",
+      shareable: false
     });
     store.createClassRecord({
       studentId,
@@ -231,18 +229,21 @@ describe("childStore", () => {
     const store = useChildStore();
     const studentId = store.activeChild.id;
 
-    expect(
-      store.updateStudentCourse(studentId, "数学", {
-        subject: "数学",
-        currentLesson: 9,
-        totalLessons: 16,
-        progress: 80
-      })
-    ).toBe(true);
+    store.createStudentCourse(studentId, {
+      id: "",
+      name: "数学课",
+      subject: "数学",
+      totalLessons: 16,
+      scope: "personal" as const,
+      lessons: Array.from({ length: 16 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+      studentIds: [],
+      scheduleMode: "weekly" as const,
+      schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
+    });
 
-    expect(store.activeChild.courses.find((course) => course.subject === "数学")?.currentLesson).toBe(9);
-    expect(store.activeChild.courses.find((course) => course.subject === "数学")?.progress).toBe(56);
-    expect(store.updateStudentCourse(studentId, "不存在", { subject: "物理", currentLesson: 1, totalLessons: 8, progress: 12 })).toBe(false);
+    expect(store.getStudentCourses(studentId).find((course) => course.subject === "数学")?.currentLesson).toBe(0);
+    expect(store.getStudentCourses(studentId).find((course) => course.subject === "数学")?.progress).toBe(0);
+    expect(store.updateStudentCourse(studentId, "不存在", { id: "", name: "物理课", subject: "物理", totalLessons: 8, scope: "personal" as const, lessons: Array.from({ length: 8 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })), studentIds: [], scheduleMode: "weekly" as const, schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 } })).toBe(false);
   });
 
   it("calculates course progress from completed and total lessons", () => {
@@ -251,19 +252,24 @@ describe("childStore", () => {
 
     expect(
       store.createStudentCourse(studentId, {
+        id: "",
+        name: "化学课",
         subject: "化学",
-        currentLesson: 3,
         totalLessons: 12,
-        progress: 99
+        scope: "personal" as const,
+        lessons: Array.from({ length: 12 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+        studentIds: [],
+        scheduleMode: "weekly" as const,
+        schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
       })
     ).toBe(true);
 
-    const course = store.activeChild.courses.find((item) => item.subject === "化学");
+    const course = store.getStudentCourses(studentId).find((item) => item.subject === "化学");
 
     expect(course).toMatchObject({
-      currentLesson: 3,
+      currentLesson: 0,
       totalLessons: 12,
-      progress: 25
+      progress: 0
     });
   });
 
@@ -271,15 +277,21 @@ describe("childStore", () => {
     const store = useChildStore();
     const studentId = store.activeChild.id;
 
-    store.updateStudentCourse(studentId, "数学", {
+    store.createStudentCourse(studentId, {
+      id: "",
+      name: "数学课",
       subject: "数学",
-      currentLesson: 15,
       totalLessons: 16,
-      progress: 1
+      lessons: Array.from({ length: 16 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+      scope: "personal" as const,
+      studentIds: [],
+      scheduleMode: "weekly" as const,
+      schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
     });
 
     expect(store.checkInStudentCourse(studentId, "数学")).toBe(true);
-    expect(store.activeChild.courses.find((course) => course.subject === "数学")).toMatchObject({
+    for (let i = 1; i < 16; i++) store.checkInStudentCourse(studentId, "数学");
+    expect(store.getStudentCourses(studentId).find((course) => course.subject === "数学")).toMatchObject({
       currentLesson: 16,
       totalLessons: 16,
       progress: 100
@@ -292,15 +304,36 @@ describe("childStore", () => {
     const store = useChildStore();
     const studentId = store.activeChild.id;
 
-    store.updateStudentCourse(studentId, "数学", {
+    store.createStudentCourse(studentId, {
+      id: "",
+      name: "数学课",
       subject: "数学",
-      currentLesson: 1,
       totalLessons: 10,
-      progress: 99
+      scope: "personal" as const,
+      lessons: Array.from({ length: 10 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+      studentIds: [],
+      scheduleMode: "weekly" as const,
+      schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
     });
 
+    store.checkInStudentCourse(studentId, "数学");
+    store.checkInStudentCourse(studentId, "数学");
+    store.checkInStudentCourse(studentId, "数学");
+
     expect(store.undoChildCourseCheckIn(studentId, "数学")).toBe(true);
-    expect(store.activeChild.courses.find((course) => course.subject === "数学")).toMatchObject({
+    expect(store.getStudentCourses(studentId).find((course) => course.subject === "数学")).toMatchObject({
+      currentLesson: 2,
+      totalLessons: 10,
+      progress: 20
+    });
+    expect(store.undoChildCourseCheckIn(studentId, "数学")).toBe(true);
+    expect(store.getStudentCourses(studentId).find((course) => course.subject === "数学")).toMatchObject({
+      currentLesson: 1,
+      totalLessons: 10,
+      progress: 10
+    });
+    expect(store.undoChildCourseCheckIn(studentId, "数学")).toBe(true);
+    expect(store.getStudentCourses(studentId).find((course) => course.subject === "数学")).toMatchObject({
       currentLesson: 0,
       totalLessons: 10,
       progress: 0
@@ -315,28 +348,36 @@ describe("childStore", () => {
 
     expect(
       store.createStudentCourse(studentId, {
+        id: "",
+        name: "物理课",
         subject: "物理",
-        currentLesson: 1,
         totalLessons: 8,
-        progress: 12
+        lessons: Array.from({ length: 8 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+        scope: "personal" as const,
+        studentIds: [],
+        scheduleMode: "weekly" as const,
+        schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
       })
     ).toBe(true);
 
-    expect(store.activeChild.courses.find((course) => course.subject === "物理")).toMatchObject({
-      currentLesson: 1,
-      totalLessons: 8,
-      progress: 13
+    expect(store.getStudentCourses(studentId).find((course) => course.subject === "物理")).toMatchObject({
+      totalLessons: 8
     });
     expect(store.activeChild.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
     expect(
       store.createStudentCourse(studentId, {
+        id: "",
+        name: "物理课",
         subject: "物理",
-        currentLesson: 2,
         totalLessons: 8,
-        progress: 24
+        lessons: Array.from({ length: 8 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+        scope: "personal" as const,
+        studentIds: [],
+        scheduleMode: "weekly" as const,
+        schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
       })
     ).toBe(false);
-    expect(store.activeChild.courses.filter((course) => course.subject === "物理")).toHaveLength(1);
+    expect(store.getStudentCourses(studentId).filter((course) => course.subject === "物理")).toHaveLength(1);
   });
 
   it("deletes student course plans without removing the final course", () => {
@@ -346,24 +387,39 @@ describe("childStore", () => {
       name: "单科小孩",
       goal: "先完成数学",
       style: "小步推进",
-      courses: [{ subject: "数学", currentLesson: 1, totalLessons: 8, progress: 12 }],
       materials: []
     });
     const studentId = store.activeChild.id;
 
-    expect(store.deleteStudentCourse(studentId, "数学")).toBe(false);
-    expect(store.activeChild.courses.map((course) => course.subject)).toEqual(["数学"]);
+    store.createStudentCourse(studentId, {
+      id: "",
+      name: "数学课",
+      subject: "数学",
+      totalLessons: 16,
+      scope: "personal" as const,
+      lessons: Array.from({ length: 16 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+      studentIds: [],
+      scheduleMode: "weekly" as const,
+      schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
+    });
+
+    expect(store.getStudentCourses(studentId).map((course) => course.subject)).toEqual(["数学"]);
 
     expect(
       store.createStudentCourse(studentId, {
+        id: "",
+        name: "英语课",
         subject: "英语",
-        currentLesson: 1,
         totalLessons: 10,
-        progress: 10
+        lessons: Array.from({ length: 10 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+        scope: "personal" as const,
+        studentIds: [],
+        scheduleMode: "weekly" as const,
+        schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
       })
     ).toBe(true);
     expect(store.deleteStudentCourse(studentId, "数学")).toBe(true);
-    expect(store.activeChild.courses.map((course) => course.subject)).toEqual(["英语"]);
+    expect(store.getStudentCourses(studentId).map((course) => course.subject)).toEqual(["英语"]);
     expect(store.activeChild.mistakeBook.subjects).toEqual(K12_MISTAKE_BOOK_SUBJECTS);
     expect(store.deleteStudentCourse(studentId, "不存在")).toBe(false);
   });
@@ -419,11 +475,23 @@ describe("childStore", () => {
     const studentId = store.activeChild.id;
     const remindAt = new Date("2026-06-12T18:00:00+08:00").getTime();
 
+    store.createStudentCourse(studentId, {
+      id: "",
+      name: "数学课",
+      subject: "数学",
+      totalLessons: 16,
+      scope: "personal" as const,
+      lessons: Array.from({ length: 16 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+      studentIds: [],
+      scheduleMode: "weekly" as const,
+      schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
+    });
+
     expect(store.createCourseReminder(studentId, "数学", remindAt)).toBe(true);
 
     expect(store.reminders[0]).toMatchObject({
       studentId,
-      title: `${store.activeChild.name}数学第 9 节课`,
+      title: `${store.activeChild.name}数学第 1 节课`,
       remindAt,
       relatedType: "课程",
       status: "待提醒"
@@ -437,15 +505,20 @@ describe("childStore", () => {
     const studentId = store.activeChild.id;
     const remindAt = new Date("2026-06-12T18:00:00+08:00").getTime();
 
-    store.updateStudentCourse(studentId, "数学", {
+    store.createStudentCourse(studentId, {
+      id: "",
+      name: "数学课",
       subject: "数学",
-      currentLesson: 16,
       totalLessons: 16,
-      progress: 100
+      lessons: Array.from({ length: 16 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+      scope: "personal" as const,
+      studentIds: [],
+      scheduleMode: "weekly" as const,
+      schedule: { startDate: "2026-01-01", startTime: "18:00", duration: 90 }
     });
 
     expect(store.createCourseReminder(studentId, "数学", remindAt)).toBe(true);
-    expect(store.reminders[0].title).toBe(`${store.activeChild.name}数学第 16 节课`);
+    expect(store.reminders[0].title).toBe(`${store.activeChild.name}数学第 1 节课`);
   });
 
   it("derives student material titles from assigned materials", () => {
@@ -458,7 +531,8 @@ describe("childStore", () => {
       tags: ["讲义"],
       assignedStudentIds: [studentId],
       sourceType: "local",
-      sourcePath: "/tmp/新分配讲义.pdf"
+      sourcePath: "/tmp/新分配讲义.pdf",
+      shareable: false
     });
 
     expect(store.materialTitlesForStudent(studentId)).toContain("新分配讲义");
@@ -474,7 +548,8 @@ describe("childStore", () => {
       tags: ["旧标签"],
       assignedStudentIds: [],
       sourceType: "local",
-      sourcePath: "/tmp/material.pdf"
+      sourcePath: "/tmp/material.pdf",
+      shareable: false
     });
     const materialId = store.materials[0].id;
 
@@ -485,7 +560,8 @@ describe("childStore", () => {
         tags: ["新标签"],
         assignedStudentIds: [studentId],
         sourceType: "smb",
-        sourcePath: "smb://nas/material.pdf"
+        sourcePath: "smb://nas/material.pdf",
+        shareable: false
       })
     ).toBe(true);
     expect(store.materials[0].title).toBe("已编辑资料");
@@ -504,7 +580,9 @@ describe("childStore", () => {
       name: "本地资料",
       host: "",
       path: "/tmp/materials",
-      authMethod: "本机"
+      authMethod: "本机",
+      username: "",
+      password: ""
     });
     const sourceId = store.materialSources[0].id;
 
@@ -544,6 +622,8 @@ describe("childStore", () => {
     const startsAt = new Date("2026-06-08T18:00:00+08:00").getTime();
 
     store.createScheduledLesson({
+      courseId: "",
+      lessonIndex: 0,
       studentId,
       subject: "数学",
       startsAt,
@@ -569,6 +649,8 @@ describe("childStore", () => {
     const lessonId = store.scheduledLessons[0].id;
     expect(
       store.updateScheduledLesson(lessonId, {
+        courseId: "",
+        lessonIndex: 0,
         studentId,
         subject: "物理",
         startsAt: startsAt + 60 * 60 * 1000,
@@ -594,6 +676,8 @@ describe("childStore", () => {
     const studentId = store.activeChild.id;
 
     store.createScheduledLesson({
+      courseId: "",
+      lessonIndex: 0,
       studentId,
       subject: "数学",
       startsAt: new Date("2026-06-08T18:00:00+08:00").getTime(),
@@ -762,7 +846,7 @@ describe("childStore", () => {
       homeworkCount: 2,
       pendingGradingCount: 2
     });
-    expect(report?.averageProgress).toBe(40);
+    expect(report?.averageProgress).toBe(0);
     expect(report?.weakPoints).toContain("函数图像");
     expect(report?.nextActions[0]).toContain("优先处理");
   });

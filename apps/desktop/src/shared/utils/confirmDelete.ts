@@ -13,6 +13,9 @@ export function useConfirmDelete() {
       content: options.content,
       positiveText: "确认删除",
       negativeText: "取消",
+      positiveButtonProps: {
+        type: "error"
+      },
       onPositiveClick: () => {
         options.onOk();
       }

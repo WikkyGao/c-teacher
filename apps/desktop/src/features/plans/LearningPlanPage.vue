@@ -4,21 +4,26 @@ import { computed, reactive, watch } from "vue";
 import { useChildStore } from "../children/childStore";
 import { buildLearningPlanSubjectOptions, learningPlanSubjectCountText } from "./learningPlanSubjects";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
+import { childLabel } from "../../shared/utils/childLabel";
+
+const props = defineProps({ userRole: String });
+
+const cl = computed(() => childLabel(props.userRole as any));
 
 const workspace = useChildStore();
 const message = useMessage();
 const { confirmDelete } = useConfirmDelete();
 const form = reactive({
   studentId: workspace.activeChildId,
-  subject: workspace.activeChild.courses[0]?.subject ?? "",
-  currentLesson: workspace.activeChild.courses[0]?.currentLesson ?? 1,
-  totalLessons: workspace.activeChild.courses[0]?.totalLessons ?? 10,
+  subject: workspace.getStudentCourses(workspace.activeChildId)[0]?.subject ?? "",
+  currentLesson: workspace.getStudentCourses(workspace.activeChildId)[0]?.currentLesson ?? 1,
+  totalLessons: workspace.getStudentCourses(workspace.activeChildId)[0]?.totalLessons ?? 10,
   remindAt: Date.now() + 24 * 60 * 60 * 1000
 });
 
 const childOptions = computed(() => workspace.items.map((child) => ({ label: child.name, value: child.id })));
 const selectedChild = computed(() => workspace.items.find((child) => child.id === form.studentId) ?? workspace.activeChild);
-const courseOptions = computed(() => buildLearningPlanSubjectOptions(selectedChild.value.courses));
+const courseOptions = computed(() => buildLearningPlanSubjectOptions(workspace.getStudentCourses(selectedChild.value.id)));
 const subjectCountText = computed(() => learningPlanSubjectCountText(courseOptions.value.map((option) => option.value)));
 const progressPreview = computed(() => {
   const totalLessons = Math.max(Number(form.totalLessons) || 1, 1);
@@ -27,7 +32,7 @@ const progressPreview = computed(() => {
 });
 
 function loadCourse(subject: string) {
-  const course = selectedChild.value.courses.find((item) => item.subject === subject);
+  const course = workspace.getStudentCourses(selectedChild.value.id).find((item) => item.subject === subject);
   form.subject = subject;
   if (!course) return;
   form.currentLesson = course.currentLesson;
@@ -37,7 +42,7 @@ function loadCourse(subject: string) {
 watch(
   () => form.studentId,
   () => {
-    const firstCourse = selectedChild.value.courses[0];
+    const firstCourse = workspace.getStudentCourses(selectedChild.value.id)[0];
     if (firstCourse) {
       loadCourse(firstCourse.subject);
     }
@@ -46,17 +51,22 @@ watch(
 
 function saveCoursePlan() {
   if (!form.studentId || !form.subject) {
-    message.warning("请选择小孩和科目");
+    message.warning(`请选择${cl.value}和科目`);
     return;
   }
   const subject = form.subject.trim();
   const course = {
+    id: "",
+    name: subject,
     subject,
-    currentLesson: Number(form.currentLesson) || 0,
     totalLessons: Number(form.totalLessons) || 1,
-    progress: 0
+    lessons: Array.from({ length: Number(form.totalLessons) || 1 }, (_, i) => ({ title: `第${i + 1}课`, materialIds: [], order: i })),
+    scope: "personal" as const,
+    studentIds: [form.studentId],
+    scheduleMode: "weekly" as const,
+    schedule: { startDate: new Date().toISOString().split("T")[0], startTime: "14:00", duration: 60, weekday: 1 }
   };
-  const existingCourse = selectedChild.value.courses.some((item) => item.subject === subject);
+  const existingCourse = workspace.getStudentCourses(selectedChild.value.id).some((item) => item.subject === subject);
   const saved = existingCourse
     ? workspace.updateStudentCourse(form.studentId, subject, course)
     : workspace.createStudentCourse(form.studentId, course);
@@ -65,7 +75,7 @@ function saveCoursePlan() {
 
 function createCourseReminder() {
   if (!form.studentId || !form.subject || !form.remindAt) {
-    message.warning("请选择小孩、科目和提醒时间");
+    message.warning(`请选择${cl.value}、科目和提醒时间`);
     return;
   }
   const created = workspace.createCourseReminder(form.studentId, form.subject.trim(), Number(form.remindAt));
@@ -80,7 +90,7 @@ function deleteCoursePlan(studentId: string, subject: string) {
       const deleted = workspace.deleteStudentCourse(studentId, subject);
       message[deleted ? "success" : "warning"](deleted ? "课程已删除" : "至少保留一个课程");
       if (deleted && form.studentId === studentId) {
-        const firstCourse = selectedChild.value.courses[0];
+        const firstCourse = workspace.getStudentCourses(selectedChild.value.id)[0];
         if (firstCourse) {
           loadCourse(firstCourse.subject);
         }
@@ -95,20 +105,20 @@ function deleteCoursePlan(studentId: string, subject: string) {
     <div class="page-top">
       <div>
         <h1 class="page-title">学习计划</h1>
-        <p class="page-subtitle">维护每个小孩的课程大纲、课时进度和学习状态</p>
+        <p class="page-subtitle">维护每个{{ cl }}的课程大纲、课时进度和学习状态</p>
       </div>
       <n-button type="primary" @click="saveCoursePlan">保存计划</n-button>
     </div>
 
     <div class="dashboard-grid">
       <section class="side-panel wide-panel">
-        <h2>小孩课程计划</h2>
+        <h2>{{ cl }}课程计划</h2>
         <div v-for="child in workspace.items" :key="child.id" class="list-row">
           <strong>{{ child.name }} · {{ child.goal }}</strong>
-          <div v-for="course in child.courses" :key="course.subject" class="course-row">
+          <div v-for="course in workspace.getStudentCourses(child.id)" :key="course.subject" class="course-row">
             <n-space justify="space-between" align="center">
               <p>{{ course.subject }} · 第 {{ course.currentLesson }}/{{ course.totalLessons }} 节 · {{ course.progress }}%</p>
-              <n-button size="tiny" quaternary type="error" @click="deleteCoursePlan(child.id, course.subject)">删除</n-button>
+              <n-button v-if="props.userRole !== 'parent'" size="tiny" secondary type="error" @click="deleteCoursePlan(child.id, course.subject)">删除</n-button>
             </n-space>
             <n-progress type="line" :percentage="course.progress" :show-indicator="false" :height="7" color="var(--primary)" />
           </div>
@@ -118,11 +128,11 @@ function deleteCoursePlan(studentId: string, subject: string) {
       <aside class="side-panel">
         <h2>编辑课程进度</h2>
         <n-form label-placement="top">
-          <n-form-item label="小孩">
+          <n-form-item :label="cl">
             <n-select
               v-model:value="form.studentId"
               :options="childOptions"
-              @update:value="loadCourse(selectedChild.courses[0]?.subject ?? '')"
+              @update:value="loadCourse(workspace.getStudentCourses(selectedChild.id)[0]?.subject ?? '')"
             />
           </n-form-item>
           <n-form-item label="科目">

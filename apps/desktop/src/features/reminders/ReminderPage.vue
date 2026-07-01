@@ -2,10 +2,17 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { invoke } from "@tauri-apps/api/core";
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
+import { Plus } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, reactive, ref } from "vue";
+import type { UserRole } from "../auth/authSession";
 import { useChildStore } from "../children/childStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
+import { childLabel } from "../../shared/utils/childLabel";
+
+const props = defineProps<{ userRole?: UserRole }>();
+
+const cl = computed(() => childLabel(props.userRole));
 
 const workspace = useChildStore();
 const message = useMessage();
@@ -132,7 +139,7 @@ function undoCompleteReminder(reminderId: string) {
           <p>{{ studentName(reminder.studentId) }} · {{ reminder.relatedType }} · 未完成</p>
           <n-space>
             <n-button size="small" secondary @click="completeReminder(reminder.id)">已完成</n-button>
-            <n-button size="small" secondary type="error" @click="removeReminder(reminder.id)">删除</n-button>
+            <n-button v-if="props.userRole !== 'parent'" size="small" secondary type="error" @click="removeReminder(reminder.id)">删除</n-button>
           </n-space>
         </div>
 
@@ -147,7 +154,7 @@ function undoCompleteReminder(reminderId: string) {
             <p>{{ studentName(reminder.studentId) }} · {{ reminder.relatedType }} · 已完成</p>
             <n-space>
               <n-button size="small" secondary @click="undoCompleteReminder(reminder.id)">撤回完成</n-button>
-              <n-button size="small" secondary type="error" @click="removeReminder(reminder.id)">删除</n-button>
+              <n-button v-if="props.userRole !== 'parent'" size="small" secondary type="error" @click="removeReminder(reminder.id)">删除</n-button>
             </n-space>
           </div>
         </div>
@@ -155,7 +162,7 @@ function undoCompleteReminder(reminderId: string) {
       <aside class="side-panel">
         <h2>创建系统提醒</h2>
         <n-form label-placement="top">
-          <n-form-item label="小孩">
+          <n-form-item :label="cl">
             <n-select v-model:value="form.studentId" :options="childOptions" />
           </n-form-item>
           <n-form-item label="类型">
@@ -168,7 +175,7 @@ function undoCompleteReminder(reminderId: string) {
             <n-date-picker v-model:value="form.remindAt" type="datetime" clearable />
           </n-form-item>
         </n-form>
-        <n-button type="primary" @click="createReminder">创建提醒</n-button>
+        <n-button v-if="props.userRole !== 'parent'" type="primary" @click="createReminder"><Plus :size="16" /> 创建提醒</n-button>
       </aside>
     </div>
   </div>

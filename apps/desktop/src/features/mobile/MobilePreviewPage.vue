@@ -10,6 +10,8 @@ import {
 import type { Component } from "vue";
 import { computed, ref, watch } from "vue";
 import { useChildStore } from "../children/childStore";
+import { childLabel } from "../../shared/utils/childLabel";
+import type { UserRole } from "../auth/authSession";
 import {
   mobilePlatformOptions,
   mobilePlatforms,
@@ -18,6 +20,9 @@ import {
 } from "./mobilePreviewConfig";
 
 type MobileAppTab = "dashboard" | "children" | "schedule" | "materials";
+
+const props = defineProps<{ userRole?: UserRole }>();
+const cl = computed(() => childLabel(props.userRole));
 
 const workspace = useChildStore();
 const selectedChildId = ref(workspace.activeChildId);
@@ -35,14 +40,14 @@ const selectedReminders = computed(() =>
   workspace.incompleteReminders.filter((reminder) => reminder.studentId === selectedChild.value.id)
 );
 const dashboardStats = computed(() => [
-  { label: "课程", value: selectedChild.value.courses.length },
+  { label: "课程", value: workspace.getStudentCourses(selectedChild.value.id).length },
   { label: "提醒", value: selectedReminders.value.length },
   { label: "资料", value: selectedMaterials.value.length }
 ]);
 
 const mobileTabs: Array<{ key: MobileAppTab; label: string; icon: Component }> = [
   { key: "dashboard", label: "工作台", icon: LayoutDashboard },
-  { key: "children", label: "小孩管理", icon: UsersRound },
+  { key: "children", label: `${cl.value}管理`, icon: UsersRound },
   { key: "schedule", label: "课程表", icon: CalendarDays },
   { key: "materials", label: "资料库", icon: LibraryBig }
 ];
@@ -70,7 +75,7 @@ function formatDateTime(value: number) {
     <div class="page-top">
       <div>
         <h1 class="page-title">手机预览</h1>
-        <p class="page-subtitle">在 Mac 上查看移动端页面结构，支持小程序和 App 两种终端：工作台、小孩管理、课程表、资料库、提醒和快捷操作。</p>
+        <p class="page-subtitle">在 Mac 上查看移动端页面结构，支持小程序和 App 两种终端：工作台、{{ cl }}管理、课程表、资料库、提醒和快捷操作。</p>
       </div>
       <n-space align="center">
         <n-segmented v-model:value="activePlatform" :options="mobilePlatformOptions" />
@@ -125,7 +130,7 @@ function formatDateTime(value: number) {
               <template v-if="activeTab === 'dashboard'">
                 <section class="mobile-summary-card">
                   <div>
-                    <span>当前小孩</span>
+                    <span>当前{{ cl }}</span>
                     <strong>{{ selectedChild.name }}</strong>
                     <p>{{ selectedChild.goal }}</p>
                     <button type="button">{{ activePlatformMeta.primaryActionLabel }}</button>
@@ -142,7 +147,7 @@ function formatDateTime(value: number) {
                     <small>{{ stat.label }}</small>
                   </span>
                 </div>
-                <article v-for="course in selectedChild.courses" :key="course.subject" class="mobile-card">
+                <article v-for="course in workspace.getStudentCourses(selectedChild.id)" :key="course.subject" class="mobile-card">
                   <strong>{{ course.subject }} · {{ course.progress }}%</strong>
                   <span>第 {{ course.currentLesson }}/{{ course.totalLessons }} 节</span>
                   <div class="mobile-progress"><i :style="{ width: `${course.progress}%` }"></i></div>

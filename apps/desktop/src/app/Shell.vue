@@ -18,7 +18,8 @@ import { computed, reactive, ref } from "vue";
 import type { UserRole } from "../features/auth/authSession";
 import type { TeacherProfile } from "../features/children/childStore";
 import type { NavKey, NavItem } from "../shared/types/navigation";
-import { navItems, settingsNavItem } from "../shared/types/navigation";
+import { buildNavItems, settingsNavItem } from "../shared/types/navigation";
+import { childLabel } from "../shared/utils/childLabel";
 import { updateState } from "../features/updater/versionCheck";
 
 const props = defineProps<{
@@ -58,10 +59,11 @@ const navIcons: Record<NavKey, Component> = {
 const parentNavKeys = new Set<NavKey>(["dashboard", "children", "schedule", "records", "materials", "reminders"]);
 
 const visibleNavItems = computed<NavItem[]>(() => {
+  const items = buildNavItems(childLabel(props.userRole));
   if (props.userRole === "parent") {
-    return navItems.filter((item) => parentNavKeys.has(item.key));
+    return items.filter((item) => parentNavKeys.has(item.key));
   }
-  return navItems;
+  return items;
 });
 
 function openTeacherEditor() {
@@ -99,7 +101,7 @@ function saveTeacherProfile() {
         <div class="teacher-profile-copy">
           <div class="brand">{{ teacherProfile.name }}</div>
           <div class="brand-subtitle">家长 · 只读</div>
-          <p>查看小孩的学习情况</p>
+          <p>查看{{ childLabel(userRole) }}的学习情况</p>
         </div>
       </div>
 

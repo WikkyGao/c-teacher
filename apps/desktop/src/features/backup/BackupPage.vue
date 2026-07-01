@@ -6,6 +6,11 @@ import { useDialog, useMessage } from "naive-ui";
 import { computed, onMounted, ref } from "vue";
 import { useChildStore } from "../children/childStore";
 import { backupBlobFromStore, backupFilename, parseWorkspaceBackupFile, triggerBackupDownload } from "./workspaceBackup";
+import { childLabel } from "../../shared/utils/childLabel";
+import type { UserRole } from "../auth/authSession";
+
+const props = defineProps<{ userRole?: UserRole }>();
+const cl = computed(() => childLabel(props.userRole));
 
 type BackupSummary = {
   students: number;
@@ -113,7 +118,7 @@ function onFilePicked(event: Event) {
 function confirmImport() {
   dialog.warning({
     title: "恢复数据",
-    content: "导入备份将覆盖当前所有数据，包括小孩、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？",
+    content: `导入备份将覆盖当前所有数据，包括${cl.value}、课程、课堂记录、提醒和设置。此操作不可撤销，确认继续？`,
     positiveText: "确认导入",
     negativeText: "取消",
     onPositiveClick: async () => {
@@ -176,7 +181,7 @@ onMounted(() => {
           <div class="h5-si-icon students">S</div>
           <div>
             <div class="h5-si-num">{{ summary.students }}</div>
-            <div class="h5-si-label">小孩</div>
+            <div class="h5-si-label">{{ cl }}</div>
           </div>
         </div>
         <div class="h5-summary-item">

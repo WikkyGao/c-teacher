@@ -41,11 +41,14 @@ import TagManageModal from "./TagManageModal.vue";
 import MobileConnectModal from "../mobile/MobileConnectModal.vue";
 
 import type { UserRole } from "../auth/authSession";
+import { childLabel } from "../../shared/utils/childLabel";
 
 const props = defineProps<{
   studentId?: string;
   userRole?: UserRole;
 }>();
+
+const cl = computed(() => childLabel(props.userRole));
 
 const emit = defineEmits<{
   back: [];
@@ -91,7 +94,7 @@ const filteredStudents = computed(() => {
 
 const treeItems = computed(() => {
   const items: Array<{ key: string; label: string; count: number; type: "all" | "class" | "subject" | "ungrouped"; group?: ChildGroup }> = [];
-  items.push({ key: "all", label: "全部小孩", count: students.items.length, type: "all" });
+  items.push({ key: "all", label: `全部${cl.value}`, count: students.items.length, type: "all" });
   for (const g of students.classes) {
     items.push({ key: g.id, label: g.name, count: g.memberIds.length, type: "class" as const, group: g });
   }
@@ -263,7 +266,7 @@ async function handleExportPrint() {
     return;
   }
   try {
-    await exportMistakesToPrint(records, currentStudent.value?.name || "小孩");
+    await exportMistakesToPrint(records, currentStudent.value?.name || cl.value);
     message.success("已打开打印预览");
   } catch (error) {
     message.error(`导出失败：${error instanceof Error ? error.message : String(error)}`);
@@ -313,7 +316,7 @@ onMounted(() => {
         />
         <span class="detail-header-name">{{ currentStudent?.name }}</span>
       </div>
-      <n-space>
+      <n-space v-if="props.userRole !== 'parent'">
         <n-button size="small" secondary @click="detailViewRef?.startEdit()">
           <template #icon><Pencil :size="14" /></template>
           编辑
@@ -335,8 +338,9 @@ onMounted(() => {
     <!-- Normal list header -->
     <header v-if="pageView !== 'detail'" class="page-header">
       <div class="header-left">
-        <n-button quaternary @click="emit('back')">
+        <n-button secondary @click="emit('back')">
           <template #icon><ArrowLeft :size="18" /></template>
+          返回{{ cl }}管理
         </n-button>
         <div class="header-title">
           <h1>错题本</h1>
@@ -373,7 +377,7 @@ onMounted(() => {
       <aside v-if="pageView !== 'detail'" class="child-sidebar" :class="{ collapsed: sidebarCollapsed }">
         <div class="sidebar-header">
           <UsersRound v-if="!sidebarCollapsed" :size="16" />
-          <span v-if="!sidebarCollapsed">小孩列表</span>
+          <span v-if="!sidebarCollapsed">{{ cl }}列表</span>
           <n-button text size="tiny" @click="toggleSidebar" :style="sidebarCollapsed ? '' : 'margin-left:auto'">
             {{ sidebarCollapsed ? '»' : '«' }}
           </n-button>
@@ -403,10 +407,10 @@ onMounted(() => {
               <span class="group-tree-count">{{ item.count }}</span>
             </button>
           </div>
-          <div class="sidebar-divider">小孩</div>
+          <div class="sidebar-divider">{{ cl }}</div>
           <!-- Child list -->
           <div class="child-list">
-            <div v-if="filteredStudents.length === 0" class="sidebar-empty">无小孩</div>
+            <div v-if="filteredStudents.length === 0" class="sidebar-empty">无{{ cl }}</div>
             <div
               v-for="child in filteredStudents"
               :key="child.id"

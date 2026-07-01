@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { navItems, settingsNavItem } from "./navigation";
+import { buildNavItems, settingsNavItem } from "./navigation";
 
 describe("navigation", () => {
+  const navItems = buildNavItems("小孩");
+
   it("exposes mobile preview as a feature page", () => {
     expect(navItems).not.toContainEqual({ key: "mobile", label: "手机预览" });
   });

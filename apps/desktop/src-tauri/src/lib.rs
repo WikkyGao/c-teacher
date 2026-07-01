@@ -1000,10 +1000,29 @@ fn scan_ftp_source(path: &str) -> Result<Vec<ScannedMaterial>, String> {
     Ok(scanned)
 }
 
+fn scan_smb_source(path: &str, _username: Option<&str>, _password: Option<&str>) -> Result<Vec<ScannedMaterial>, String> {
+    let source_path = PathBuf::from(path.trim());
+    
+    if !source_path.exists() {
+        return Err(format!("路径不存在: {}", path.trim()));
+    }
+    if !source_path.is_dir() {
+        return Err(format!("路径不是目录: {}", path.trim()));
+    }
+    
+    let mut scanned = Vec::new();
+    scan_directory(&source_path, 0, &mut scanned)?;
+    Ok(scanned)
+}
+
 #[tauri::command]
-fn scan_material_source(path: String) -> Result<Vec<ScannedMaterial>, String> {
+fn scan_material_source(path: String, username: Option<String>, password: Option<String>) -> Result<Vec<ScannedMaterial>, String> {
     if path.trim().starts_with("ftp://") {
         return scan_ftp_source(&path);
+    }
+
+    if path.trim().starts_with("smb://") {
+        return scan_smb_source(&path, username.as_deref(), password.as_deref());
     }
 
     let source_path = PathBuf::from(path.trim());

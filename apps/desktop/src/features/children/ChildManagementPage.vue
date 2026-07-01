@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { isTauri, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Plus, Settings2, Smartphone, Sparkles, UserRound, UsersRound } from "lucide-vue-next";
+import { ArrowLeft, CalendarCheck2, FileImage, FileText, NotebookPen, Pencil, Plus, Settings2, Smartphone, Sparkles, UserRound, UsersRound } from "lucide-vue-next";
 import MobileConnectModal from "../mobile/MobileConnectModal.vue";
 import { storeToRefs } from "pinia";
 import { useMessage } from "naive-ui";
@@ -13,6 +13,7 @@ import MistakeBookPage from "../mistake-book/MistakeBookPage.vue";
 import type { Child, ChildGroup, Course, MistakeRecord } from "./childStore";
 import { GROUP_COLORS, K12_MISTAKE_BOOK_SUBJECTS, useChildStore } from "./childStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
+import { childLabel } from "../../shared/utils/childLabel";
 
 const students = useChildStore();
 import type { UserRole } from "../auth/authSession";
@@ -22,10 +23,10 @@ const props = defineProps<{
   userRole?: UserRole;
 }>();
 const { activeChild, defaultAiModel } = storeToRefs(students);
+const cl = computed(() => childLabel(props.userRole));
 const modelSupportsVision = computed(() => defaultAiModel.value?.supportsVision ?? false);
 const message = useMessage();
 const { confirmDelete } = useConfirmDelete();
-const showStudentModal = ref(false);
 const editingStudentId = ref<string | null>(null);
 const selectedMistakeImagePath = ref("");
 const selectedMistakeImageDataUrl = ref("");
@@ -37,7 +38,7 @@ const streamingSimilarQuestionsText = ref("");
 const showMobileConnectModal = ref(false);
 const isAnalyzingMistake = ref(false);
 const isGeneratingSimilarQuestions = ref(false);
-const pageMode = ref<"list" | "detail" | "mistakeBook" | "groupManage">("list");
+const pageMode = ref<"list" | "detail" | "edit" | "mistakeBook" | "groupManage">("list");
 const activeMistakeSubject = ref("");
 const selectedGroupId = ref<string | null>(null);
 const showGroupModal = ref(false);
@@ -57,11 +58,10 @@ const form = reactive({
   gender: "female" as Child["gender"],
   goal: "",
   style: "",
-  courses: [] as Course[],
-  materialsText: "",
-  groupIds: [] as string[]
+  groupIds: [] as string[],
+  reportNotes: ""
 });
-const modalTitle = computed(() => (editingStudentId.value ? "编辑小孩" : "新增小孩"));
+const modalTitle = computed(() => (editingStudentId.value ? `编辑${cl.value}` : `新增${cl.value}`));
 const groupModalTitle = computed(() => (editingGroupId.value ? "编辑分组" : "新建分组"));
 const mistakeSubjectOptions = computed(() => buildMistakeBookSubjectOptions(activeChild.value.mistakeBook.subjects));
 const activeMistakeSubjectLabel = computed(() => activeMistakeSubject.value || activeChild.value.mistakeBook.subjects[0]);
@@ -74,6 +74,11 @@ const activeStudentPlans = computed(() =>
 const activeStudentReport = computed(() =>
   students.learningReports.find((report) => report.studentId === activeChild.value.id)
 );
+const activeStudentMaterials = computed(() => students.materialsForStudent(activeChild.value.id));
+const activeStudentCourses = computed(() => students.getStudentCourses(activeChild.value.id));
+function getChildCourses(childId: string) {
+  return students.getStudentCourses(childId);
+}
 const courseSubjectOptions = computed(() => {
   return K12_MISTAKE_BOOK_SUBJECTS.map((subject) => ({ label: subject, value: subject }));
 });
@@ -85,11 +90,11 @@ const filteredChildren = computed(() => {
   if (!selectedGroupId.value) return students.items;
   const group = students.groups.find((g) => g.id === selectedGroupId.value);
   if (!group) return students.items;
-  return students.items.filter((s) => group.memberIds.includes(s.id));
+  return students.items.filter((s) => group.memberIds?.includes(s.id));
 });
 const treeItems = computed(() => {
   const items: Array<{ key: string; label: string; count: number; type: "all" | "class" | "subject" | "ungrouped"; group?: ChildGroup }> = [];
-  items.push({ key: "all", label: "全部小孩", count: students.items.length, type: "all" });
+  items.push({ key: "all", label: `全部${cl.value}`, count: students.items.length, type: "all" });
   if (students.classes.length > 0) {
     items.push(...students.classes.map((g) => ({
       key: g.id,
@@ -143,38 +148,23 @@ function resetForm(child?: Child) {
   form.gender = child?.gender ?? "female";
   form.goal = child?.goal ?? "";
   form.style = child?.style ?? "";
-  form.courses = child
-    ? child.courses.map((course) => ({ ...course }))
-    : [{ subject: "数学", currentLesson: 0, totalLessons: 12, progress: 0 }];
-  form.materialsText = child?.materials.join("\n") ?? "";
   form.groupIds = child ? students.groups.filter((g) => g.memberIds.includes(child.id)).map((g) => g.id) : [];
+  form.reportNotes = "";
 }
 
 function openCreateStudent() {
   resetForm();
-  showStudentModal.value = true;
+  pageMode.value = "edit";
 }
 
 function openEditStudent(child: Child) {
   resetForm(child);
-  showStudentModal.value = true;
+  pageMode.value = "edit";
 }
 
 function saveStudent() {
   if (!form.name.trim()) {
-    message.warning("请填写小孩姓名");
-    return;
-  }
-  const courses = form.courses
-    .map((course) => ({
-      subject: course.subject.trim(),
-      currentLesson: Number(course.currentLesson) || 0,
-      totalLessons: Number(course.totalLessons) || 1,
-      progress: 0
-    }))
-    .filter((course) => course.subject);
-  if (courses.length === 0) {
-    message.warning("请至少添加一门课程");
+    message.warning(`请填写${cl.value}姓名`);
     return;
   }
   const draft = {
@@ -182,13 +172,13 @@ function saveStudent() {
     gender: form.gender,
     goal: form.goal.trim() || "待设定目标",
     style: form.style.trim() || "待观察学习风格",
-    courses,
-    materials: parseList(form.materialsText)
+    materials: []
   };
   if (editingStudentId.value) {
     students.updateStudent(editingStudentId.value, draft);
-    // Update group memberships
     const studentId = editingStudentId.value;
+    
+    // Update group memberships
     const prevGroupIds = students.groups.filter((g) => g.memberIds.includes(studentId)).map((g) => g.id);
     for (const gid of prevGroupIds) {
       if (!form.groupIds.includes(gid)) students.removeStudentFromGroup(gid, studentId);
@@ -196,34 +186,16 @@ function saveStudent() {
     for (const gid of form.groupIds) {
       if (!prevGroupIds.includes(gid)) students.addStudentToGroup(gid, studentId);
     }
-    message.success("小孩信息已更新");
+    message.success(`${cl.value}信息已更新`);
   } else {
     students.createStudent(draft);
     const newStudentId = students.activeChildId;
     for (const gid of form.groupIds) {
       students.addStudentToGroup(gid, newStudentId);
     }
-    message.success("小孩已新增");
+    message.success(`${cl.value}已新增`);
   }
-  showStudentModal.value = false;
-}
-
-function addCourseDraft() {
-  form.courses.push({ subject: "", currentLesson: 0, totalLessons: 12, progress: 0 });
-}
-
-function removeCourseDraft(index: number) {
-  if (form.courses.length <= 1) {
-    message.warning("至少保留一门课程");
-    return;
-  }
-  form.courses.splice(index, 1);
-}
-
-function courseProgress(course: Course) {
-  const totalLessons = Math.max(Number(course.totalLessons) || 1, 1);
-  const currentLesson = Math.min(Math.max(Number(course.currentLesson) || 0, 0), totalLessons);
-  return Math.min(Math.round((currentLesson / totalLessons) * 100), 100);
+  pageMode.value = "list";
 }
 
 function childAvatar(child: Child) {
@@ -253,13 +225,13 @@ function removeStudent(studentId: string) {
   const child = students.items.find((s) => s.id === studentId);
   if (!child) return;
   confirmDelete({
-    content: `确定要删除小孩「${child.name}」吗？该小孩的所有课堂记录、提醒和课程也将一并删除。`,
+    content: `确定要删除${cl.value}「${child.name}」吗？该${cl.value}的所有课堂记录、提醒和课程也将一并删除。`,
     onOk: () => {
       const deleted = students.deleteStudent(studentId);
       if (deleted) {
-        message.success("小孩已删除");
+        message.success(`${cl.value}已删除`);
       } else {
-        message.warning("至少保留一个小孩档案");
+        message.warning(`至少保留一个${cl.value}档案`);
       }
     }
   });
@@ -274,7 +246,7 @@ function openMistakeBook(studentId: string) {
   students.selectStudent(studentId);
   activeMistakeSubject.value = students.activeChild.mistakeBook.subjects[0] ?? "";
   pageMode.value = "mistakeBook";
-  message.info("已打开小孩错题本");
+  message.info(`已打开${cl.value}错题本`);
 }
 
 async function runAiAnalysis() {
@@ -460,8 +432,8 @@ function openEditGroup(group: ChildGroup) {
   groupForm.description = group.description;
   groupForm.type = group.type;
   groupForm.color = group.color;
-  groupForm.subjects = [...group.subjects];
-  groupForm.memberIds = [...group.memberIds];
+  groupForm.subjects = group.subjects ? [...group.subjects] : [];
+  groupForm.memberIds = group.memberIds ? [...group.memberIds] : [];
   showGroupModal.value = true;
 }
 
@@ -471,17 +443,17 @@ function saveGroup() {
     return;
   }
   if (editingGroupId.value) {
-    students.updateGroup(editingGroupId.value, {
+    const groupId = editingGroupId.value;
+    const group = students.groups.find((g) => g.id === groupId);
+    if (!group) return;
+    const prevIds = [...(group.memberIds ?? [])];
+    students.updateGroup(groupId, {
       name: groupForm.name.trim(),
       description: groupForm.description.trim(),
       type: groupForm.type,
       color: groupForm.color,
       subjects: groupForm.type === "subject" ? groupForm.subjects : []
     });
-    // Sync members
-    const groupId = editingGroupId.value;
-    const group = students.groups.find((g) => g.id === groupId)!;
-    const prevIds = [...group.memberIds];
     for (const sid of prevIds) {
       if (!groupForm.memberIds.includes(sid)) students.removeStudentFromGroup(groupId, sid);
     }
@@ -507,7 +479,7 @@ function deleteGroup(groupId: string) {
   const group = students.groups.find((g) => g.id === groupId);
   if (!group) return;
   confirmDelete({
-    content: `确定要删除分组「${group.name}」吗？该分组下的小孩不会受影响。`,
+    content: `确定要删除分组「${group.name}」吗？该分组下的${cl.value}不会受影响。`,
     onOk: () => {
       students.deleteGroup(groupId);
       message.success("分组已删除");
@@ -518,7 +490,7 @@ function deleteGroup(groupId: string) {
 function toggleStudentInGroup(groupId: string, studentId: string) {
   const group = students.groups.find((g) => g.id === groupId);
   if (!group) return;
-  if (group.memberIds.includes(studentId)) {
+  if (group.memberIds?.includes(studentId)) {
     students.removeStudentFromGroup(groupId, studentId);
   } else {
     students.addStudentToGroup(groupId, studentId);
@@ -529,7 +501,7 @@ function toggleStudentInGroup(groupId: string, studentId: string) {
 const groupMemberDraft = ref<Record<string, string[]>>({});
 
 function initGroupMemberDraft(group: ChildGroup) {
-  groupMemberDraft.value[group.id] = [...group.memberIds];
+  groupMemberDraft.value[group.id] = [...(group.memberIds ?? [])];
 }
 
 function toggleMemberDraft(groupId: string, studentId: string) {
@@ -551,14 +523,31 @@ function saveGroupMembers(groupId: string) {
   group.memberIds = [...draft];
   message.success("成员已更新");
 }
+
+async function openMaterial(sourcePath: string) {
+  if (!sourcePath.trim()) {
+    message.warning("这份资料还没有路径");
+    return;
+  }
+  if (!isTauri()) {
+    message.info("Web 预览环境不能打开本机资料，请在 Tauri 桌面端使用");
+    return;
+  }
+  try {
+    await invoke("open_material_target", { path: sourcePath });
+    message.success("已交给系统打开资料");
+  } catch (error) {
+    message.error(`打开资料失败：${String(error)}`);
+  }
+}
 </script>
 
 <template>
   <div>
     <div class="page-top">
       <div>
-        <h1 class="page-title">小孩管理</h1>
-        <p class="page-subtitle">卡片化管理小孩、多学科课程、错题本和 AI 分析入口</p>
+        <h1 class="page-title">{{ cl }}管理</h1>
+        <p class="page-subtitle">卡片化管理{{ cl }}、多学科课程、错题本和 AI 分析入口</p>
       </div>
       <n-space align="center">
         <n-button v-if="props.userRole !== 'parent'" secondary @click="openGroupManage">
@@ -571,7 +560,7 @@ function saveGroupMembers(groupId: string) {
           <template #icon>
             <Plus :size="16" />
           </template>
-          新增小孩
+          新增{{ cl }}
         </n-button>
       </n-space>
     </div>
@@ -580,7 +569,7 @@ function saveGroupMembers(groupId: string) {
       <aside class="group-sidebar">
         <div class="group-sidebar-header">
           <UsersRound :size="16" />
-          <span>小孩列表</span>
+          <span>{{ cl }}列表</span>
         </div>
         <nav class="group-tree">
           <button
@@ -609,7 +598,7 @@ function saveGroupMembers(groupId: string) {
       </aside>
 
       <section class="child-grid">
-        <div v-if="filteredChildren.length === 0" class="list-empty-state">该分组暂无小孩</div>
+        <div v-if="filteredChildren.length === 0" class="list-empty-state">该分组暂无{{ cl }}</div>
         <article v-for="child in filteredChildren" :key="child.id" class="child-card">
           <header>
             <img class="child-card-avatar" :src="childAvatar(child)" :alt="`${child.name}头像`" />
@@ -629,7 +618,7 @@ function saveGroupMembers(groupId: string) {
           </div>
 
           <div class="course-list">
-            <div v-for="course in child.courses" :key="course.subject" class="course-row">
+            <div v-for="course in getChildCourses(child.id)" :key="course.id" class="course-row">
               <n-space justify="space-between" align="center">
                 <strong>{{ course.subject }} · 第 {{ course.currentLesson }}/{{ course.totalLessons }} 节 · {{ course.progress }}%</strong>
                 <n-space v-if="props.userRole !== 'parent'" size="small">
@@ -654,8 +643,6 @@ function saveGroupMembers(groupId: string) {
               <n-progress type="line" :percentage="course.progress" :show-indicator="false" :height="7" color="var(--primary)" />
             </div>
           </div>
-
-          <p>已分配资料：{{ students.materialTitlesForStudent(child.id).join("、") || "未分配" }}</p>
 
           <div class="mistake-entry">
             <strong>{{ child.mistakeBook.summary }}</strong>
@@ -689,10 +676,10 @@ function saveGroupMembers(groupId: string) {
           <template #icon>
             <ArrowLeft :size="16" />
           </template>
-          返回小孩列表
+          返回{{ cl }}列表
         </n-button>
         <n-space style="margin-left: auto;">
-          <n-button size="small" secondary @click="openCreateGroup('class')">
+          <n-button size="small" type="primary" @click="openCreateGroup('class')">
             <template #icon><Plus :size="14" /></template>新建分组
           </n-button>
         </n-space>
@@ -733,15 +720,16 @@ function saveGroupMembers(groupId: string) {
           <template #icon>
             <ArrowLeft :size="16" />
           </template>
-          返回小孩列表
+          返回{{ cl }}列表
         </n-button>
       </div>
 
       <section class="side-panel child-detail-panel">
+        <!-- 详情页（只读） -->
         <template v-if="pageMode === 'detail'">
           <div class="panel-heading">
             <UserRound :size="18" />
-            <h2>{{ activeChild.name }} · 小孩详情</h2>
+            <h2>{{ activeChild.name }} · {{ cl }}详情</h2>
           </div>
           <div v-if="studentGroupsFor(activeChild.id).length > 0" class="group-tags">
             <span
@@ -762,11 +750,23 @@ function saveGroupMembers(groupId: string) {
             </div>
             <div>
               <span>已分配资料</span>
-              <strong>{{ students.materialTitlesForStudent(activeChild.id).join("、") || "未分配" }}</strong>
+              <div v-if="activeStudentMaterials.length > 0" class="assigned-materials">
+                <n-button
+                  v-for="mat in activeStudentMaterials"
+                  :key="mat.id"
+                  size="tiny"
+                  type="primary"
+                  @click="openMaterial(mat.sourcePath)"
+                >
+                  <template #icon><FileText :size="12" /></template>
+                  {{ mat.title }}
+                </n-button>
+              </div>
+              <span v-else class="muted-text">未分配</span>
             </div>
           </div>
           <div class="course-list">
-            <div v-for="course in activeChild.courses" :key="course.subject" class="course-row">
+            <div v-for="course in activeStudentCourses" :key="course.id" class="course-row">
               <n-space justify="space-between" align="center">
                 <strong>{{ course.subject }} · 第 {{ course.currentLesson }}/{{ course.totalLessons }} 节 · {{ course.progress }}%</strong>
                 <n-space size="small">
@@ -830,72 +830,43 @@ function saveGroupMembers(groupId: string) {
             查看错题本
           </n-button>
         </template>
+
+        <!-- 编辑页 -->
+        <template v-if="pageMode === 'edit'">
+          <div class="panel-heading">
+            <UserRound :size="18" />
+            <h2>{{ editingStudentId ? `编辑${cl}` : `新增${cl}` }}</h2>
+          </div>
+          <n-form label-placement="top">
+            <n-form-item :label="`${cl}姓名`">
+              <n-input v-model:value="form.name" placeholder="例如：陈一诺" />
+            </n-form-item>
+            <n-form-item label="性别">
+              <n-select v-model:value="form.gender" :options="genderOptions" />
+            </n-form-item>
+            <n-form-item label="学习目标">
+              <n-input v-model:value="form.goal" placeholder="例如：期中数学 90+" />
+            </n-form-item>
+            <n-form-item label="学习风格">
+              <n-input v-model:value="form.style" placeholder="例如：图像化讲解 + 例题驱动" />
+            </n-form-item>
+            <n-form-item v-if="students.groups.length > 0" label="所属分组">
+              <n-select
+                v-model:value="form.groupIds"
+                :options="students.groups.map((g) => ({ label: `${g.name}（${g.type === 'class' ? '班级' : '科目'}）`, value: g.id }))"
+                multiple
+                filterable
+                placeholder="选择所属分组"
+              />
+            </n-form-item>
+          </n-form>
+          <n-space style="margin-top: 16px;">
+            <n-button type="primary" @click="saveStudent">保存</n-button>
+            <n-button secondary @click="pageMode = 'list'">取消</n-button>
+          </n-space>
+        </template>
       </section>
     </section>
-
-    <n-modal v-model:show="showStudentModal" preset="card" :title="modalTitle" class="form-modal">
-      <n-form label-placement="top">
-        <n-form-item label="小孩姓名">
-          <n-input v-model:value="form.name" placeholder="例如：陈一诺" />
-        </n-form-item>
-        <n-form-item label="性别">
-          <n-select v-model:value="form.gender" :options="genderOptions" />
-        </n-form-item>
-        <n-form-item label="学习目标">
-          <n-input v-model:value="form.goal" placeholder="例如：期中数学 90+" />
-        </n-form-item>
-        <n-form-item label="学习风格">
-          <n-input v-model:value="form.style" placeholder="例如：图像化讲解 + 例题驱动" />
-        </n-form-item>
-        <n-form-item label="课程信息">
-          <div class="structured-course-editor">
-            <div v-for="(course, index) in form.courses" :key="index" class="structured-course-row">
-              <n-select
-                v-model:value="course.subject"
-                :options="courseSubjectOptions"
-                filterable
-                tag
-                placeholder="选择科目"
-              />
-              <n-input-number
-                v-model:value="course.currentLesson"
-                :min="0"
-                :max="Math.max(Number(course.totalLessons) || 1, 1)"
-                placeholder="已完成"
-              />
-              <n-input-number v-model:value="course.totalLessons" :min="1" placeholder="总课时" />
-              <div class="course-progress-preview">{{ courseProgress(course) }}%</div>
-              <n-button size="small" secondary type="error" @click="removeCourseDraft(index)">删除</n-button>
-            </div>
-            <n-button secondary @click="addCourseDraft">添加课程</n-button>
-            <p class="muted-text">进度由已完成课时 / 总课时自动计算，保存时不会使用手填百分比。</p>
-          </div>
-        </n-form-item>
-        <n-form-item label="已分配资料">
-          <n-input
-            v-model:value="form.materialsText"
-            type="textarea"
-            placeholder="每行一个资料名称"
-            :autosize="{ minRows: 2, maxRows: 5 }"
-          />
-        </n-form-item>
-        <n-form-item v-if="students.groups.length > 0" label="所属分组">
-          <n-select
-            v-model:value="form.groupIds"
-            :options="students.groups.map((g) => ({ label: `${g.name}（${g.type === 'class' ? '班级' : '科目'}）`, value: g.id }))"
-            multiple
-            filterable
-            placeholder="选择所属分组"
-          />
-        </n-form-item>
-      </n-form>
-      <template #footer>
-        <n-space justify="end">
-          <n-button @click="showStudentModal = false">取消</n-button>
-          <n-button type="primary" @click="saveStudent">保存</n-button>
-        </n-space>
-      </template>
-    </n-modal>
 
     <n-modal v-model:show="showGroupModal" preset="card" :title="groupModalTitle" class="form-modal">
       <n-form label-placement="top">
@@ -938,7 +909,7 @@ function saveGroupMembers(groupId: string) {
             :options="students.items.map((s) => ({ label: s.name, value: s.id }))"
             multiple
             filterable
-            placeholder="选择小孩"
+            placeholder="选择{{ cl }}"
           />
         </n-form-item>
       </n-form>
@@ -962,3 +933,144 @@ function saveGroupMembers(groupId: string) {
 
   </div>
 </template>
+
+<style scoped>
+.assigned-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.material-assign-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.material-assign-label {
+  flex-shrink: 0;
+  color: var(--muted-strong);
+  font-size: 13px;
+}
+
+.detail-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.material-assignment-list {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.material-assignment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.material-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.material-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.course-tree {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.course-tree-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+}
+
+.course-tree-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.course-tree-header:hover {
+  background: var(--bg-elevated);
+}
+
+.course-tree-header .n-icon {
+  transition: transform 0.2s;
+}
+
+.course-tree-header .expanded {
+  transform: rotate(90deg);
+}
+
+.course-subject {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.course-progress {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.course-tree-content {
+  padding: 0 12px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.course-form-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.course-lessons-list {
+  margin-top: 12px;
+}
+
+.course-lessons-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-strong);
+  margin-bottom: 8px;
+}
+
+.lesson-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.lesson-number {
+  flex-shrink: 0;
+  width: 50px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.child-follow-item :deep(.n-button--primary) {
+  --n-text-color: #fff !important;
+  --n-color: var(--primary) !important;
+}
+
+.child-follow-item :deep(.n-button--secondary) {
+  --n-text-color: var(--text) !important;
+  --n-color: var(--panel-solid) !important;
+}
+</style>

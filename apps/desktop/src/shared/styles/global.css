@@ -62,10 +62,11 @@ body {
   margin: 0;
   min-width: 320px;
   color: var(--text);
-  background:
+  --body-bg:
     linear-gradient(155deg, rgba(23, 105, 212, 0.12), transparent 38%),
     linear-gradient(330deg, rgba(17, 167, 162, 0.14), transparent 46%),
     #f4f8ff;
+  background: var(--body-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -100,9 +101,10 @@ body {
 }
 
 :root[data-app-theme="turquoise"] body {
-  background:
+  --body-bg:
     radial-gradient(circle at 18% 12%, rgba(244, 183, 120, 0.2), transparent 28%),
     linear-gradient(145deg, #fbfaf5 0%, #eef5f2 52%, #f4f2ea 100%);
+  background: var(--body-bg);
 }
 
 :root[data-app-theme="night"] {
@@ -136,10 +138,11 @@ body {
 }
 
 :root[data-app-theme="night"] body {
-  background:
+  --body-bg:
     linear-gradient(155deg, rgba(95, 179, 164, 0.12), transparent 38%),
     linear-gradient(330deg, rgba(240, 177, 90, 0.12), transparent 46%),
     #101820;
+  background: var(--body-bg);
 }
 
 :root[data-app-theme="blue"] {
@@ -172,10 +175,11 @@ body {
 }
 
 :root[data-app-theme="blue"] body {
-  background:
+  --body-bg:
     linear-gradient(155deg, rgba(23, 105, 212, 0.12), transparent 38%),
     linear-gradient(330deg, rgba(17, 167, 162, 0.14), transparent 46%),
     #f4f8ff;
+  background: var(--body-bg);
 }
 
 :root[data-app-theme="plum"] {
@@ -208,10 +212,11 @@ body {
 }
 
 :root[data-app-theme="plum"] body {
-  background:
+  --body-bg:
     linear-gradient(155deg, rgba(123, 78, 143, 0.12), transparent 38%),
     linear-gradient(330deg, rgba(63, 140, 119, 0.12), transparent 46%),
     #fbf7fb;
+  background: var(--body-bg);
 }
 
 button,
@@ -1946,7 +1951,7 @@ svg {
   gap: 10px;
 }
 
-.detail-list div {
+.detail-list > div {
   display: grid;
   gap: 4px;
   padding: 12px;
@@ -1964,6 +1969,20 @@ svg {
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
+}
+
+.detail-materials-item {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+}
+
+.detail-materials-item .detail-label-row span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .child-follow-section {
@@ -3352,6 +3371,10 @@ svg {
   --n-border-hover: 1px solid color-mix(in srgb, var(--primary) 86%, white) !important;
   --n-border-pressed: 1px solid var(--primary-strong) !important;
   --n-border-focus: 1px solid var(--primary) !important;
+  --n-text-color: #fff !important;
+  --n-text-color-hover: #fff !important;
+  --n-text-color-pressed: #fff !important;
+  --n-text-color-focus: #fff !important;
   --n-ripple-color: var(--primary) !important;
 }
 
@@ -3371,10 +3394,14 @@ svg {
 .n-button--primary-type.n-button--secondary,
 .n-button--primary-type.n-button--tertiary,
 .n-button--primary-type.n-button--quaternary {
-  --n-text-color: var(--primary-strong) !important;
+  --n-color: var(--primary-soft) !important;
+  --n-color-hover: color-mix(in srgb, var(--primary) 20%, white) !important;
+  --n-text-color: var(--primary) !important;
   --n-text-color-hover: var(--primary-strong) !important;
   --n-text-color-pressed: var(--primary-strong) !important;
   --n-text-color-focus: var(--primary-strong) !important;
+  --n-border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border)) !important;
+  --n-border-hover: 1px solid var(--primary) !important;
 }
 
 .n-button--secondary .n-button__content,
@@ -3386,7 +3413,33 @@ svg {
 .n-button--primary-type.n-button--secondary .n-button__content,
 .n-button--primary-type.n-button--tertiary .n-button__content,
 .n-button--primary-type.n-button--quaternary .n-button__content {
-  color: var(--primary-strong) !important;
+  color: var(--primary) !important;
+}
+
+.n-button--error-type {
+  --n-color: #e53e3e !important;
+  --n-color-hover: #c53030 !important;
+  --n-color-pressed: #c53030 !important;
+  --n-text-color: #fff !important;
+}
+
+.n-button--error-type.n-button--secondary,
+.n-button--error-type.n-button--tertiary,
+.n-button--error-type.n-button--quaternary {
+  --n-color: var(--panel-solid) !important;
+  --n-color-hover: #fef2f2 !important;
+  --n-text-color: #e53e3e !important;
+  --n-text-color-hover: #c53030 !important;
+  --n-text-color-pressed: #c53030 !important;
+  --n-text-color-focus: #e53e3e !important;
+  --n-border: 1px solid #fecaca !important;
+  --n-border-hover: 1px solid #e53e3e !important;
+}
+
+.n-button--error-type.n-button--secondary .n-button__content,
+.n-button--error-type.n-button--tertiary .n-button__content,
+.n-button--error-type.n-button--quaternary .n-button__content {
+  color: #e53e3e !important;
 }
 
 .n-button:not(.n-button--disabled):focus-visible {

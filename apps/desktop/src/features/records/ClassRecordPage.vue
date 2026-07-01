@@ -7,6 +7,7 @@ import { useChildStore } from "../children/childStore";
 import type { UserRole } from "../auth/authSession";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 import { childAvatarSourceFor } from "../../shared/assets/childAvatars";
+import { childLabel } from "../../shared/utils/childLabel";
 
 const RECORD_TYPES: RecordType[] = ["课堂讲授", "课堂练习", "课后作业", "实验报告", "测验考试", "项目任务", "辅导记录", "复习笔记"];
 
@@ -36,6 +37,8 @@ const props = defineProps<{
   userRole?: UserRole;
 }>();
 
+const cl = computed(() => childLabel(props.userRole));
+
 const workspace = useChildStore();
 const message = useMessage();
 const { confirmDelete } = useConfirmDelete();
@@ -46,7 +49,7 @@ const assignMode = ref<"child" | "group">("child");
 const form = reactive({
   studentId: workspace.activeChildId,
   groupId: null as string | null,
-  subject: workspace.activeChild.courses[0]?.subject ?? "数学",
+  subject: workspace.getStudentCourses(workspace.activeChildId)[0]?.subject ?? "数学",
   recordType: "课堂讲授" as RecordType,
   lessonContent: "",
   performance: "",
@@ -111,7 +114,7 @@ const dynamicFields = computed<DynamicFieldDef[]>(() => {
     case "课堂讲授":
       return [
         { key: "content", label: "授课内容/主题", bindTo: "lessonContent", placeholder: "请输入授课内容或主题...", type: "textarea", required: true },
-        { key: "performance", label: "课堂表现", bindTo: "performance", placeholder: "小孩课堂参与度、表现情况...", type: "textarea", required: false },
+        { key: "performance", label: "课堂表现", bindTo: "performance", placeholder: `${cl.value}课堂参与度、表现情况...`, type: "textarea", required: false },
         { key: "homework", label: "作业布置", bindTo: "homework", placeholder: "布置的作业内容...", type: "input", required: false }
       ];
     case "课堂练习":
@@ -174,7 +177,7 @@ function resetForm() {
   assignMode.value = "child";
   form.studentId = workspace.activeChildId;
   form.groupId = null;
-  form.subject = workspace.activeChild.courses[0]?.subject ?? "数学";
+  form.subject = workspace.getStudentCourses(workspace.activeChildId)[0]?.subject ?? "数学";
   form.recordType = "课堂讲授";
   form.lessonContent = "";
   form.performance = "";
@@ -206,7 +209,7 @@ function saveRecord() {
   }
   if (assignMode.value === "child") {
     if (!form.studentId) {
-      message.warning("请选择小孩");
+      message.warning(`请选择${cl.value}`);
       return;
     }
     const draft = {
@@ -231,7 +234,7 @@ function saveRecord() {
     }
     const group = workspace.groups.find((g) => g.id === form.groupId);
     if (!group || group.memberIds.length === 0) {
-      message.warning("该分组下没有小孩");
+      message.warning(`该分组下没有${cl.value}`);
       return;
     }
     for (const studentId of group.memberIds) {
@@ -244,7 +247,7 @@ function saveRecord() {
         homework: form.homework.trim()
       });
     }
-    message.success(`课堂记录已为该分组 ${group.memberIds.length} 名小孩创建`);
+    message.success(`课堂记录已为该分组 ${group.memberIds.length} 名${cl.value}创建`);
   }
   pageMode.value = "list";
   editingRecordId.value = null;
@@ -286,7 +289,7 @@ function goBack() {
       <template v-if="pageMode === 'list'">
         <div>
           <h1 class="page-title">课堂记录</h1>
-          <p class="page-subtitle">记录授课内容、小孩表现和作业布置</p>
+          <p class="page-subtitle">记录授课内容、{{ cl }}表现和作业布置</p>
         </div>
         <n-button v-if="props.userRole !== 'parent'" type="primary" @click="openCreateForm">
           <template #icon>
@@ -298,7 +301,7 @@ function goBack() {
       <template v-else>
         <div>
           <h1 class="page-title">{{ editingRecordId ? "编辑课堂记录" : "新建课堂记录" }}</h1>
-          <p class="page-subtitle">记录授课内容、小孩表现和作业布置</p>
+          <p class="page-subtitle">记录授课内容、{{ cl }}表现和作业布置</p>
         </div>
         <n-button secondary @click="goBack">
           <template #icon>
@@ -437,13 +440,13 @@ function goBack() {
           <!-- 记录归属 -->
           <n-form-item label="记录归属" v-if="!editingRecordId">
             <n-radio-group v-model:value="assignMode">
-              <n-radio value="child">单个小孩</n-radio>
+              <n-radio value="child">单个{{ cl }}</n-radio>
               <n-radio value="group">班级/分组</n-radio>
             </n-radio-group>
           </n-form-item>
 
-          <!-- 小孩选择（带头像） -->
-          <n-form-item v-if="assignMode === 'child'" label="小孩">
+          <!-- {{ cl }}选择（带头像） -->
+          <n-form-item v-if="assignMode === 'child'" :label="cl">
             <div class="child-select-with-avatar">
               <img
                 class="child-select-avatar"
@@ -507,7 +510,7 @@ function goBack() {
             </n-form-item>
           </div>
 
-          <p v-if="assignMode === 'group'" class="muted-text">选择班级或分组后，记录将自动为该分组内的所有小孩创建。</p>
+          <p v-if="assignMode === 'group'" class="muted-text">选择班级或分组后，记录将自动为该分组内的所有{{ cl }}创建。</p>
 
           <!-- 底部按钮 -->
           <div class="form-actions-bar">

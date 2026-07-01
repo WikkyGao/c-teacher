@@ -6,6 +6,11 @@ import { useMessage } from "naive-ui";
 import { computed, ref } from "vue";
 import { useChildStore } from "../children/childStore";
 import { createLearningReportMarkdown } from "./reportExport";
+import { childLabel } from "../../shared/utils/childLabel";
+import type { UserRole } from "../auth/authSession";
+
+const props = defineProps<{ userRole?: UserRole }>();
+const cl = computed(() => childLabel(props.userRole));
 
 const workspace = useChildStore();
 const message = useMessage();
@@ -110,7 +115,7 @@ async function exportReport() {
       </section>
 
       <aside class="side-panel">
-        <h2>全部小孩概览</h2>
+        <h2>全部{{ cl }}概览</h2>
         <div v-for="report in workspace.learningReports" :key="report.studentId" class="list-row compact-row">
           <strong>{{ report.studentName }} · {{ report.averageProgress }}%</strong>
           <p>{{ report.goal }}</p>

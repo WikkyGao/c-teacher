@@ -20,10 +20,13 @@ import { computed } from "vue";
 import { childAvatarSourceFor } from "../../shared/assets/childAvatars";
 import { useChildStore } from "../children/childStore";
 import type { UserRole } from "../auth/authSession";
+import { childLabel } from "../../shared/utils/childLabel";
 
 const props = defineProps<{
   userRole?: UserRole;
 }>();
+
+const cl = computed(() => childLabel(props.userRole));
 
 const emit = defineEmits<{
   navigate: [value: "children" | "schedule" | "records" | "materials" | "reminders"];
@@ -49,7 +52,7 @@ const pendingHomework = computed(() =>
 const progressRows = computed(() =>
   students.items.slice(0, 3).map((child) => ({
     child,
-    courses: child.courses.map((course) => ({ ...course, progress: courseProgress(course.progress) })),
+    courses: students.getStudentCourses(child.id).map((course) => ({ ...course, progress: courseProgress(course.progress) })),
     latest: latestActivityLabel(child.id)
   }))
 );
@@ -103,7 +106,7 @@ function latestActivityLabel(studentId: string) {
 
 function childClassLabel(studentId: string) {
   const index = students.items.findIndex((child) => child.id === studentId);
-  return index === -1 ? "小孩档案" : `高二（${index + 1}）班`;
+  return index === -1 ? `${cl.value}档案` : `高二（${index + 1}）班`;
 }
 
 function openStudentDetail(studentId: string) {
@@ -117,7 +120,7 @@ function openStudentDetail(studentId: string) {
     <header class="workbench-topbar">
       <div>
         <h1 class="page-title">工作台</h1>
-        <p class="page-subtitle">今天的课程、小孩进度与待办提醒</p>
+        <p class="page-subtitle">今天的课程、{{ cl }}进度与待办提醒</p>
       </div>
     </header>
 
@@ -125,7 +128,7 @@ function openStudentDetail(studentId: string) {
       <button class="workbench-metric-card" type="button" @click="emit('navigate', 'children')">
         <span class="workbench-metric-icon blue"><UsersRound :size="30" /></span>
         <div>
-          <p>小孩数</p>
+          <p>{{ cl }}数</p>
           <strong>{{ students.items.length }} <small>人</small></strong>
           <em>较昨日 ↑ {{ Math.max(1, Math.min(5, students.items.length - 1)) }}</em>
         </div>
@@ -152,7 +155,10 @@ function openStudentDetail(studentId: string) {
       <section class="workbench-panel workbench-schedule-panel">
         <header>
           <h2>今日课程安排</h2>
-          <button v-if="props.userRole !== 'parent'" type="button" @click="emit('navigate', 'schedule')"><Plus :size="16" /> 添加课程</button>
+          <n-button v-if="props.userRole !== 'parent'" type="primary" @click="emit('navigate', 'schedule')">
+            <template #icon><Plus :size="16" /></template>
+            添加课程
+          </n-button>
         </header>
         <div class="workbench-course-list">
           <button
@@ -211,7 +217,7 @@ function openStudentDetail(studentId: string) {
           </button>
         </div>
         <footer>
-          <button type="button" @click="emit('navigate', 'children')">查看小孩管理 <ChevronRight :size="15" /></button>
+          <button type="button" @click="emit('navigate', 'children')">查看{{ cl }}管理 <ChevronRight :size="15" /></button>
         </footer>
       </section>
 
