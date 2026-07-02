@@ -2,7 +2,7 @@
 import { ArrowLeft, Plus } from "lucide-vue-next";
 import { useMessage } from "naive-ui";
 import { computed, nextTick, reactive, ref, watch } from "vue";
-import type { ScheduledLesson } from "../children/childStore";
+import type { Course, ScheduledLesson, ScheduledLessonDraft } from "../children/childStore";
 import { useChildStore, K12_MISTAKE_BOOK_SUBJECTS } from "../children/childStore";
 import { useConfirmDelete } from "../../shared/utils/confirmDelete";
 import { childLabel } from "../../shared/utils/childLabel";
@@ -114,6 +114,64 @@ const materialOptions = computed(() => workspace.materials.map((m) => ({ label: 
 const subjectOptions = computed(() => {
   return K12_MISTAKE_BOOK_SUBJECTS.map((s) => ({ label: s, value: s }));
 });
+
+function parseDateString(dateStr: string) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatDateString(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function repeatedLessonDate(startDate: string, mode: "weekly" | "biweekly", lessonIndex: number) {
+  const date = parseDateString(startDate);
+  date.setDate(date.getDate() + lessonIndex * (mode === "biweekly" ? 14 : 7));
+  return date;
+}
+
+function courseFormLessonDate(lessonIndex: number) {
+  if (courseForm.scheduleMode === "specific") {
+    return courseForm.schedule.dates[lessonIndex] ?? courseForm.schedule.dates[0] ?? courseForm.schedule.startDate;
+  }
+  return formatDateString(repeatedLessonDate(courseForm.schedule.startDate, courseForm.scheduleMode, lessonIndex));
+}
+
+function syncCourseFormLessonDates() {
+  courseForm.lessons.forEach((lesson, index) => {
+    lesson.date = courseFormLessonDate(index);
+  });
+}
+
+function resolveCourseLessonDate(course: Course, lessonIndex: number) {
+  if (course.scheduleMode === "specific") {
+    const dateStr = course.lessons[lessonIndex]?.date ?? course.schedule.dates?.[lessonIndex];
+    return dateStr ? parseDateString(dateStr) : null;
+  }
+  return repeatedLessonDate(course.schedule.startDate, course.scheduleMode, lessonIndex);
+}
+
+function buildScheduledLessonDraft(course: Course, studentId: string, lessonIndex: number): ScheduledLessonDraft | null {
+  const lessonDate = resolveCourseLessonDate(course, lessonIndex);
+  if (!lessonDate) return null;
+
+  const lesson = course.lessons[lessonIndex];
+  const lessonTimeStr = lesson?.startTime ?? course.schedule.startTime;
+  const lessonDuration = lesson?.duration ?? course.schedule.duration ?? 90;
+  const [hours, minutes] = lessonTimeStr.split(":").map(Number);
+  lessonDate.setHours(hours, minutes || 0, 0, 0);
+
+  return {
+    courseId: course.id,
+    lessonIndex,
+    studentId,
+    subject: course.subject,
+    startsAt: lessonDate.getTime(),
+    durationMinutes: lessonDuration,
+    topic: lesson?.title ?? `第${lessonIndex + 1}课`,
+    note: ""
+  };
+}
 
 // --- 列表视图数据（课程列表） ---
 const listFilterSubject = ref<string | null>(null);
@@ -380,12 +438,11 @@ function openCreateCourse(timestamp?: number) {
     courseForm.schedule.weekday = 1;
   }
   courseForm.schedule.duration = 90;
-  const baseDate = courseForm.schedule.dates[0] || courseForm.schedule.startDate;
   courseForm.lessons = Array.from({ length: 12 }, (_, i) => ({
     title: `第${i + 1}课`,
     materialIds: [],
     order: i,
-    date: baseDate,
+    date: courseFormLessonDate(i),
     startTime: courseForm.schedule.startTime,
     duration: courseForm.schedule.duration,
     id: `lesson-${Date.now()}-${i}`
@@ -408,10 +465,10 @@ function editCourse(courseId: string) {
   courseForm.schedule.dates = course.scheduleMode === "specific" && course.schedule.dates
     ? [...course.schedule.dates]
     : [course.schedule.startDate];
-  specificDates.value = courseForm.schedule.dates.map((d) => new Date(d).getTime());
+  specificDates.value = courseForm.schedule.dates.map((d) => parseDateString(d).getTime());
   courseForm.schedule.startTime = course.schedule.startTime;
   courseForm.schedule.duration = course.schedule.duration;
-  courseForm.schedule.weekday = course.schedule.weekday ?? new Date(course.schedule.startDate).getDay();
+  courseForm.schedule.weekday = course.schedule.weekday ?? parseDateString(course.schedule.startDate).getDay();
   courseForm.price = course.price;
   courseForm.hourlyPrice = course.hourlyPrice;
   courseForm.lessons = course.lessons.map((l, i) => ({
@@ -423,6 +480,9 @@ function editCourse(courseId: string) {
     startTime: l.startTime ?? course.schedule.startTime,
     duration: l.duration ?? course.schedule.duration
   }));
+  if (courseForm.scheduleMode !== "specific") {
+    syncCourseFormLessonDates();
+  }
 }
 
 function saveCourse() {
@@ -529,13 +589,12 @@ function deleteCourse() {
 
 function addLesson() {
   const index = courseForm.lessons.length;
-  const lastDate = courseForm.lessons.length > 0 ? courseForm.lessons[courseForm.lessons.length - 1].date : courseForm.schedule.dates[0] || courseForm.schedule.startDate;
   courseForm.lessons.push({
     id: `lesson-${Date.now()}-${index}`,
     title: `第${index + 1}课`,
     materialIds: [],
     order: index,
-    date: lastDate,
+    date: courseFormLessonDate(index),
     startTime: courseForm.schedule.startTime,
     duration: courseForm.schedule.duration
   });
@@ -624,13 +683,12 @@ function updateLessonCount() {
   const count = Math.max(courseForm.totalLessons, 1);
   while (courseForm.lessons.length < count) {
     const i = courseForm.lessons.length;
-    const lastDate = courseForm.lessons.length > 0 ? courseForm.lessons[courseForm.lessons.length - 1].date : courseForm.schedule.dates[0] || courseForm.schedule.startDate;
     courseForm.lessons.push({
       id: `lesson-${Date.now()}-${i}`,
       title: `第${i + 1}课`,
       materialIds: [],
       order: i,
-      date: lastDate,
+      date: courseFormLessonDate(i),
       startTime: courseForm.schedule.startTime,
       duration: courseForm.schedule.duration
     });
@@ -639,6 +697,7 @@ function updateLessonCount() {
     courseForm.lessons.splice(count);
   }
   courseForm.totalLessons = courseForm.lessons.length;
+  syncCourseFormLessonDates();
 }
 
 function goBack() {
@@ -661,6 +720,36 @@ function shiftCalendar(direction: 1 | -1) {
   calendarAnchor.value = shiftCalendarAnchor(calendarMode.value, calendarAnchor.value, direction);
 }
 
+let touchStartX = 0;
+let touchStartY = 0;
+let isSwiping = false;
+
+function onTouchStart(e: TouchEvent) {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+  isSwiping = false;
+}
+
+function onTouchMove(e: TouchEvent) {
+  if (!touchStartX) return;
+  const deltaX = e.touches[0].clientX - touchStartX;
+  const deltaY = e.touches[0].clientY - touchStartY;
+  if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+    isSwiping = true;
+  }
+}
+
+function onTouchEnd(e: TouchEvent) {
+  if (!isSwiping) return;
+  const deltaX = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(deltaX) > 50) {
+    shiftCalendar(deltaX > 0 ? -1 : 1);
+  }
+  touchStartX = 0;
+  touchStartY = 0;
+  isSwiping = false;
+}
+
 function scrollDayViewToMorning() {
   nextTick(() => {
     if (dayGridRef.value) {
@@ -678,8 +767,35 @@ function nextHour(): number {
 
 function syncCoursesToSchedule() {
   let created = 0;
+  let updated = 0;
   let deleted = 0;
   let skipped = 0;
+
+  function upsertScheduledLesson(draft: ScheduledLessonDraft) {
+    const existing = workspace.scheduledLessons.find(
+      (lesson) =>
+        lesson.courseId === draft.courseId &&
+        lesson.studentId === draft.studentId &&
+        lesson.lessonIndex === draft.lessonIndex
+    );
+
+    if (!existing) {
+      workspace.createScheduledLesson(draft);
+      created++;
+      return;
+    }
+
+    if (
+      existing.subject !== draft.subject ||
+      existing.startsAt !== draft.startsAt ||
+      existing.durationMinutes !== draft.durationMinutes ||
+      existing.topic !== draft.topic ||
+      existing.note !== draft.note
+    ) {
+      workspace.updateScheduledLesson(existing.id, draft);
+      updated++;
+    }
+  }
   
   const validCourseKeys = new Set<string>();
   for (const course of workspace.courses) {
@@ -713,108 +829,18 @@ function syncCoursesToSchedule() {
       validCourseKeys.add(`${dummyStudentId}:${course.subject}`);
       
       for (let i = 0; i < course.totalLessons; i++) {
-        let lessonDate: Date;
-        let lessonTimeStr = course.schedule.startTime;
-        let lessonDuration = course.schedule.duration || 90;
-        
-        if (course.lessons[i]?.date) {
-          lessonDate = new Date(course.lessons[i].date!);
-        } else if (course.scheduleMode === "specific" && course.schedule.dates && course.schedule.dates.length > 0) {
-          if (i >= course.schedule.dates.length) break;
-          lessonDate = new Date(course.schedule.dates[i]);
-        } else {
-          lessonDate = new Date(course.schedule.startDate);
-          if (course.scheduleMode === "weekly") {
-            lessonDate.setDate(lessonDate.getDate() + i * 7);
-          } else if (course.scheduleMode === "biweekly") {
-            lessonDate.setDate(lessonDate.getDate() + i * 14);
-          } else {
-            lessonDate.setDate(lessonDate.getDate() + i * 7);
-          }
-        }
-        
-        if (course.lessons[i]?.startTime) {
-          lessonTimeStr = course.lessons[i].startTime!;
-        }
-        if (course.lessons[i]?.duration) {
-          lessonDuration = course.lessons[i].duration!;
-        }
-        
-        const [hours, minutes] = lessonTimeStr.split(":").map(Number);
-        lessonDate.setHours(hours, minutes || 0, 0, 0);
-        const startsAt = lessonDate.getTime();
-        
-        const exists = workspace.scheduledLessons.some(
-          (l) => l.courseId === course.id && l.studentId === dummyStudentId && l.lessonIndex === i
-        );
-        
-        if (!exists) {
-          workspace.createScheduledLesson({
-            courseId: course.id,
-            lessonIndex: i,
-            studentId: dummyStudentId,
-            subject: course.subject,
-            startsAt,
-            durationMinutes: lessonDuration,
-            topic: course.lessons[i]?.title ?? `第${i + 1}课`,
-            note: ""
-          });
-          created++;
-        }
+        const draft = buildScheduledLessonDraft(course, dummyStudentId, i);
+        if (!draft) break;
+        upsertScheduledLesson(draft);
       }
     } else {
       for (const student of courseStudentsList) {
         validCourseKeys.add(`${student.id}:${course.subject}`);
         
         for (let i = 0; i < course.totalLessons; i++) {
-          let lessonDate: Date;
-          let lessonTimeStr = course.schedule.startTime;
-          let lessonDuration = course.schedule.duration || 90;
-          
-          if (course.lessons[i]?.date) {
-            lessonDate = new Date(course.lessons[i].date!);
-          } else if (course.scheduleMode === "specific" && course.schedule.dates && course.schedule.dates.length > 0) {
-            if (i >= course.schedule.dates.length) break;
-            lessonDate = new Date(course.schedule.dates[i]);
-          } else {
-            lessonDate = new Date(course.schedule.startDate);
-            if (course.scheduleMode === "weekly") {
-              lessonDate.setDate(lessonDate.getDate() + i * 7);
-            } else if (course.scheduleMode === "biweekly") {
-              lessonDate.setDate(lessonDate.getDate() + i * 14);
-            } else {
-              lessonDate.setDate(lessonDate.getDate() + i * 7);
-            }
-          }
-          
-          if (course.lessons[i]?.startTime) {
-            lessonTimeStr = course.lessons[i].startTime!;
-          }
-          if (course.lessons[i]?.duration) {
-            lessonDuration = course.lessons[i].duration!;
-          }
-          
-          const [hours, minutes] = lessonTimeStr.split(":").map(Number);
-          lessonDate.setHours(hours, minutes || 0, 0, 0);
-          const startsAt = lessonDate.getTime();
-          
-          const exists = workspace.scheduledLessons.some(
-            (l) => l.courseId === course.id && l.studentId === student.id && l.lessonIndex === i
-          );
-          
-          if (!exists) {
-            workspace.createScheduledLesson({
-              courseId: course.id,
-              lessonIndex: i,
-              studentId: student.id,
-              subject: course.subject,
-              startsAt,
-              durationMinutes: lessonDuration,
-              topic: course.lessons[i]?.title ?? `第${i + 1}课`,
-              note: ""
-            });
-            created++;
-          }
+          const draft = buildScheduledLessonDraft(course, student.id, i);
+          if (!draft) break;
+          upsertScheduledLesson(draft);
         }
       }
     }
@@ -835,6 +861,7 @@ function syncCoursesToSchedule() {
   
   const parts = [];
   if (created > 0) parts.push(`新增 ${created} 条`);
+  if (updated > 0) parts.push(`更新 ${updated} 条`);
   if (deleted > 0) parts.push(`删除 ${deleted} 条`);
   if (parts.length > 0) {
     message.success(`课程表已同步：${parts.join("，")}`);
@@ -849,8 +876,9 @@ watch(calendarMode, () => {
 
 function onStartDateChange(dateStr: string) {
   if (!dateStr) return;
-  courseForm.schedule.weekday = new Date(dateStr).getDay();
+  courseForm.schedule.weekday = parseDateString(dateStr).getDay();
   courseForm.schedule.dates = [dateStr];
+  syncCourseFormLessonDates();
 }
 
 function onSpecificDatePick(ts: number | null) {
@@ -860,11 +888,13 @@ function onSpecificDatePick(ts: number | null) {
   if (!courseForm.schedule.dates.includes(dateStr)) {
     courseForm.schedule.dates.push(dateStr);
     courseForm.schedule.dates.sort();
+    syncCourseFormLessonDates();
   }
 }
 
 function removeDate(index: number) {
   courseForm.schedule.dates.splice(index, 1);
+  syncCourseFormLessonDates();
 }
 
 watch(() => specificDates.value, (val) => {
@@ -874,9 +904,26 @@ watch(() => specificDates.value, (val) => {
   });
   if (courseForm.schedule.dates.length > 0) {
     courseForm.schedule.startDate = courseForm.schedule.dates[0];
-    courseForm.schedule.weekday = new Date(courseForm.schedule.dates[0]).getDay();
+    courseForm.schedule.weekday = parseDateString(courseForm.schedule.dates[0]).getDay();
   }
+  syncCourseFormLessonDates();
 }, { deep: true });
+
+watch(() => courseForm.scheduleMode, () => {
+  syncCourseFormLessonDates();
+});
+
+watch(() => courseForm.schedule.startTime, (startTime) => {
+  courseForm.lessons.forEach((lesson) => {
+    lesson.startTime = startTime;
+  });
+});
+
+watch(() => courseForm.schedule.duration, (duration) => {
+  courseForm.lessons.forEach((lesson) => {
+    lesson.duration = duration;
+  });
+});
 
 const weekdayLabel = computed(() => {
   return getWeekdayLabel(courseForm.schedule.weekday);
@@ -947,11 +994,20 @@ const weekdayLabel = computed(() => {
             <n-tag round size="small">{{ titleText }}</n-tag>
           </n-space>
         </div>
+        <div class="swipe-hint" v-if="viewMode === 'calendar'">
+          <span>← 左右滑动切换月份 →</span>
+        </div>
       </div>
 
       <!-- ====== 日历视图 ====== -->
       <template v-if="viewMode === 'calendar'">
-        <section class="schedule-calendar" :class="`schedule-calendar-${calendarMode}`">
+        <section
+          class="schedule-calendar"
+          :class="`schedule-calendar-${calendarMode}`"
+          @touchstart="onTouchStart"
+          @touchmove="onTouchMove"
+          @touchend="onTouchEnd"
+        >
           <template v-if="calendarMode === 'month'">
             <div class="schedule-month-head">
               <div v-for="label in ['周一', '周二', '周三', '周四', '周五', '周六', '周日']" :key="label">{{ label }}</div>
@@ -1379,6 +1435,20 @@ const weekdayLabel = computed(() => {
   visibility: hidden;
   pointer-events: none;
   border-color: transparent;
+}
+
+.swipe-hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 4px 0;
+  opacity: 0.6;
+}
+
+@media (min-width: 768px) {
+  .swipe-hint {
+    display: none;
+  }
 }
 
 .view-switch {

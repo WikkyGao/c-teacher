@@ -911,16 +911,16 @@ async function openMaterial(sourcePath: string) {
             <n-form-item label="地址">
               <n-input v-model:value="form.address" placeholder="例如：滨江花园 3 栋 1202" />
             </n-form-item>
-            <n-form-item label="总课时">
+            <n-form-item v-if="editingStudentId" label="总课时">
               <n-input-number v-model:value="form.totalHours" :min="0" :max="999" style="width: 100%;" />
             </n-form-item>
-            <n-form-item label="已完成课时">
+            <n-form-item v-if="editingStudentId" label="已完成课时">
               <n-input-number v-model:value="form.completedHours" :min="0" :max="form.totalHours" style="width: 100%;" />
             </n-form-item>
-            <n-form-item label="收费模式">
+            <n-form-item v-if="editingStudentId" label="收费模式">
               <n-select v-model:value="form.collectionMode" :options="collectionModeSelectOptions" />
             </n-form-item>
-            <n-form-item label="收款状态">
+            <n-form-item v-if="editingStudentId" label="收款状态">
               <n-select v-model:value="form.paymentStatus" :options="paymentStatusSelectOptions" />
             </n-form-item>
             <n-form-item v-if="students.groups.length > 0" label="所属分组">
