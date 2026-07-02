@@ -361,6 +361,42 @@ fn migrate_entity_tables(connection: &Connection) -> Result<(), String> {
         "record_type",
         "TEXT NOT NULL DEFAULT '课堂讲授'",
     )?;
+    ensure_column(
+        connection,
+        "students",
+        "guardian_phone",
+        "TEXT NOT NULL DEFAULT ''",
+    )?;
+    ensure_column(
+        connection,
+        "students",
+        "address",
+        "TEXT NOT NULL DEFAULT ''",
+    )?;
+    ensure_column(
+        connection,
+        "students",
+        "total_hours",
+        "REAL NOT NULL DEFAULT 0",
+    )?;
+    ensure_column(
+        connection,
+        "students",
+        "completed_hours",
+        "REAL NOT NULL DEFAULT 0",
+    )?;
+    ensure_column(
+        connection,
+        "students",
+        "collection_mode",
+        "TEXT NOT NULL DEFAULT '全款'",
+    )?;
+    ensure_column(
+        connection,
+        "students",
+        "payment_status",
+        "TEXT NOT NULL DEFAULT '未收款'",
+    )?;
     Ok(())
 }
 
