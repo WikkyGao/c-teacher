@@ -255,6 +255,7 @@ fn open_database(app: &AppHandle) -> Result<Connection, String> {
         )
         .map_err(|error| format!("failed to migrate workspace db: {error}"))?;
     migrate_entity_tables(&connection)?;
+    migrate_shared_database(&connection)?;
     seed_k12_tags(&connection)?;
     Ok(connection)
 }
@@ -397,6 +398,14 @@ fn migrate_entity_tables(connection: &Connection) -> Result<(), String> {
         "payment_status",
         "TEXT NOT NULL DEFAULT '未收款'",
     )?;
+    Ok(())
+}
+
+fn migrate_shared_database(connection: &Connection) -> Result<(), String> {
+    let migration_sql = include_str!("../../../../shared/database/migrate.sql");
+    connection
+        .execute_batch(migration_sql)
+        .map_err(|error| format!("failed to migrate shared database: {error}"))?;
     Ok(())
 }
 

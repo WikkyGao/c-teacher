@@ -34,6 +34,8 @@ export type Course = {
     duration: number;
     weekday?: number;
   };
+  price?: number;
+  hourlyPrice?: number;
 };
 
 export type CourseStudent = {
@@ -103,6 +105,12 @@ export type Child = {
   style: string;
   materials: string[];
   mistakeBook: MistakeBookSummary;
+  guardianPhone: string;
+  address: string;
+  totalHours: number;
+  completedHours: number;
+  collectionMode: "全款" | "分期";
+  paymentStatus: "未收款" | "部分收款" | "已收款";
 };
 
 export type ChildGroup = {
@@ -117,6 +125,12 @@ export type ChildGroup = {
 
 export type ChildDraft = Pick<Child, "name" | "goal" | "style" | "materials"> & {
   gender?: Child["gender"];
+  guardianPhone?: string;
+  address?: string;
+  totalHours?: number;
+  completedHours?: number;
+  collectionMode?: Child["collectionMode"];
+  paymentStatus?: Child["paymentStatus"];
 };
 
 export type MistakeBookPatch = Partial<
@@ -459,7 +473,13 @@ const seedChildren: Child[] = [
       analysis: "概念理解基本到位，但图像平移与参数变化对应关系不稳定。",
       similarQuestions: "函数图像平移 3 题，参数取值判断 2 题。",
       knowledgeInsight: "函数图像掌握 72%，几何证明掌握 44%。"
-    }
+    },
+    guardianPhone: "138 0000 8126",
+    address: "滨江花园 3 栋 1202",
+    totalHours: 20,
+    completedHours: 17,
+    collectionMode: "全款",
+    paymentStatus: "已收款"
   },
   {
     id: "meng",
@@ -476,7 +496,13 @@ const seedChildren: Child[] = [
       analysis: "定位信息准确，但推断题容易忽略转折词和上下文指代。",
       similarQuestions: "推断题 4 题，指代还原 2 题。",
       knowledgeInsight: "阅读推断掌握 58%，表达题掌握 63%。"
-    }
+    },
+    guardianPhone: "139 0000 6721",
+    address: "江南路 88 号",
+    totalHours: 20,
+    completedHours: 11,
+    collectionMode: "分期",
+    paymentStatus: "部分收款"
   },
   {
     id: "he",
@@ -493,7 +519,13 @@ const seedChildren: Child[] = [
       analysis: "公式记忆能跟上，但题干条件抽取和单位换算需要慢速训练。",
       similarQuestions: "基础概念辨析 5 题，受力分析入门 3 题。",
       knowledgeInsight: "基础概念掌握 40%，受力分析掌握 18%。"
-    }
+    },
+    guardianPhone: "137 0000 4562",
+    address: "学府路 16 号",
+    totalHours: 20,
+    completedHours: 8,
+    collectionMode: "全款",
+    paymentStatus: "已收款"
   }
 ];
 
@@ -786,7 +818,9 @@ function normalizeCourse(course: Course): Course {
     groupId: course.groupId,
     studentIds: course.studentIds ?? [],
     scheduleMode: course.scheduleMode ?? "weekly",
-    schedule: course.schedule ?? { startDate: new Date().toISOString().split('T')[0], startTime: "14:00", duration: 90 }
+    schedule: course.schedule ?? { startDate: new Date().toISOString().split('T')[0], startTime: "14:00", duration: 90 },
+    price: course.price,
+    hourlyPrice: course.hourlyPrice
   };
 }
 
@@ -794,7 +828,13 @@ function normalizeChild(child: Child): Child {
   return {
     ...child,
     gender: child.gender === "male" || child.gender === "female" ? child.gender : "female",
-    mistakeBook: normalizeMistakeBook(child.mistakeBook)
+    mistakeBook: normalizeMistakeBook(child.mistakeBook),
+    guardianPhone: child.guardianPhone ?? "",
+    address: child.address ?? "",
+    totalHours: child.totalHours ?? 0,
+    completedHours: child.completedHours ?? 0,
+    collectionMode: child.collectionMode ?? "全款",
+    paymentStatus: child.paymentStatus ?? "未收款"
   };
 }
 
@@ -1317,11 +1357,20 @@ function applyPersistedState(state: PersistedState) {
   }
 
   function createStudent(draft: ChildDraft) {
-  const child: Child = {
+    const child: Child = {
       id: createId("child"),
-      ...draft,
+      name: draft.name,
       gender: draft.gender ?? "female",
-      mistakeBook: createMistakeBook([])
+      goal: draft.goal,
+      style: draft.style,
+      materials: draft.materials,
+      mistakeBook: createMistakeBook([]),
+      guardianPhone: draft.guardianPhone ?? "",
+      address: draft.address ?? "",
+      totalHours: draft.totalHours ?? 0,
+      completedHours: draft.completedHours ?? 0,
+      collectionMode: draft.collectionMode ?? "全款",
+      paymentStatus: draft.paymentStatus ?? "未收款"
     };
     items.value.unshift(child);
     activeChildId.value = child.id;
@@ -1338,7 +1387,13 @@ function applyPersistedState(state: PersistedState) {
       mistakeBook: {
         ...existing.mistakeBook,
         subjects: K12_MISTAKE_BOOK_SUBJECTS
-      }
+      },
+      guardianPhone: draft.guardianPhone ?? existing.guardianPhone,
+      address: draft.address ?? existing.address,
+      totalHours: draft.totalHours ?? existing.totalHours,
+      completedHours: draft.completedHours ?? existing.completedHours,
+      collectionMode: draft.collectionMode ?? existing.collectionMode,
+      paymentStatus: draft.paymentStatus ?? existing.paymentStatus
     };
   }
 

@@ -22,7 +22,13 @@ function sampleState(): CompletePersistedState {
           analysis: "",
           similarQuestions: "",
           knowledgeInsight: ""
-        }
+        },
+        guardianPhone: "",
+        address: "",
+        totalHours: 0,
+        completedHours: 0,
+        collectionMode: "全款",
+        paymentStatus: "未收款"
       }
     ],
     materials: [],

@@ -59,7 +59,13 @@ const form = reactive({
   goal: "",
   style: "",
   groupIds: [] as string[],
-  reportNotes: ""
+  reportNotes: "",
+  guardianPhone: "",
+  address: "",
+  totalHours: 0,
+  completedHours: 0,
+  collectionMode: "全款" as Child["collectionMode"],
+  paymentStatus: "未收款" as Child["paymentStatus"]
 });
 const modalTitle = computed(() => (editingStudentId.value ? `编辑${cl.value}` : `新增${cl.value}`));
 const groupModalTitle = computed(() => (editingGroupId.value ? "编辑分组" : "新建分组"));
@@ -85,6 +91,15 @@ const courseSubjectOptions = computed(() => {
 const genderOptions = [
   { label: "女生", value: "female" },
   { label: "男生", value: "male" }
+];
+const collectionModeSelectOptions: Array<{ label: string; value: Child["collectionMode"] }> = [
+  { label: "全款", value: "全款" },
+  { label: "分期", value: "分期" }
+];
+const paymentStatusSelectOptions: Array<{ label: string; value: Child["paymentStatus"] }> = [
+  { label: "未收款", value: "未收款" },
+  { label: "部分收款", value: "部分收款" },
+  { label: "已收款", value: "已收款" }
 ];
 const filteredChildren = computed(() => {
   if (!selectedGroupId.value) return students.items;
@@ -150,6 +165,12 @@ function resetForm(child?: Child) {
   form.style = child?.style ?? "";
   form.groupIds = child ? students.groups.filter((g) => g.memberIds.includes(child.id)).map((g) => g.id) : [];
   form.reportNotes = "";
+  form.guardianPhone = child?.guardianPhone ?? "";
+  form.address = child?.address ?? "";
+  form.totalHours = child?.totalHours ?? 0;
+  form.completedHours = child?.completedHours ?? 0;
+  form.collectionMode = child?.collectionMode ?? "全款";
+  form.paymentStatus = child?.paymentStatus ?? "未收款";
 }
 
 function openCreateStudent() {
@@ -172,12 +193,18 @@ function saveStudent() {
     gender: form.gender,
     goal: form.goal.trim() || "待设定目标",
     style: form.style.trim() || "待观察学习风格",
-    materials: []
+    materials: [],
+    guardianPhone: form.guardianPhone.trim(),
+    address: form.address.trim(),
+    totalHours: form.totalHours,
+    completedHours: form.completedHours,
+    collectionMode: form.collectionMode,
+    paymentStatus: form.paymentStatus
   };
   if (editingStudentId.value) {
     students.updateStudent(editingStudentId.value, draft);
     const studentId = editingStudentId.value;
-    
+
     // Update group memberships
     const prevGroupIds = students.groups.filter((g) => g.memberIds.includes(studentId)).map((g) => g.id);
     for (const gid of prevGroupIds) {
@@ -748,6 +775,33 @@ async function openMaterial(sourcePath: string) {
               <span>学习风格</span>
               <strong>{{ activeChild.style }}</strong>
             </div>
+            <n-divider title-placement="left" style="margin: 8px 0;">收费信息</n-divider>
+            <div>
+              <span>监护人电话</span>
+              <strong>{{ activeChild.guardianPhone || '未填写' }}</strong>
+            </div>
+            <div>
+              <span>地址</span>
+              <strong>{{ activeChild.address || '未填写' }}</strong>
+            </div>
+            <div>
+              <span>总课时</span>
+              <strong>{{ activeChild.totalHours }} 课时</strong>
+            </div>
+            <div>
+              <span>已完成课时</span>
+              <strong>{{ activeChild.completedHours }} 课时（剩余 {{ activeChild.totalHours - activeChild.completedHours }} 课时）</strong>
+            </div>
+            <div>
+              <span>收费模式</span>
+              <strong>{{ activeChild.collectionMode }}</strong>
+            </div>
+            <div>
+              <span>收款状态</span>
+              <n-tag :type="activeChild.paymentStatus === '已收款' ? 'success' : activeChild.paymentStatus === '部分收款' ? 'warning' : 'error'" size="small">
+                {{ activeChild.paymentStatus }}
+              </n-tag>
+            </div>
             <div>
               <span>已分配资料</span>
               <div v-if="activeStudentMaterials.length > 0" class="assigned-materials">
@@ -849,6 +903,25 @@ async function openMaterial(sourcePath: string) {
             </n-form-item>
             <n-form-item label="学习风格">
               <n-input v-model:value="form.style" placeholder="例如：图像化讲解 + 例题驱动" />
+            </n-form-item>
+            <n-divider title-placement="left" style="margin: 8px 0;">收费信息</n-divider>
+            <n-form-item label="监护人电话">
+              <n-input v-model:value="form.guardianPhone" placeholder="例如：138 0000 8126" />
+            </n-form-item>
+            <n-form-item label="地址">
+              <n-input v-model:value="form.address" placeholder="例如：滨江花园 3 栋 1202" />
+            </n-form-item>
+            <n-form-item label="总课时">
+              <n-input-number v-model:value="form.totalHours" :min="0" :max="999" style="width: 100%;" />
+            </n-form-item>
+            <n-form-item label="已完成课时">
+              <n-input-number v-model:value="form.completedHours" :min="0" :max="form.totalHours" style="width: 100%;" />
+            </n-form-item>
+            <n-form-item label="收费模式">
+              <n-select v-model:value="form.collectionMode" :options="collectionModeSelectOptions" />
+            </n-form-item>
+            <n-form-item label="收款状态">
+              <n-select v-model:value="form.paymentStatus" :options="paymentStatusSelectOptions" />
             </n-form-item>
             <n-form-item v-if="students.groups.length > 0" label="所属分组">
               <n-select

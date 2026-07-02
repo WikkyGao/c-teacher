@@ -51,7 +51,9 @@ const courseForm = reactive({
     duration: 90,
     weekday: 1
   },
-  lessons: [] as Array<{ id: string; title: string; materialIds: string[]; order: number; date: string; startTime: string; duration: number }>
+  lessons: [] as Array<{ id: string; title: string; materialIds: string[]; order: number; date: string; startTime: string; duration: number }>,
+  price: undefined as number | undefined,
+  hourlyPrice: undefined as number | undefined
 });
 
 type GroupedLessonItem = {
@@ -101,7 +103,10 @@ const scheduleModeOptions = [
   { label: "每两周重复", value: "biweekly" }
 ];
 const intervalOptions = [3, 5, 7, 10, 14, 21, 30].map((d) => ({ label: `每 ${d} 天`, value: d }));
-const childOptions = computed(() => workspace.items.map((child) => ({ label: child.name, value: child.id })));
+const childOptions = computed(() => workspace.items.map((child) => ({
+  label: `${child.name}（剩余 ${child.totalHours - child.completedHours} 课时）`,
+  value: child.id
+})));
 const groupOptions = computed(() =>
   workspace.groups.map((g) => ({ label: `${g.name}（${g.type === "class" ? "班级" : "小组"}）`, value: g.id }))
 );
@@ -407,6 +412,8 @@ function editCourse(courseId: string) {
   courseForm.schedule.startTime = course.schedule.startTime;
   courseForm.schedule.duration = course.schedule.duration;
   courseForm.schedule.weekday = course.schedule.weekday ?? new Date(course.schedule.startDate).getDay();
+  courseForm.price = course.price;
+  courseForm.hourlyPrice = course.hourlyPrice;
   courseForm.lessons = course.lessons.map((l, i) => ({
     id: l.id || `lesson-${Date.now()}-${i}`,
     title: l.title,
@@ -463,7 +470,9 @@ function saveCourse() {
       startTime: courseForm.schedule.startTime,
       duration: courseForm.schedule.duration,
       weekday: courseForm.scheduleMode === "weekly" || courseForm.scheduleMode === "biweekly" ? courseForm.schedule.weekday : undefined
-    }
+    },
+    price: courseForm.price,
+    hourlyPrice: courseForm.hourlyPrice
   };
   
   if (editingCourseId.value) {
@@ -1087,6 +1096,13 @@ const weekdayLabel = computed(() => {
                   <span class="course-card-scope">
                     {{ course.scope === 'personal' ? getCourseStudents(course.id).map(s => s.name).join('、') : (workspace.groups.find(g => g.id === course.groupId)?.name ?? '班级/小组') }}
                   </span>
+                  <span v-if="course.price || course.hourlyPrice" class="course-card-price">
+                    <template v-if="course.price">总费用: ¥{{ course.price }}</template>
+                    <template v-if="course.hourlyPrice"> | 单节: ¥{{ course.hourlyPrice }}</template>
+                  </span>
+                  <span v-if="course.scope === 'personal' && course.studentIds.length > 0" class="course-card-hours">
+                    {{ getCourseStudents(course.id).map(s => `${s.name} 剩余 ${s.totalHours - s.completedHours} 课时`).join(' | ') }}
+                  </span>
                 </div>
                 <svg :class="{ expanded: isCourseExpanded(course.id) }" class="expand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
                   <path d="M9 18l6-6-6-6" />
@@ -1224,6 +1240,12 @@ const weekdayLabel = computed(() => {
               </n-form-item>
               <n-form-item label="课时数量">
                 <n-input-number v-model:value="courseForm.totalLessons" :min="1" :max="100" @update:value="updateLessonCount" />
+              </n-form-item>
+              <n-form-item label="课程总费用（元）">
+                <n-input-number v-model:value="courseForm.price" :min="0" :precision="2" placeholder="可选" />
+              </n-form-item>
+              <n-form-item label="单节课时价格（元）">
+                <n-input-number v-model:value="courseForm.hourlyPrice" :min="0" :precision="2" placeholder="可选" />
               </n-form-item>
             </n-form>
           </div>
@@ -1525,6 +1547,17 @@ const weekdayLabel = computed(() => {
   border-radius: 999px;
   background: var(--surface-soft);
   color: var(--muted-strong);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.course-card-price {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
