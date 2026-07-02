@@ -1,6 +1,3 @@
 [submodule "apps/mobile"]
 	path = apps/mobile
 	url = /Users/wikky/Documents/c-financial
-[submodule "c-financial"]
-	path = c-financial
-	url = ../c-financial
