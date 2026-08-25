@@ -4,6 +4,7 @@
 
 | 版本 | 日期 | 变更内容 | 变更人 |
 | --- | --- | --- | --- |
+| v2.3.0 | 2026-07-02 | 新增局域网配对数据同步（REQ-022）：C-teacher 桌面端作为主设备，C-financial 配对后双向自动同步学生、课程、排课和财务字段。 | 用户需求分析 |
 | v2.2.0 | 2026-06-26 | 资料库增强：新增 iCloud 自动同步（REQ-020）、拖拽上传（REQ-021）、iCloud 冲突处理策略、数据模型扩展。 | — |
 | v2.1.2 | 2026-06-26 | 课堂记录类型化改造：类型选择从多选改为单选，更新接口、需求描述和页面设计。 | — |
 | v2.1.1 | 2026-06-26 | 课堂记录类型化改造：类型选择从多选改为单选，更新接口、需求描述和页面设计。 | — |
@@ -49,6 +50,7 @@ C-teacher 面向教师的一对多个性化教学管理场景，帮助教师管�
 | 移动端支持 | V1 | P0 | 是 | 支持移动端访问核心功能，至少覆盖查看资料、查看学习计划、课堂记录查看、作业查看等轻量场景。 | 用户补充 |
 | 系统提醒调用 | V1 | P0 | 是 | 支持调用系统提醒能力，用于课程、作业、批改、学习报告等关键事项提醒。 | 用户补充 |
 | 移动端拍照传桌面端 | V2 | P0 | 否 | 手机拍照错题 → 局域网传输 → 桌面端自动入库 → AI 分析。复用 Go API sidecar。 | 用户补充 + 需求分析 |
+| 局域网配对数据同步 | V2 | P0 | 否 | C-teacher 桌面端作为主设备，同 WiFi 下与 C-financial 配对后双向自动同步学生、课程、排课和财务字段。 | 用户需求分析 2026-07-02 |
 
 > ⚠️ 待确认  
 > - "系统提醒"具体指 macOS 通知中心、本机"提醒事项"App、日历提醒，还是跨端推送通知。当前 PRD 先按"可调用系统级提醒能力"描述，不限定具体技术实现。
@@ -60,7 +62,7 @@ C-teacher 面向教师的一对多个性化教学管理场景，帮助教师管�
 | 阶段 | 范围 | 周期 | 包含需求 | 说明 | 来源 |
 | --- | --- | --- | --- | --- | --- |
 | V1 | MVP | 6 周 | P0 | 学生档案、学生错题本入口、个性化学习计划、课堂记录、资料库、资料-学生关联、macOS 优先教师端、移动端核心适配、系统提醒调用 | 需求记录.txt, 功能模块.xlsx, 需求分析过程.md, 用户补充 |
-| V2 | 增强版 | 4 周 | P1 | 资料共享与复用、进度看板、作业与批改跟踪、错题本 AI 分析、资料打标签/搜索、移动端拍照传桌面端、**课堂记录类型化** | 需求记录.txt, 需求分析过程.md, 用户补充 |
+| V2 | 增强版 | 4 周 | P1 | 资料共享与复用、进度看板、作业与批改跟踪、错题本 AI 分析、资料打标签/搜索、移动端拍照传桌面端、**课堂记录类型化**、局域网配对数据同步 | 需求记录.txt, 需求分析过程.md, 用户补充 |
 | V3 | 智能化 | 6 周 | P1 + P2 | 学习报告自动生成、智能备课推荐、学生自助端、知识点图谱、跨知识点错因洞察 | 需求记录.txt, 需求分析过程.md, 用户补充 |
 
 > ⚠️ 待确认  
@@ -567,6 +569,100 @@ ws://127.0.0.1:18080/ws/uploads
 **新增文件**：`upload.go`、`websocket.go`、`mobile.html`、`MobileConnectModal.vue`
 **修改文件**：`main.go`（路由注册）、`MistakeBookPage.vue`（接收上传）、`lib.rs`（`save_uploaded_image` command）
 
+### 模块 11: 局域网配对数据同步（REQ-022）
+
+> 来源: 用户需求分析 2026-07-02
+
+#### 11.1 需求概述
+
+C-teacher 与 C-financial 在同一个 WiFi 下，通过双方配对建立可信连接。C-teacher 桌面端作为主设备，C-financial 作为配对设备；配对成功后自动进行双向数据同步，范围限定为学生、课程、排课和财务相关字段，不同步错题图片、教学资料文件、PDF 费用单等大文件。
+
+**核心流程**：`桌面端开启配对 → C-financial 扫码/输入配对码 → 双方确认连接 → 自动双向同步 → 展示同步结果`
+
+#### 11.2 同步范围
+
+| 数据类别 | 同步方向 | 字段归属 | 说明 |
+| --- | --- | --- | --- |
+| 学生基础信息 | 双向 | 共享字段人工处理冲突 | `id/name/gender/guardianPhone/address` 等基础字段保持一致 |
+| 教学字段 | C-teacher 优先 | C-teacher | `goal/style/materials/mistakeBook` 等教学侧字段由 C-teacher 主维护 |
+| 课程信息 | 双向 | 共享字段人工处理冲突 | `Course/CourseLesson/CourseSchedule` 结构保持一致 |
+| 排课信息 | 双向 | 共享字段人工处理冲突 | `ScheduledLesson` 与 C-financial 排课结构按课程、学生和时间同步 |
+| 课程-学生关联 | 双向 | 共享字段人工处理冲突 | `{ courseId, studentId, currentLesson, progress }` 保持一致 |
+| 财务字段 | C-financial 优先 | C-financial | `totalHours/completedHours/collectionMode/paymentStatus` 由 C-financial 主维护 |
+
+**不在 MVP 范围**：错题图片、资料库文件、iCloud 文件、PDF 费用单、账号权限、跨互联网远程同步、多人实时协作。
+
+#### 11.3 配对管理
+
+| 功能 ID | 功能 | 阶段 | 优先级 | 是否 MVP | 描述 |
+| --- | --- | --- | --- | --- | --- |
+| REQ-022-1 | 开启桌面端配对 | V2 | P0 | 是 | C-teacher 桌面端打开本地同步服务，生成二维码和配对码。 |
+| REQ-022-2 | C-financial 发起连接 | V2 | P0 | 是 | C-financial 扫描二维码或输入配对码，连接同 WiFi 下的 C-teacher。 |
+| REQ-022-3 | 双方确认配对 | V2 | P0 | 是 | 桌面端展示待配对设备名称、IP 和时间，用户确认后建立可信连接。 |
+| REQ-022-4 | 设备管理 | V2 | P1 | 否 | 查看已配对设备、最近同步时间、解除配对。 |
+
+**配对信息建议包含**：`host/ip/port/sessionId/oneTimeToken/expiresAt/schemaVersion/deviceName`。一次性 token 默认 5 分钟有效，配对完成后换取长期设备授权。
+
+#### 11.4 自动同步
+
+| 功能 ID | 功能 | 阶段 | 优先级 | 是否 MVP | 描述 |
+| --- | --- | --- | --- | --- | --- |
+| REQ-022-5 | 连接后自动同步 | V2 | P0 | 是 | 配对连接成功后立即执行一次双向增量同步。 |
+| REQ-022-6 | 增量变更同步 | V2 | P0 | 是 | 按实体 `updatedAt/deletedAt/schemaVersion` 识别新增、更新和删除。 |
+| REQ-022-7 | 同步状态提示 | V2 | P0 | 是 | 展示同步中、同步成功、同步失败、冲突待处理等状态。 |
+| REQ-022-8 | 失败重试 | V2 | P1 | 否 | WiFi 中断、设备休眠、端口不可达时允许手动重试。 |
+
+**自动同步触发条件**：
+
+- 首次配对成功后自动同步。
+- 已配对设备重新连接成功后自动同步。
+- 自动同步只在同 WiFi 且设备授权有效时触发。
+- 同步前校验双方 schema 版本，不兼容时阻止同步并提示升级。
+
+#### 11.5 冲突处理
+
+| 冲突类型 | 默认策略 | 用户处理 |
+| --- | --- | --- |
+| 教学字段冲突 | 保留 C-teacher | 无需用户处理，记录同步日志 |
+| 财务字段冲突 | 保留 C-financial | 无需用户处理，记录同步日志 |
+| 共享字段冲突 | 暂停该字段合并 | 展示双方值，由用户选择保留 C-teacher 或 C-financial |
+| 删除冲突 | 删除优先级低于更新 | 用户确认删除或恢复 |
+
+共享字段包括学生姓名、性别、家长电话、地址、课程名称、科目、课时标题、排课时间等双方都会直接编辑的字段。
+
+#### 11.6 接口设计（草案）
+
+```
+GET /v1/sync/pairing/session
+响应: { sessionId, oneTimeToken, host, port, expiresAt, schemaVersion, deviceName }
+
+POST /v1/sync/pairing/confirm
+请求: { sessionId, deviceId, deviceName, oneTimeToken }
+响应: { pairingId, deviceToken, acceptedAt }
+
+POST /v1/sync/pull
+请求: { deviceId, deviceToken, since, entityTypes }
+响应: { schemaVersion, changes, serverTime }
+
+POST /v1/sync/push
+请求: { deviceId, deviceToken, changes }
+响应: { accepted, conflicts, serverTime }
+
+GET /v1/sync/status
+响应: { connectedDevices, lastSyncAt, lastError, pendingConflicts }
+```
+
+#### 11.7 验收标准
+
+- [ ] C-teacher 桌面端可生成二维码和配对码。
+- [ ] C-financial 在同 WiFi 下扫码或输入配对码后可连接 C-teacher。
+- [ ] C-teacher 端确认后，双方自动完成一次双向同步。
+- [ ] 学生、课程、排课和财务字段按同步范围保持一致。
+- [ ] 教学字段冲突时默认保留 C-teacher，财务字段冲突时默认保留 C-financial。
+- [ ] 共享字段冲突时不自动覆盖，必须展示双方值并等待用户选择。
+- [ ] 不同步错题图片、资料文件、PDF 费用单等大文件。
+- [ ] WiFi 断开或 token 过期时，同步失败并给出可理解提示。
+
 ---
 
 ## MVP 范围
@@ -610,6 +706,7 @@ ws://127.0.0.1:18080/ws/uploads
 | 学生错题本 | V1 | 从学生管理进入，按学生和科目管理错题 |
 | 错题 AI 分析 | V2 | 拍照识别错题、AI 辅助改题、错误分析、相似题生成和知识点分析 |
 | 移动端拍照页 | V2 | 手机拍照 → 局域网传输 → 桌面端自动入库 |
+| 局域网同步配对页 | V2 | 桌面端生成二维码/配对码，确认 C-financial 设备配对，展示同步状态和冲突 |
 | 学习报告页 | V3 | 查看周/月学习报告 |
 | 移动端核心页面 | V1 | 在移动端查看资料、学习计划、课堂记录和作业 |
 | 学生小程序端 | V3 | 学生查看资料、提交作业、查看学习报告 |
@@ -637,6 +734,10 @@ graph TD
     G1 --> G2[生成类似题型和知识点诊断]
     G1 --> G3[移动端拍照 → 局域网传输]
     G3 --> G1
+    B --> S1[开启局域网同步配对]
+    S1 --> S2[C-financial 扫码连接]
+    S2 --> S3[自动双向同步学生/课程/排课/财务]
+    S3 --> B
     G --> H[生成学习报告]
 ```
 
@@ -782,6 +883,51 @@ graph TD
 | similar_questions | array | 否 | AI 生成的类似题型 | 用户补充 |
 | review_status | enum | 是 | 待订正、已订正、已掌握等状态 | 用户补充 |
 
+### 实体 10: 同步配对设备
+
+| 字段名 | 类型 | 必填 | 说明 | 来源 |
+| --- | --- | --- | --- | --- |
+| id | string | 是 | 配对记录唯一标识 | REQ-022 |
+| device_id | string | 是 | 配对设备唯一标识 | REQ-022 |
+| device_name | string | 是 | 设备名称，如 C-financial Android | REQ-022 |
+| app_name | enum | 是 | c-teacher/c-financial | REQ-022 |
+| device_token_hash | string | 是 | 配对后设备授权 token 的哈希 | REQ-022 |
+| ip_address | string | 否 | 最近连接 IP | REQ-022 |
+| schema_version | string | 是 | 设备支持的数据 schema 版本 | REQ-022 |
+| paired_at | datetime | 是 | 首次配对时间 | REQ-022 |
+| last_sync_at | datetime | 否 | 最近同步完成时间 | REQ-022 |
+| status | enum | 是 | paired/revoked/expired | REQ-022 |
+
+### 实体 11: 同步变更记录
+
+| 字段名 | 类型 | 必填 | 说明 | 来源 |
+| --- | --- | --- | --- | --- |
+| id | string | 是 | 同步变更唯一标识 | REQ-022 |
+| entity_type | enum | 是 | student/course/course_lesson/course_student/scheduled_lesson/finance | REQ-022 |
+| entity_id | string | 是 | 业务实体 ID | REQ-022 |
+| operation | enum | 是 | create/update/delete | REQ-022 |
+| changed_fields | array\<string\> | 否 | 本次变更字段 | REQ-022 |
+| source_app | enum | 是 | c-teacher/c-financial | REQ-022 |
+| source_device_id | string | 是 | 变更来源设备 | REQ-022 |
+| version | number | 是 | 实体版本号或逻辑时钟 | REQ-022 |
+| changed_at | datetime | 是 | 变更发生时间 | REQ-022 |
+| synced_at | datetime | 否 | 同步完成时间 | REQ-022 |
+
+### 实体 12: 同步冲突
+
+| 字段名 | 类型 | 必填 | 说明 | 来源 |
+| --- | --- | --- | --- | --- |
+| id | string | 是 | 冲突记录唯一标识 | REQ-022 |
+| entity_type | enum | 是 | 冲突实体类型 | REQ-022 |
+| entity_id | string | 是 | 冲突实体 ID | REQ-022 |
+| field_name | string | 是 | 冲突字段 | REQ-022 |
+| c_teacher_value | json | 否 | C-teacher 当前值 | REQ-022 |
+| c_financial_value | json | 否 | C-financial 当前值 | REQ-022 |
+| resolution | enum | 否 | keep_c_teacher/keep_c_financial/manual | REQ-022 |
+| status | enum | 是 | pending/resolved/ignored | REQ-022 |
+| created_at | datetime | 是 | 冲突创建时间 | REQ-022 |
+| resolved_at | datetime | 否 | 冲突解决时间 | REQ-022 |
+
 ---
 
 ## 附录
@@ -791,8 +937,8 @@ graph TD
 | 项目 | 数量 |
 | --- | ---: |
 | 合并源文档 | 10 |
-| 功能模块 | 10 |
-| 功能项 (REQ) | 21 |
+| 功能模块 | 11 |
+| 功能项 (REQ) | 22 |
 | 去重合并 | 6 |
 | 信息补充 | 14 |
 | 已实现功能（错题本） | 26/26 |
@@ -812,6 +958,7 @@ graph TD
 | 错题本功能 | 实施计划清单（26/26 完成）合并为模块 9 详细状态。 | outputs/实施计划清单.md |
 | 课堂记录类型化 | REQ-019：8 种记录类型、动态表单、差异化状态、单选类型、按类型筛选。 | 用户需求分析 2026-06-26 |
 | iCloud 同步 + 拖拽上传 | REQ-020：iCloud 自动同步（可共享资料同步到 iCloud Drive）；REQ-021：拖拽上传（沿用 14 种格式）。 | 用户需求分析 2026-06-26 |
+| 局域网配对数据同步 | REQ-022：C-teacher 桌面端为主设备，C-financial 同 WiFi 配对后双向自动同步学生、课程、排课和财务字段。 | 用户需求分析 2026-07-02 |
 
 ### C. 待确认事项
 
