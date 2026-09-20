@@ -63,6 +63,7 @@ type GroupedLessonItem = {
   groupName: string;
   groupColor: string;
   students: Array<{ id: string; name: string }>;
+  courseIds: string[];
   startsAt: number;
   durationMinutes: number;
   subject: string;
@@ -287,7 +288,7 @@ const titleText = computed(() => calendarTitle(calendarMode.value, calendarAncho
 const dayHours = computed(() => hours.map((hour) => dayView.value.start + hour * 60 * 60 * 1000));
 
 const calendarItems = computed<CalendarLessonItem[]>(() => {
-  const grouped = new Map<string, { groupId: string; students: Set<string>; startsAt: number; durationMinutes: number; subject: string }>();
+  const grouped = new Map<string, { groupId: string; students: Set<string>; courseIds: string[]; startsAt: number; durationMinutes: number; subject: string }>();
   const coveredLessons = new Set<string>();
 
   for (const lesson of visibleLessons.value) {
@@ -314,12 +315,15 @@ const calendarItems = computed<CalendarLessonItem[]>(() => {
       grouped.set(key, {
         groupId: group.id,
         students: new Set(),
+        courseIds: [],
         startsAt: lesson.startsAt,
         durationMinutes: lesson.durationMinutes,
         subject: lesson.subject
       });
     }
-    grouped.get(key)!.students.add(lesson.studentId);
+    const entry = grouped.get(key)!;
+    entry.students.add(lesson.studentId);
+    if (!entry.courseIds.includes(lesson.courseId)) entry.courseIds.push(lesson.courseId);
     coveredLessons.add(lesson.id);
   }
 
@@ -338,6 +342,7 @@ const calendarItems = computed<CalendarLessonItem[]>(() => {
       groupName: group.name,
       groupColor: group.color,
       students,
+      courseIds: [...entry.courseIds],
       startsAt: entry.startsAt,
       durationMinutes: entry.durationMinutes,
       subject: entry.subject
@@ -704,12 +709,25 @@ function goBack() {
   pageMode.value = "calendar";
 }
 
-function handleCalendarClick(item: CalendarLessonItem) {
-  if (item.kind === "group") return;
-  const lesson = workspace.scheduledLessons.find((l) => l.id === item.lessonId);
-  if (lesson?.courseId) {
-    editCourse(lesson.courseId);
+function courseIdForCalendarItem(item: CalendarLessonItem): string | null {
+  if (item.kind === "individual") {
+    return workspace.scheduledLessons.find((l) => l.id === item.lessonId)?.courseId ?? null;
   }
+  return item.courseIds[0] ?? null;
+}
+
+function handleCalendarClick(item: CalendarLessonItem) {
+  const courseId = courseIdForCalendarItem(item);
+  if (courseId) editCourse(courseId);
+}
+
+function handleCalendarCellClick(items: CalendarLessonItem[], createTimestamp: number) {
+  const courseId = items.length > 0 ? courseIdForCalendarItem(items[0]) : null;
+  if (courseId) {
+    editCourse(courseId);
+    return;
+  }
+  openCreateCourse(createTimestamp);
 }
 
 function returnToToday() {
@@ -1018,7 +1036,7 @@ const weekdayLabel = computed(() => {
                 :key="cell.key"
                 class="schedule-month-cell"
                 :class="{ muted: !cell.inCurrentMonth, today: cell.isToday }"
-                @click="openCreateCourse(cell.start + 18 * 60 * 60 * 1000)"
+                @click="handleCalendarCellClick(itemsForDay(cell.start, cell.end), cell.start + 18 * 60 * 60 * 1000)"
               >
                 <span>{{ cell.dayNumber }}</span>
                 <div
@@ -1055,7 +1073,12 @@ const weekdayLabel = computed(() => {
                   <span>{{ day.dateLabel }}</span>
                 </div>
                 <div class="schedule-week-hours">
-                  <div v-for="hour in hours" :key="hour" class="schedule-week-hour" @click="openCreateCourse(day.start + hour * 60 * 60 * 1000)">
+                  <div
+                    v-for="hour in hours"
+                    :key="hour"
+                    class="schedule-week-hour"
+                    @click="handleCalendarCellClick(itemsForHour(day.start + hour * 60 * 60 * 1000), day.start + hour * 60 * 60 * 1000)"
+                  >
                     <div v-for="item in itemsForHour(day.start + hour * 60 * 60 * 1000)" :key="item.key" class="schedule-week-lesson" :style="lessonBorderStyle(item)" @click.stop="handleCalendarClick(item)">
                       <template v-if="item.kind === 'group'">
                         <strong :style="{ color: item.groupColor }">{{ item.groupName }}</strong>
@@ -1083,7 +1106,12 @@ const weekdayLabel = computed(() => {
               <span>{{ dayView.dateLabel }}</span>
             </div>
             <div ref="dayGridRef" class="schedule-day-grid">
-              <div v-for="hour in hours" :key="hour" class="schedule-day-hour" @click="openCreateCourse(dayView.start + hour * 60 * 60 * 1000)">
+              <div
+                v-for="hour in hours"
+                :key="hour"
+                class="schedule-day-hour"
+                @click="handleCalendarCellClick(itemsForHour(dayView.start + hour * 60 * 60 * 1000), dayView.start + hour * 60 * 60 * 1000)"
+              >
                 <div class="schedule-day-hour-label">{{ hour }}:00</div>
                 <div class="schedule-day-hour-content">
                   <div v-for="item in itemsForHour(dayView.start + hour * 60 * 60 * 1000)" :key="item.key" class="schedule-day-lesson" :style="lessonBorderStyle(item)" @click.stop="handleCalendarClick(item)">
