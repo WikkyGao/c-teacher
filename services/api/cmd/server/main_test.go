@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -91,13 +92,14 @@ func TestHandleAnalyzeMistakeRequiresStudentAndSubject(t *testing.T) {
 }
 
 func TestOpenAIAnalyzerUsesResponsesAPI(t *testing.T) {
+	stubKey := os.Getenv("TEST_OPENAI_API_KEY")
 	var received map[string]interface{}
 	client := &http.Client{
 		Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 			if r.URL.String() != "https://example.test/v1/responses" {
 				t.Fatalf("unexpected url: %s", r.URL.String())
 			}
-			if r.Header.Get("Authorization") != "Bearer test-key" {
+			if r.Header.Get("Authorization") != "Bearer "+stubKey {
 				t.Fatalf("missing auth header")
 			}
 			if err := json.NewDecoder(r.Body).Decode(&received); err != nil {
@@ -114,7 +116,7 @@ func TestOpenAIAnalyzerUsesResponsesAPI(t *testing.T) {
 	}
 
 	analyzer := openAIAnalyzer{
-		apiKey:  "test-key",
+		apiKey:  stubKey,
 		baseURL: "https://example.test/v1",
 		model:   "gpt-test",
 		client:  client,

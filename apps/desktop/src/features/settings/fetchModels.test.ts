@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fetchProviderModels, getModelCatalogEndpoints, mergeFetchedModels } from "./aiModelCatalog";
 
+const stubApiKey = () => Math.random().toString(36).slice(2);
+
 describe("aiModelCatalog", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -27,9 +29,10 @@ describe("aiModelCatalog", () => {
       )
     );
 
+    const fakeKey = stubApiKey();
     const models = await fetchProviderModels({
       baseUrl: "https://api.deepseek.com/anthropic",
-      apiKey: "sk-real-key"
+      apiKey: fakeKey
     });
 
     expect(models).toEqual([{ name: "deepseek-chat" }, { name: "deepseek-coder" }]);
@@ -37,7 +40,7 @@ describe("aiModelCatalog", () => {
       "https://api.deepseek.com/api/v1/models",
       expect.objectContaining({
         headers: expect.objectContaining({
-          Authorization: "Bearer sk-real-key"
+          Authorization: `Bearer ${fakeKey}`
         })
       })
     );
@@ -53,7 +56,7 @@ describe("aiModelCatalog", () => {
         })
       );
 
-    await expect(fetchProviderModels({ baseUrl: "https://api.example.com/v1", apiKey: "sk-key" })).resolves.toEqual([
+    await expect(fetchProviderModels({ baseUrl: "https://api.example.com/v1", apiKey: stubApiKey() })).resolves.toEqual([
       { name: "local-model" }
     ]);
   });

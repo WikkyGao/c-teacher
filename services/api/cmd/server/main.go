@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
+	"crypto"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -304,7 +304,8 @@ func wsUpgrade(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
 		return nil, errors.New("missing key")
 	}
 
-	hash := sha1.New()
+	// RFC 6455 规定 WebSocket 握手必须用 SHA-1 计算 Sec-WebSocket-Accept
+	hash := crypto.SHA1.New()
 	hash.Write([]byte(strings.TrimSpace(key) + wsMagicGUID))
 	accept := base64.StdEncoding.EncodeToString(hash.Sum(nil))
 

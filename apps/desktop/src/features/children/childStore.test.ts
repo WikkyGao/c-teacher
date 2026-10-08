@@ -2,6 +2,8 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { appThemes, K12_MISTAKE_BOOK_SUBJECTS, useChildStore } from "./childStore";
 
+const stubApiKey = () => Math.random().toString(36).slice(2);
+
 describe("childStore", () => {
   const storage = new Map<string, string>();
 
@@ -696,7 +698,7 @@ describe("childStore", () => {
     store.createAiProvider({
       name: "测试供应商",
       baseUrl: "https://api.example.com/v1",
-      apiKey: "test-key",
+      apiKey: stubApiKey(),
       apiFormat: "openai-chat",
       models: [
         {
@@ -716,7 +718,7 @@ describe("childStore", () => {
       store.updateAiProvider(providerId, {
         name: "已编辑供应商",
         baseUrl: "https://api.edited.com/v1",
-        apiKey: "edited-key",
+        apiKey: stubApiKey(),
         apiFormat: "openai-chat",
         models: [
           {
